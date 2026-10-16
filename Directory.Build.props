@@ -1,0 +1,26 @@
+<Project>
+
+  <!--
+    Réglages communs à tous les projets de la solution (src et tests).
+    MSBuild charge ce fichier automatiquement : inutile de répéter ces lignes dans les .csproj.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Un warning est une erreur : on ne laisse pas s'accumuler du code douteux,
+         surtout les avertissements de nullabilité sur du code qui manipule de l'argent. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+    <!-- Analyseurs .NET intégrés, niveau par défaut (le niveau "recommended" sera
+         envisagé plus tard, quand le code des templates aura été nettoyé). -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <!-- Builds reproductibles : même code source = même binaire, en local et en CI. -->
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+</Project>

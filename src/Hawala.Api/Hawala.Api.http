@@ -1,0 +1,6 @@
+@Hawala.Api_HostAddress = http://localhost:5215
+
+GET {{Hawala.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
