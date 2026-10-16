@@ -1,0 +1,23 @@
+# PostgreSQL pour le développement local UNIQUEMENT.
+# Ces identifiants ne servent que sur ta machine : ne jamais les réutiliser en production.
+# Démarrer : docker compose up -d      Arrêter : docker compose down
+services:
+  postgres:
+    image: postgres:17
+    container_name: hawala-postgres
+    environment:
+      POSTGRES_DB: hawala
+      POSTGRES_USER: hawala
+      POSTGRES_PASSWORD: hawala_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - hawala-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hawala -d hawala"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  hawala-pgdata:
