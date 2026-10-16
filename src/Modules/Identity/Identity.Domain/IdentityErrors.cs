@@ -37,6 +37,26 @@ public static class IdentityErrors
             Error.Validation("Identity.Login.Empty", "Saisir un email ou un numéro de téléphone.");
     }
 
+    public static class Account
+    {
+        public static readonly Error FullNameEmpty =
+            Error.Validation("Identity.Account.FullNameEmpty", "Le nom complet est obligatoire.");
+
+        public static readonly Error FullNameTooLong =
+            Error.Validation("Identity.Account.FullNameTooLong", "Le nom complet dépasse 100 caractères.");
+
+        public static readonly Error AlreadyBlocked =
+            Error.Conflict("Identity.Account.AlreadyBlocked", "Le compte est déjà bloqué.");
+
+        public static readonly Error NotBlocked =
+            Error.Conflict("Identity.Account.NotBlocked", "Le compte n'est pas bloqué.");
+
+        public static readonly Error LastActiveSupervisor =
+            Error.Conflict(
+                "Identity.Account.LastActiveSupervisor",
+                "Impossible : c'est le dernier Superviseur actif. Nommer ou débloquer un autre Superviseur d'abord.");
+    }
+
     // Côté client, ces quatre erreurs mènent au même résultat : retour à l'écran de connexion.
     // Les codes distincts servent aux logs et à l'audit (surtout Reused, signe de vol de jeton).
     public static class RefreshToken
