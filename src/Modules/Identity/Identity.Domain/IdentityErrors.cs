@@ -37,8 +37,36 @@ public static class IdentityErrors
             Error.Validation("Identity.Login.Empty", "Saisir un email ou un numéro de téléphone.");
     }
 
+    public static class Auth
+    {
+        // Même erreur que le compte existe ou non : on ne révèle jamais si un email ou un téléphone est inscrit.
+        public static readonly Error InvalidCredentials =
+            Error.Unauthorized("Identity.Auth.InvalidCredentials", "Identifiant ou mot de passe incorrect.");
+
+        public static readonly Error LockedOut =
+            Error.Unauthorized("Identity.Auth.LockedOut", "Trop d'essais : compte verrouillé temporairement.");
+
+        public static readonly Error AccountBlocked =
+            Error.Forbidden("Identity.Auth.AccountBlocked", "Ce compte est bloqué. Contacter le Superviseur.");
+    }
+
+    public static class Password
+    {
+        public static readonly Error Empty =
+            Error.Validation("Identity.Password.Empty", "Le mot de passe est obligatoire.");
+
+        public static readonly Error Incorrect =
+            Error.Validation("Identity.Password.Incorrect", "Le mot de passe actuel est incorrect.");
+
+        public static readonly Error TooWeak =
+            Error.Validation("Identity.Password.TooWeak", "Le nouveau mot de passe ne respecte pas les règles.");
+    }
+
     public static class Account
     {
+        public static readonly Error NotFound =
+            Error.NotFound("Identity.Account.NotFound", "Compte introuvable.");
+
         public static readonly Error FullNameEmpty =
             Error.Validation("Identity.Account.FullNameEmpty", "Le nom complet est obligatoire.");
 
