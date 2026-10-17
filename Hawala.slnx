@@ -10,10 +10,17 @@
     <Project Path="src/Modules/Identity/Identity.Domain/Identity.Domain.csproj" />
     <Project Path="src/Modules/Identity/Identity.Infrastructure/Identity.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Organization/">
+    <Project Path="src/Modules/Organization/Organization.Application/Organization.Application.csproj" />
+    <Project Path="src/Modules/Organization/Organization.Contracts/Organization.Contracts.csproj" />
+    <Project Path="src/Modules/Organization/Organization.Domain/Organization.Domain.csproj" />
+    <Project Path="src/Modules/Organization/Organization.Infrastructure/Organization.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Architecture.Tests/Architecture.Tests.csproj" />
     <Project Path="tests/Hawala.SharedKernel.Tests/Hawala.SharedKernel.Tests.csproj" />
     <Project Path="tests/Identity.Domain.Tests/Identity.Domain.Tests.csproj" />
     <Project Path="tests/Identity.IntegrationTests/Identity.IntegrationTests.csproj" />
+    <Project Path="tests/Organization.Domain.Tests/Organization.Domain.Tests.csproj" />
   </Folder>
 </Solution>
