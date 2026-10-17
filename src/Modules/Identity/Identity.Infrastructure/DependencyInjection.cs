@@ -2,6 +2,7 @@ using System.Text;
 using Hawala.SharedKernel.Messaging;
 using Hawala.SharedKernel.Time;
 using Identity.Application.Abstractions;
+using Identity.Application.Features.Accounts.GetCurrentAccount;
 using Identity.Application.Features.Auth;
 using Identity.Application.Features.Auth.ChangePassword;
 using Identity.Application.Features.Auth.Login;
@@ -11,6 +12,7 @@ using Identity.Infrastructure.Credentials;
 using Identity.Infrastructure.Persistence;
 using Identity.Infrastructure.Persistence.Repositories;
 using Identity.Infrastructure.Seeding;
+using Identity.Infrastructure.Sessions;
 using Identity.Infrastructure.Tokens;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -81,11 +83,17 @@ public static class DependencyInjection
         var connectionString = configuration.GetConnectionString("Hawala")
             ?? throw new InvalidOperationException("ConnectionStrings:Hawala absente de la configuration.");
 
-        services.AddDbContext<IdentityModuleDbContext>(options =>
-            options.UseNpgsql(
-                connectionString,
-                npgsql => npgsql.MigrationsHistoryTable("__ef_migrations_history", IdentityModuleDbContext.Schema)));
+        services.AddMemoryCache();
+        services.AddSingleton<AccountCacheInvalidationInterceptor>();
 
+        services.AddDbContext<IdentityModuleDbContext>((sp, options) =>
+            options
+                .UseNpgsql(
+                    connectionString,
+                    npgsql => npgsql.MigrationsHistoryTable("__ef_migrations_history", IdentityModuleDbContext.Schema))
+                .AddInterceptors(sp.GetRequiredService<AccountCacheInvalidationInterceptor>()));
+
+        services.AddScoped<SessionValidator>();
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<IdentityModuleDbContext>());
         services.AddScoped<IUserAccountRepository, UserAccountRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
@@ -122,6 +130,7 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<LoginCommand, AuthTokens>, LoginCommandHandler>();
         services.AddScoped<ICommandHandler<RefreshCommand, AuthTokens>, RefreshCommandHandler>();
         services.AddScoped<ICommandHandler<LogoutCommand>, LogoutCommandHandler>();
+        services.AddScoped<IQueryHandler<GetCurrentAccountQuery, CurrentAccount>, GetCurrentAccountQueryHandler>();
 
         // ChangePassword modifie les tables d'ASP.NET Identity et les nôtres : une seule transaction.
         services.AddScoped<ChangePasswordCommandHandler>();

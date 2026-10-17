@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Hawala.Api.Configuration;
 using Hawala.Api.Errors;
 using Hawala.SharedKernel.Messaging;
+using Identity.Application.Features.Accounts.GetCurrentAccount;
 using Identity.Application.Features.Auth;
 using Identity.Application.Features.Auth.ChangePassword;
 using Identity.Application.Features.Auth.Login;
@@ -35,7 +36,25 @@ public static class AuthEndpoints
         group.MapPost("/change-password", ChangePassword)
             .RequireAuthorization(AuthorizationPolicies.PasswordChangeAllowed);
 
+        // Politique standard : refusé (403) tant que le mot de passe temporaire n'est pas changé.
+        group.MapGet("/me", Me).RequireAuthorization();
+
         return app;
+    }
+
+    private static async Task<IResult> Me(
+        ClaimsPrincipal user,
+        IQueryHandler<GetCurrentAccountQuery, CurrentAccount> handler,
+        CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(user.FindFirstValue(HawalaClaimTypes.Subject), out var accountId))
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        var result = await handler.Handle(new GetCurrentAccountQuery(accountId), cancellationToken);
+
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.Error.ToProblem();
     }
 
     private static async Task<IResult> Login(
