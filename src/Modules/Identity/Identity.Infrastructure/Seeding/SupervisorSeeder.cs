@@ -59,7 +59,7 @@ internal sealed class SupervisorSeeder(
         }
 
         var account = UserAccount.CreateWithTemporaryPassword(
-            email.Value, phone, seed.FullName, RoleTemplate.Supervisor, clock.UtcNow);
+            email.Value, phone, seed.FullName, RoleTemplate.Supervisor, agencyId: null, clock.UtcNow);
         if (account.IsFailure)
         {
             throw new InvalidOperationException(

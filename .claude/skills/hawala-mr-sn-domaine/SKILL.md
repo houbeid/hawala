@@ -1,0 +1,215 @@
+---
+name: "hawala-mr-sn-domaine"
+description: "Règles métier, décisions validées et conventions de l'app Hawala Mauritanie–Sénégal. À charger avant tout code, conception ou question sur ce projet."
+---
+
+# App Hawala Mauritanie–Sénégal — référentiel du projet
+
+Nouvelle app web (PWA) de transfert d'argent entre Nouakchott et Dakar, inspirée d'une app existante (alhawala, v1.0.57) avec de nombreux changements fonctionnels et UI/UX. Ce skill est la source de vérité sur les règles validées. Le document d'architecture complet est dans le dépôt : `docs/architecture.md` (copie de « Architecture — App Hawala MR–SN », Claude Docs). L'état d'avancement et la prochaine étape sont dans `CLAUDE.md` à la racine.
+
+À utiliser avec `layered-backend-builder` (backend) et `react-frontend-builder` (frontend) : ce skill dit QUOI construire, eux disent COMMENT avancer (fichier par fichier, tests avant de continuer).
+
+## Règles de travail
+
+- Ne jamais inventer une règle métier. Si un cas n'est pas couvert ici, poser la question à l'utilisateur et lister la question dans « Questions ouvertes ».
+- Une règle marquée **validée** ne change pas sans accord explicite de l'utilisateur.
+- Ne jamais utiliser de vrais noms, téléphones, emails ou NNI de clients dans le code, les tests ou les seeds : données fictives uniquement.
+- Répondre en français.
+- Secrets (`Jwt:SigningKey`, `SeedSupervisor:*`) uniquement dans les user-secrets (dev) ou des variables d'environnement (prod), jamais dans un appsettings versionné. Les identifiants du docker-compose sont pour le dev local seulement.
+- Un mot de passe temporaire n'est jamais journalisé ni stocké en clair.
+
+## Périmètre (validé)
+
+- Un seul corridor : Mauritanie ↔ Sénégal. Deux agences : Nouakchott et Dakar.
+- Deux devises seulement : ouguiya et FCFA (XOF).
+- **L'ouguiya est stockée et affichée en MRO** (ancienne ouguiya, 1 MRU = 10 MRO), comme l'app actuelle. « MRO » n'est plus un code ISO : c'est un code interne ; ne pas déléguer le formatage à une lib ISO stricte.
+- Les banques et wallets affichent en MRU : chaque champ de montant affiche son unité et convertit ×10 si la saisie est en MRU.
+- Montants en `decimal` / `numeric(18,2)`, jamais `float`/`double`.
+
+## Arrondi (validé)
+
+1. Le FCFA est toujours en nombres entiers ; les taux gardent 2 décimales (3 604,77).
+2. Le montant MRO d'un transfert (FCFA × taux / 5000) est arrondi à l'unité la plus proche, 0,5 vers le haut : `MidpointRounding.AwayFromZero`, jamais l'arrondi par défaut de .NET (vers le pair).
+3. On arrondit une seule fois, à la création du transfert ; le montant arrondi est enregistré et jamais recalculé.
+4. Bénéfice et bilan : calcul en pleine précision sur les montants enregistrés, arrondi seulement du total affiché.
+5. MRU ↔ MRO : ×10 exact.
+
+Si le test de référence (536 893 MRO) montre un écart, on ajuste le point 4, jamais la règle des transferts.
+
+## Organisation et règlement entre agences (validé)
+
+- **Un seul patron, deux caisses** : une caisse à Nouakchott (MRO), une caisse à Dakar (FCFA).
+- Transfert Nouakchott → Dakar : l'ouguiya entre dans la caisse de Nouakchott, le FCFA sort de la caisse de Dakar (et inversement). Pas de compte de dette entre agences : les deux caisses appartiennent au même patron et le bilan les additionne. Le passage de devise se fait par le compte « Position de change ».
+- Le remplissage des caisses (achat de FCFA, banque, transport…) est **hors périmètre** de l'app. Les agents enregistrent seulement :
+  - « Approvisionnement de caisse » (montant seul, sans source) ;
+  - « Retrait du patron » (montant seul).
+  Les deux passent par un compte « Apports du patron » rattaché au capital : ni gain ni perte.
+- **Caisse insuffisante : la livraison est autorisée.** La caisse peut passer en négatif ; avertissement à l'agent, sans blocage.
+
+## Périmètre par agence (validé)
+
+Mêmes règles pour Nouakchott et Dakar :
+
+- Un compte agent appartient à **une seule agence** ; le choix de l'agence est verrouillé dans l'interface.
+- Une agence voit **les transferts qu'elle a envoyés et ceux qu'elle a reçus** (à livrer), sa propre caisse et ses propres données, jamais celles de l'autre agence.
+- Une agence voit **ses montants (acheté, donné au client) et le prix de vente**. Elle ne voit **ni le prix d'achat, ni la commission**, ni les quatre cartes de l'écran des transferts : réservés au Superviseur.
+- Le **Superviseur voit les deux agences** (gestion des comptes, taux, commission, bilan total).
+- Contrôle côté serveur (filtre global EF Core sur l'agence, champs masqués dans les réponses de l'API), jamais seulement dans l'interface.
+
+## Taux et commission (validé)
+
+- Deux taux du jour, au format « 5 000 FCFA = ? MRO », enregistrés **jour par jour** :
+  - **prix d'achat** = taux du marché (T), ce que coûtent les FCFA ;
+  - **prix de vente** = taux appliqué au client.
+- **Seul le Superviseur fixe ou modifie un taux.** Le prix de vente du jour s'applique automatiquement à chaque nouveau transfert ; le Superviseur peut le changer pour un transfert précis. Les agents des deux agences ne touchent à aucun taux ; le serveur refuse (permissions `rates.set_daily`, `transfers.edit_rate`).
+- **Commission = écart entre prix de vente et prix d'achat × montant.** Exemple : 5 000 000 FCFA vendus à 3 650 (le client paie 3 650 000 MRO), achetés à 3 600 (3 600 000 MRO) → 50 000 MRO. C'est la formule du bénéfice ci-dessous.
+- Chaque transfert garde ses taux (historisés).
+- **Alerte « taux de change inhabituel »** si le taux d'un transfert s'écarte de **plus de 5 %** du taux du jour (avec 3 600 : hors de 3 420 à 3 780). Alerte seulement, sans blocage.
+
+## Comptes et permissions (validé)
+
+- Un compte **Superviseur** gère les autres comptes : il attribue la branche (Nouakchott ou Dakar, donc le pays) et sa couleur, crée un compte, active ou bloque un compte, accorde les permissions, et peut limiter un compte à une liste de tiers autorisés. Contrôle par la permission `users.manage`, pas par le nom du rôle.
+- **Plusieurs Superviseurs possibles.** Un Superviseur peut bloquer un autre Superviseur et peut se donner des permissions à lui-même (tracé dans l'audit).
+- **Le dernier Superviseur actif ne peut être ni bloqué ni rétrogradé** (comptage avec verrou `SELECT … FOR UPDATE`).
+- **Un Superviseur ne peut ni bloquer, ni changer le rôle, ni réinitialiser le mot de passe de son propre compte** (il change son mot de passe par `/auth/change-password`). Pas de motif obligatoire pour bloquer un compte.
+- **Réinitialiser le mot de passe** (par le Superviseur) : nouveau mot de passe temporaire généré, **lève le verrouillage** (5 échecs / 15 min) et **coupe toutes les sessions** du compte. Possible aussi sur un compte bloqué et sur un autre Superviseur.
+- **Débloquer un compte : l'ancien mot de passe n'est plus valable** ; le déblocage génère un nouveau mot de passe temporaire (affiché une fois, changement obligatoire à la connexion) et lève le verrouillage.
+- **Le Superviseur peut modifier le nom, l'email et le téléphone d'un compte, y compris le sien** (mêmes règles d'unicité qu'à la création). Le téléphone peut être retiré (champ vide). Ce changement ne coupe pas les sessions.
+- **Liste des comptes** : nom, email, téléphone, rôle, agence (code, nom, couleur), statut, « mot de passe à changer », « verrouillé jusqu'à ». Filtres agence, rôle, statut + recherche texte (nom, email, téléphone) ; comptes bloqués affichés par défaut ; tri par nom ; pas de pagination pour l'instant. Dernière connexion : reportée à la phase 6 (avec les appareils connectés).
+- Le premier Superviseur est créé au démarrage depuis la configuration (user-secrets en dev, variables d'environnement en prod), seulement si aucun Superviseur n'existe.
+- App actuelle : rôles Administration / Membre + permissions Voir / Ajouter / Modifier / Supprimer par élément (tiers, opérations financières, transferts…) + « Lire le budget de la caisse » et « Enregistrer le budget de la caisse ». Nouvelle app : modèles de rôles (Superviseur, Agent, Caissier, Consultation) + ajouts / retraits par compte, permissions métier (livrer, annuler, modifier le taux, activer le crédit, voir bénéfice, voir bilan, exporter, `cash.budget.read`, `cash.budget.save`), plafonds par compte, 2FA obligatoire pour le Superviseur, audit lisible.
+- Contrôle côté serveur en 3 couches : permission → périmètre (agence, tiers autorisés, via filtre global EF Core) → plafond.
+
+### Implémenté (gestion des comptes)
+
+- Agences en base (module Organisation) : **NKC** Nouakchott (Mauritanie, MRO, #1E8E3E, Africa/Nouakchott) et **DKR** Dakar (Sénégal, XOF, #1565C0, Africa/Dakar), créées au démarrage si absentes, jamais écrasées. Code = 3 lettres majuscules ; la devise découle du pays ; couleur #RRGGBB.
+- `UserAccount.AgencyId` : obligatoire pour Agent / Caissier / Consultation, **interdit pour un Superviseur** (il voit les deux agences). Pas de clé étrangère entre schémas : l'existence de l'agence est vérifiée par `IAgencyDirectory` (Organization.Contracts).
+- **Le Superviseur peut déplacer un compte d'une agence à l'autre** (`ChangeAgency`, SecurityVersion incrémentée).
+- **Le mot de passe temporaire est généré par l'app** (format `xxx-xxx-xxx`, sans 0/O/1/l/I, au moins un chiffre), renvoyé une seule fois dans la réponse de création.
+- Permissions définies dans `Identity.Contracts.Permissions` : `users.manage`, `agencies.manage` (d'autres s'ajouteront avec les modules). Superviseur = toutes ; Agent, Caissier, Consultation = aucune pour l'instant (POINT OUVERT : droits par défaut à faire valider par le patron). Endpoints protégés par `.RequirePermission(Permissions.X)` ; le contrôle passe par `IPermissionChecker`, lu côté serveur (option B).
+
+## Authentification (validé, implémenté)
+
+- Connexion par **email ou téléphone**, dans un seul champ. **Email obligatoire et unique** ; téléphone facultatif, unique s'il est renseigné, stocké en E.164 ; un numéro sans indicatif pays est refusé.
+- Création de compte par le Superviseur avec **mot de passe temporaire**, changement obligatoire à la première connexion ; avant ce changement, le jeton n'autorise que le changement de mot de passe.
+- Mot de passe : 8 caractères minimum dont au moins un chiffre. **Verrouillage après 5 échecs, pendant 15 minutes.** Même message d'erreur que le compte existe ou non ; le blocage n'est révélé qu'après le bon mot de passe.
+- JWT de 15 minutes (identité seulement : `sub`, `sv` = SecurityVersion, `pwd_change`) + refresh token rotatif de 12 heures dans un cookie `HttpOnly`, `Secure`, `SameSite=Strict`, chemin `/api/v1/auth`, stocké haché (SHA-256). Rejouer un refresh token déjà utilisé révoque toute la session.
+- **Option B** : permissions lues côté serveur, jamais dans le JWT. À chaque requête, la SecurityVersion du jeton est comparée à celle du compte (cache mémoire 30 s, vidé automatiquement à chaque modification du compte) : blocage, changement de rôle ou de mot de passe = effet immédiat.
+- Changer son mot de passe ferme toutes les autres sessions. `GET /api/v1/auth/me` renvoie le compte connecté. 2FA TOTP du Superviseur : à faire.
+
+## Caisse (validé)
+
+- **Encaissement = + (l'argent entre), décaissement = − (l'argent sort).**
+- Un hawala reçu du Sénégal est vu par l'utilisateur comme un encaissement même s'il est payé ici : en partie double, le compte tiers/Sénégal monte et la caisse physique baisse.
+- Le type d'opération fixe le signe : l'agent ne choisit jamais + ou −.
+- Virement interne entre comptes = deux lignes.
+
+### Budget de la caisse (validé)
+
+- Chaque agence a son budget, dans sa devise (Nouakchott en MRO, Dakar en FCFA) :
+  `Budget caisse = espèces + banques + soldes débiteurs (tiers qui nous doivent) − soldes créditeurs (tiers à qui on doit) − transferts non livrés`.
+- **L'agence enregistre son budget chaque jour** (clôture journalière) : photo datée du budget. Historique sur une période avec courbe.
+- **Contrôle de cohérence** : analyse les opérations depuis le dernier budget enregistré et affiche des alertes à vérifier avant validation (ex. « taux de change inhabituel », voir « Taux et commission »).
+- Ce budget par agence donne le résultat de chaque agence, sans règle de partage du bénéfice.
+- **Seuls les tiers marqués « dans le bilan » comptent** dans les soldes débiteurs / créditeurs. Les transferts non livrés comptés sont ceux que **l'agence doit encore payer**, dans sa devise.
+- Tous les chiffres sont lus dans le grand livre, rien n'est saisi à la main.
+- **Corriger un solde** (Superviseur seulement, toujours tracé) : (1) modifier le **solde initial d'un tiers par agence, à tout moment**, comme dans l'ancienne app — passe par une écriture d'ouverture de la différence + audit avant / après ; (2) ajustement de solde avec motif obligatoire vers un compte « Écarts et ajustements » ; (3) contre-passation puis nouvelle saisie. Les budgets déjà enregistrés ne changent pas ; le contrôle de cohérence signale ces corrections.
+- Permissions : `cash.budget.read`, `cash.budget.save`.
+
+## Tiers (validé)
+
+- Les tiers sont les personnes et comptes avec qui il y a du crédit : clients, fournisseurs, personnel, et aussi banques et wallets (Bankily, Sedad, banques…), qui forment la liste « Méthode de paiement ».
+- **Rouge = il nous doit (on a de l'argent chez lui). Vert = on lui doit.** Total = rouges − verts.
+- Champs : nom (max 30), téléphone, NNI, adresse, « dans le bilan », « considéré comme banque », compte comptable (41 = clients), solde initial par agence (Nouakchott en MRO, Dakar en FCFA), genre, note.
+- Liste : filtres agence (verrouillé pour un agent), « dans le bilan / hors bilan / tous », solde, type de tiers ; totaux rouge et vert.
+- Nouvelle app : séparer « Comptes de trésorerie » (caisses, banques, wallets) et « Tiers » ; plafond de crédit ; dédoublonnage par téléphone.
+
+## Transferts (validé)
+
+- Montant de référence en FCFA (entier). **Montant MRO = FCFA × prix de vente / 5000**, arrondi selon « Arrondi ».
+- Les taux de chaque transfert sont fixés par le Superviseur (voir « Taux et commission »).
+- Sens : Envoyé / Reçu. Statuts : Non livré → Livré, ou Non livré → Annulé. Nouvelle app : « En attente de synchro » (hors ligne) et « Rejeté » (refus serveur).
+- « Activer le crédit » : le client paie plus tard → dette sur le tiers (rouge).
+- « Répartition des paiements » : un paiement peut être réparti sur plusieurs comptes ; le total affecté doit égaler le montant, sauf si le crédit est activé.
+- **Livré = le bénéficiaire a reçu son argent.** Il peut être payé par n'importe quel moyen (espèces, Wave, Orange Money, Bankily, banque…) et la livraison peut être répartie ; le total livré doit égaler le montant.
+- Livré et Annulé sont verrouillés ; une correction se fait par contre-passation ; l'annulation exige un motif ; chaque changement est historisé (qui, quand, avant / après).
+- Référence lisible par agence et par jour (ex. TR-NKC-20261013-000052).
+- Écran des transferts : cartes du jour « entrées · Nouakchott », « sorties · Nouakchott » (MRO), « montant envoyé · Dakar », « montant livré · Dakar » (FCFA), taux du jour et bénéfice. **Ces cartes sont visibles par le Superviseur seulement.**
+
+### Code de retrait (validé)
+
+1. Généré à la création : 6 chiffres aléatoires, affiché une fois, imprimé sur le reçu de l'expéditeur.
+2. **L'expéditeur le transmet lui-même au bénéficiaire.**
+3. L'agent de destination saisit le code pour livrer ; il ne peut jamais le lire.
+4. Stocké haché ; 5 essais faux → transfert bloqué, déblocage par le Superviseur.
+5. Code perdu : livraison par le Superviseur avec pièce d'identité + motif obligatoire (audit), ou nouveau code demandé à l'agence d'envoi.
+
+## Bénéfice (validé)
+
+T = prix d'achat du jour (taux du marché, MRO pour 5 000 FCFA), fixé par le Superviseur ; M = montant MRO du transfert, calculé au prix de vente. Bénéfice (commission) en MRO :
+
+- On reçoit des FCFA, on paie des MRO : `B = F × T / 5000 − M`
+- On reçoit des MRO, on paie des FCFA : `B = M − F × T / 5000`
+
+Le bénéfice du jour = somme des transferts du jour. Réservé au Superviseur. Valeur de référence vérifiée sur l'app actuelle : **536 893 MRO** (avec T = 3629,88).
+
+## Bilan général (validé)
+
+`Résultat net = Trésorerie de toutes les caisses + Résultat tiers − Transferts non livrés − Capital initial` (tout en MRO au taux du bilan).
+
+Valeur de référence vérifiée : capital 165 500 000, résultat net **−261 005 MRO (−0,16 %)**. Les transferts non livrés sont soustraits car l'argent est en caisse mais dû aux bénéficiaires. Écran : taux saisi, « Actualiser », « Enregistrer le bilan », montants envoyés du jour par agence. Réservé au Superviseur.
+
+## Tableau de bord (validé)
+
+Nombre de transferts, livrés / non livrés, **taux de livraison par agence**, rapport caisse / capital / bénéfice.
+
+## Moteur comptable
+
+- Grand livre en partie double ; seul module qui écrit les montants. Chaque écriture est équilibrée **par devise**.
+- Passage MRO ↔ FCFA via un compte système « Position de change ».
+- Écritures immuables : jamais de UPDATE/DELETE, uniquement des contre-passations.
+- Une commande = une transaction PostgreSQL (écritures + entité + audit).
+- `Idempotency-Key` sur chaque création ; `If-Match` (version) sur les modifications ; verrou sur la livraison.
+
+## Stack et conventions (décidées)
+
+- Backend : ASP.NET Core .NET 10 (Minimal APIs), monolithe modulaire + Clean Architecture (Domain / Application / Infrastructure / Contracts par module), handlers maison (pas MediatR), FluentValidation, EF Core 10 + Dapper pour les rapports, PostgreSQL 17+ (un schéma par module), Identity + JWT court + refresh token rotatif + TOTP, SignalR, Hangfire, QuestPDF, Serilog + OpenTelemetry.
+- Solution : `Hawala.slnx`, `Directory.Build.props` (nullable, warnings = erreurs), versions NuGet centralisées dans `Directory.Packages.props`, `Result` / `Error` (codes stables `Module.Raison` traduits par le frontend), `IClock` injecté, UUID v7 (`IdGenerator`).
+- Frontend : React 19 + TypeScript + Vite, Tailwind + shadcn/ui, TanStack Query + Router, React Hook Form + Zod, i18next (fr, ar en RTL), vite-plugin-pwa + Dexie (file d'attente hors ligne), Recharts. Client API généré depuis OpenAPI.
+- Modules : Identité & accès, Organisation, Tiers, Trésorerie, Grand livre, Taux, Transferts, Caisse, Bénéfice, Bilan, Notifications (temps réel entre agences), Audit & conformité. Un module n'appelle que les `Contracts` d'un autre (test d'architecture).
+- API REST `/api/v1`, une route par cas d'usage (`POST /transfers/{id}/deliver`), erreurs en Problem Details (RFC 9457) avec un champ `code`. Tout endpoint est protégé par défaut, sauf ceux marqués anonymes.
+- IDs UUID v7 ; identifiants techniques jamais affichés à l'utilisateur.
+- Tests : xUnit + Testcontainers (vrai PostgreSQL) ; tests de référence sur 536 893 et −261 005 dès que les données source sont disponibles ; Playwright pour l'E2E.
+- Hors ligne : seules les créations (transfert, encaissement, décaissement) vont en file ; livrer, annuler, modifier un taux et clôturer exigent le réseau.
+
+## Hébergement (décidé)
+
+Serveur en Europe accepté. Départ : 1 VPS OVHcloud en France (type VPS-2, 4 vCore / 8 Go) avec Docker Compose, Caddy derrière Cloudflare, sauvegardes `pg_dump` + WAL vers un stockage objet, restauration testée chaque mois. Budget visé : environ 15 à 20 € par mois.
+
+## Hors périmètre V1
+
+- Notifications clients par WhatsApp / SMS (reportées). En V1 le reçu PDF s'imprime ou se télécharge.
+
+## Plan de réalisation
+
+1. Fondations (solution, CI, Docker, Identité, Organisation, squelette PWA bilingue) — faits : authentification complète, permissions côté serveur, module Organisation (agences), création de compte par le Superviseur. Restent : bloquer / débloquer, changer de rôle, changer d'agence, réinitialiser le mot de passe, lister les comptes, couleur d'agence, 2FA du Superviseur, CI.
+2. Grand livre + Trésorerie + Tiers
+3. Transferts
+4. Caisse et clôture journalière (approvisionnement / retrait du patron, budget de la caisse, contrôle de cohérence)
+5. Bénéfice + Bilan
+6. Sécurité avancée
+7. Hors ligne + reçu
+8. Migration depuis l'ancienne app + mise en service : import des tiers et de leurs soldes à la date de démarrage, **sans les anciens transferts**
+9. Conformité (AML, HarisAI) ; plus tard WhatsApp / SMS
+
+Valider les maquettes des écrans de transfert (création en 3 étapes, livraison) avec les utilisateurs avant la phase 3.
+
+## Questions ouvertes
+
+- Droits par défaut des rôles Agent, Caissier et Consultation ?
+- Audit de « qui a créé / modifié ce compte » : à brancher quand le module Audit existera.
+
+- Que contient le bouton « + » de l'écran de modification d'un transfert (livraison, annulation, autre) ?
+- Autres alertes du contrôle de cohérence, en plus du « taux inhabituel » ?
+
+Quand une question est tranchée, mettre à jour ce skill (et le document d'architecture).

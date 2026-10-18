@@ -31,6 +31,11 @@ internal sealed class UserAccountConfiguration : IEntityTypeConfiguration<UserAc
             .HasMaxLength(UserAccount.FullNameMaxLength)
             .IsRequired();
 
+        // Agence du module Organisation. Volontairement sans clé étrangère vers organization.agencies :
+        // les modules restent séparés ; l'existence de l'agence est vérifiée via IAgencyDirectory.
+        builder.Property(a => a.AgencyId);
+        builder.HasIndex(a => a.AgencyId);
+
         // Enums en texte : la base reste lisible, et ajouter une valeur ne décale rien.
         builder.Property(a => a.Role).HasConversion<string>().HasMaxLength(20);
         builder.Property(a => a.Status).HasConversion<string>().HasMaxLength(20);

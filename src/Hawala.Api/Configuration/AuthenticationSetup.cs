@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Security.Claims;
+using Identity.Contracts;
 using Identity.Infrastructure.Sessions;
 using Identity.Infrastructure.Tokens;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -49,11 +50,23 @@ public static class AuthenticationSetup
             .RequireAssertion(ctx => !ctx.User.HasClaim(c => c.Type == HawalaClaimTypes.PasswordChangeRequired))
             .Build();
 
-        services.AddAuthorizationBuilder()
+        var authorization = services.AddAuthorizationBuilder()
             .SetDefaultPolicy(standardPolicy)
             // Sûr par défaut : tout endpoint est protégé sauf ceux marqués AllowAnonymous.
             .SetFallbackPolicy(standardPolicy)
             .AddPolicy(AuthorizationPolicies.PasswordChangeAllowed, policy => policy.RequireAuthenticatedUser());
+
+        // Une politique par permission : la politique standard (connecté, mot de passe changé) + la permission.
+        foreach (var permission in Permissions.All)
+        {
+            authorization.AddPolicy(
+                PermissionEndpointExtensions.PolicyName(permission),
+                policy => policy
+                    .Combine(standardPolicy)
+                    .AddRequirements(new PermissionRequirement(permission)));
+        }
+
+        services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
         return services;
     }

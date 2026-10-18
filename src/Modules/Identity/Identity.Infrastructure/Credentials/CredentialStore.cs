@@ -3,6 +3,7 @@ using Hawala.SharedKernel.Results;
 using Identity.Application.Abstractions;
 using Identity.Domain;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace Identity.Infrastructure.Credentials;
 
@@ -78,6 +79,55 @@ internal sealed class CredentialStore(
 
         var result = await userManager.ChangePasswordAsync(user, currentPassword, newPassword);
         return ToResult(result);
+    }
+
+    public async Task<Result> ResetPasswordAsync(Guid userId, string newPassword, CancellationToken cancellationToken)
+    {
+        var user = await userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+        {
+            return IdentityErrors.Account.NotFound;
+        }
+
+        // Pas de jeton de réinitialisation (non configuré avec AddIdentityCore) : on retire puis on ajoute.
+        // Chaque appel enregistre ; la transaction de l'appelant évite un compte sans mot de passe si l'ajout échoue.
+        var removed = await userManager.RemovePasswordAsync(user);
+        if (!removed.Succeeded)
+        {
+            return ToResult(removed);
+        }
+
+        var added = await userManager.AddPasswordAsync(user, newPassword);
+        if (!added.Succeeded)
+        {
+            return ToResult(added);
+        }
+
+        // Règle validée : la réinitialisation (et le déblocage) lève le verrouillage après 5 échecs.
+        var unlocked = await userManager.SetLockoutEndDateAsync(user, lockoutEnd: null);
+        if (!unlocked.Succeeded)
+        {
+            return ToResult(unlocked);
+        }
+
+        return ToResult(await userManager.ResetAccessFailedCountAsync(user));
+    }
+
+    public async Task<IReadOnlyDictionary<Guid, DateTimeOffset>> GetLockoutEndsAsync(
+        IReadOnlyCollection<Guid> userIds, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(userIds);
+
+        if (userIds.Count == 0)
+        {
+            return new Dictionary<Guid, DateTimeOffset>();
+        }
+
+        // Une seule requête sur la table des identifiants, quel que soit le nombre de comptes.
+        return await userManager.Users
+            .AsNoTracking()
+            .Where(u => userIds.Contains(u.Id) && u.LockoutEnd != null && u.LockoutEnd > now)
+            .ToDictionaryAsync(u => u.Id, u => u.LockoutEnd!.Value, cancellationToken);
     }
 
     private static Result ToResult(IdentityResult result)

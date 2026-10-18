@@ -1,24 +1,24 @@
 # Requêtes de test manuel (VS Code : extension REST Client ; Visual Studio / Rider : natif).
 # Remplace le port par celui affiché au démarrage (« Now listening on: http://localhost:XXXX »).
-@api = http://localhost:5215/api/v1/auth
+@api = http://localhost:5000/api/v1/auth
 
 ### Connexion (email ou téléphone dans le même champ)
 POST {{api}}/login
 Content-Type: application/json
 
 {
-  "login": "oubeidhamad@gmail.com",
-  "password": "H12345678"
+  "login": "remplace-par-l-email-du-seed",
+  "password": "remplace-par-le-mot-de-passe-temporaire"
 }
 
 ### Changement du mot de passe temporaire (coller le accessToken reçu)
 POST {{api}}/change-password
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJoYXdhbGEtYXBwIiwiaXNzIjoiaGF3YWxhLWFwaSIsImV4cCI6MTc5MjE3MzQ5NSwiaWF0IjoxNzkyMTcyNTk1LCJuYmYiOjE3OTIxNzI1OTUsInN1YiI6IjAxYTE0NWM2LWVmMmQtNzFkMC05NTY4LWY3ZWJlZDgzOWU3MSIsInN2IjoiMSIsImp0aSI6IjZjOWE2YjdjLTU5NGQtNDQwMC1iYmRjLWRhMTYzMmNhODA5YiIsInB3ZF9jaGFuZ2UiOiJ0cnVlIn0.zSl9vpEV6gSSOdm6NvEaALcK93eJGGfzQ0rwnrLxLXk
+Authorization: Bearer COLLER_LE_ACCESS_TOKEN_ICI
 Content-Type: application/json
 
 {
-  "currentPassword": "H12345678",
-  "newPassword": "H@1234567"
+  "currentPassword": "remplace-par-le-mot-de-passe-temporaire",
+  "newPassword": "remplace-par-un-nouveau-mot-de-passe-1"
 }
 
 ### Rafraîchissement (le cookie hawala_refresh est envoyé automatiquement)
@@ -26,3 +26,7 @@ POST {{api}}/refresh
 
 ### Déconnexion
 POST {{api}}/logout
+
+### Liste des agences (coller un accessToken de compte au mot de passe déjà changé)
+GET http://localhost:5215/api/v1/agencies
+Authorization: Bearer COLLER_LE_ACCESS_TOKEN_ICI

@@ -3,11 +3,22 @@ using Hawala.SharedKernel.Messaging;
 using Hawala.SharedKernel.Time;
 using Identity.Application.Abstractions;
 using Identity.Application.Features.Accounts.GetCurrentAccount;
+using Identity.Application.Features.Users;
+using Identity.Application.Features.Users.BlockUser;
+using Identity.Application.Features.Users.ChangeUserAgency;
+using Identity.Application.Features.Users.ChangeUserRole;
+using Identity.Application.Features.Users.CreateUser;
+using Identity.Application.Features.Users.GetUser;
+using Identity.Application.Features.Users.ListUsers;
+using Identity.Application.Features.Users.ResetUserPassword;
+using Identity.Application.Features.Users.UnblockUser;
+using Identity.Application.Features.Users.UpdateUserProfile;
 using Identity.Application.Features.Auth;
 using Identity.Application.Features.Auth.ChangePassword;
 using Identity.Application.Features.Auth.Login;
 using Identity.Application.Features.Auth.Logout;
 using Identity.Application.Features.Auth.Refresh;
+using Identity.Contracts;
 using Identity.Infrastructure.Credentials;
 using Identity.Infrastructure.Persistence;
 using Identity.Infrastructure.Persistence.Repositories;
@@ -94,6 +105,7 @@ public static class DependencyInjection
                 .AddInterceptors(sp.GetRequiredService<AccountCacheInvalidationInterceptor>()));
 
         services.AddScoped<SessionValidator>();
+        services.AddScoped<IPermissionChecker, PermissionChecker>();
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<IdentityModuleDbContext>());
         services.AddScoped<IUserAccountRepository, UserAccountRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
@@ -123,6 +135,7 @@ public static class DependencyInjection
             .AddEntityFrameworkStores<IdentityModuleDbContext>();
 
         services.AddScoped<ICredentialStore, CredentialStore>();
+        services.AddSingleton<ITemporaryPasswordGenerator, TemporaryPasswordGenerator>();
     }
 
     private static void AddHandlers(IServiceCollection services)
@@ -131,12 +144,43 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<RefreshCommand, AuthTokens>, RefreshCommandHandler>();
         services.AddScoped<ICommandHandler<LogoutCommand>, LogoutCommandHandler>();
         services.AddScoped<IQueryHandler<GetCurrentAccountQuery, CurrentAccount>, GetCurrentAccountQueryHandler>();
+        services.AddScoped<IQueryHandler<ListUsersQuery, IReadOnlyList<UserSummary>>, ListUsersQueryHandler>();
+        services.AddScoped<IQueryHandler<GetUserQuery, UserSummary>, GetUserQueryHandler>();
 
-        // ChangePassword modifie les tables d'ASP.NET Identity et les nôtres : une seule transaction.
-        services.AddScoped<ChangePasswordCommandHandler>();
-        services.AddScoped<ICommandHandler<ChangePasswordCommand, AuthTokens>>(sp =>
-            new TransactionalCommandHandler<ChangePasswordCommand, AuthTokens>(
-                sp.GetRequiredService<ChangePasswordCommandHandler>(),
+        // Une seule table modifiée, pas de verrou : pas besoin de transaction explicite.
+        services.AddScoped<ICommandHandler<ChangeUserAgencyCommand>, ChangeUserAgencyCommandHandler>();
+        services.AddScoped<ICommandHandler<UpdateUserProfileCommand>, UpdateUserProfileCommandHandler>();
+
+        // Ces commandes modifient les tables d'ASP.NET Identity et les nôtres : une seule transaction.
+        AddTransactional<ChangePasswordCommand, AuthTokens, ChangePasswordCommandHandler>(services);
+        AddTransactional<CreateUserCommand, CreatedUser, CreateUserCommandHandler>(services);
+        AddTransactional<UnblockUserCommand, UnblockedUser, UnblockUserCommandHandler>(services);
+        AddTransactional<ResetUserPasswordCommand, ResetPassword, ResetUserPasswordCommandHandler>(services);
+
+        // Pas de table d'Identity ici, mais le verrou sur les Superviseurs exige une transaction.
+        AddTransactional<BlockUserCommand, BlockUserCommandHandler>(services);
+        AddTransactional<ChangeUserRoleCommand, ChangeUserRoleCommandHandler>(services);
+    }
+
+    private static void AddTransactional<TCommand, THandler>(IServiceCollection services)
+        where TCommand : ICommand
+        where THandler : class, ICommandHandler<TCommand>
+    {
+        services.AddScoped<THandler>();
+        services.AddScoped<ICommandHandler<TCommand>>(sp =>
+            new TransactionalCommandHandler<TCommand>(
+                sp.GetRequiredService<THandler>(),
+                sp.GetRequiredService<IdentityModuleDbContext>()));
+    }
+
+    private static void AddTransactional<TCommand, TResponse, THandler>(IServiceCollection services)
+        where TCommand : ICommand<TResponse>
+        where THandler : class, ICommandHandler<TCommand, TResponse>
+    {
+        services.AddScoped<THandler>();
+        services.AddScoped<ICommandHandler<TCommand, TResponse>>(sp =>
+            new TransactionalCommandHandler<TCommand, TResponse>(
+                sp.GetRequiredService<THandler>(),
                 sp.GetRequiredService<IdentityModuleDbContext>()));
     }
 }

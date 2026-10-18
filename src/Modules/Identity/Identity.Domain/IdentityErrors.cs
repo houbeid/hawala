@@ -79,6 +79,46 @@ public static class IdentityErrors
         public static readonly Error NotBlocked =
             Error.Conflict("Identity.Account.NotBlocked", "Le compte n'est pas bloqué.");
 
+        public static readonly Error EmailTaken =
+            Error.Conflict("Identity.Account.EmailTaken", "Cet email est déjà utilisé par un autre compte.");
+
+        public static readonly Error PhoneTaken =
+            Error.Conflict("Identity.Account.PhoneTaken", "Ce numéro est déjà utilisé par un autre compte.");
+
+        public static readonly Error RoleInvalid =
+            Error.Validation(
+                "Identity.Account.RoleInvalid",
+                "Rôle inconnu. Valeurs possibles : Supervisor, Agent, Cashier, ReadOnly.");
+
+        public static readonly Error StatusInvalid =
+            Error.Validation("Identity.Account.StatusInvalid", "Statut inconnu. Valeurs possibles : Active, Blocked.");
+
+        public static readonly Error AgencyNotFound =
+            Error.Validation("Identity.Account.AgencyNotFound", "Cette agence n'existe pas.");
+
+        public static readonly Error AgencyRequired =
+            Error.Validation("Identity.Account.AgencyRequired", "Un agent doit être rattaché à une agence.");
+
+        public static readonly Error AgencyNotAllowedForSupervisor =
+            Error.Validation(
+                "Identity.Account.AgencyNotAllowedForSupervisor",
+                "Un Superviseur n'est rattaché à aucune agence : il voit les deux.");
+
+        public static readonly Error CannotBlockSelf =
+            Error.Conflict(
+                "Identity.Account.CannotBlockSelf",
+                "Impossible de bloquer son propre compte. Demander à un autre Superviseur.");
+
+        public static readonly Error CannotChangeOwnRole =
+            Error.Conflict(
+                "Identity.Account.CannotChangeOwnRole",
+                "Impossible de changer son propre rôle. Demander à un autre Superviseur.");
+
+        public static readonly Error CannotResetOwnPassword =
+            Error.Conflict(
+                "Identity.Account.CannotResetOwnPassword",
+                "Impossible de réinitialiser son propre mot de passe. Utiliser le changement de mot de passe.");
+
         public static readonly Error LastActiveSupervisor =
             Error.Conflict(
                 "Identity.Account.LastActiveSupervisor",

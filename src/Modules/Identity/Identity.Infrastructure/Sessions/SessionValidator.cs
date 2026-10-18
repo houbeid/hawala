@@ -1,4 +1,5 @@
 using Identity.Domain.Accounts;
+using Identity.Domain.Roles;
 using Identity.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -7,9 +8,10 @@ namespace Identity.Infrastructure.Sessions;
 
 /// <summary>
 /// Option B : à chaque requête, vérifie que le JWT correspond toujours à l'état du compte.
-/// Un compte bloqué, ou dont la SecurityVersion a changé (rôle, mot de passe…), est refusé tout de suite.
-/// L'état est gardé 30 secondes en mémoire, et retiré du cache dès que le compte est modifié en base
-/// (voir <see cref="AccountCacheInvalidationInterceptor"/>).
+/// Un compte bloqué, ou dont la SecurityVersion a changé (rôle, agence, mot de passe…), est refusé tout de suite.
+/// L'état (version, statut, rôle) est gardé 30 secondes en mémoire, et retiré du cache dès que le compte
+/// est modifié en base (voir <see cref="AccountCacheInvalidationInterceptor"/>).
+/// Le même état sert à la vérification des permissions : aucune requête en base en plus.
 /// </summary>
 public sealed class SessionValidator(IdentityModuleDbContext db, IMemoryCache cache)
 {
@@ -29,7 +31,7 @@ public sealed class SessionValidator(IdentityModuleDbContext db, IMemoryCache ca
 
     internal static string CacheKey(Guid accountId) => $"identity:account-security:{accountId:N}";
 
-    private async Task<AccountSecurityState?> GetStateAsync(Guid accountId, CancellationToken cancellationToken)
+    internal async Task<AccountSecurityState?> GetStateAsync(Guid accountId, CancellationToken cancellationToken)
     {
         var key = CacheKey(accountId);
         if (cache.TryGetValue(key, out AccountSecurityState? cached))
@@ -40,7 +42,7 @@ public sealed class SessionValidator(IdentityModuleDbContext db, IMemoryCache ca
         var state = await db.Accounts
             .AsNoTracking()
             .Where(a => a.Id == accountId)
-            .Select(a => new AccountSecurityState(a.SecurityVersion, a.Status))
+            .Select(a => new AccountSecurityState(a.SecurityVersion, a.Status, a.Role))
             .FirstOrDefaultAsync(cancellationToken);
 
         // Un compte introuvable n'est pas mis en cache : il sera relu à la prochaine requête.
@@ -51,6 +53,6 @@ public sealed class SessionValidator(IdentityModuleDbContext db, IMemoryCache ca
 
         return state;
     }
-
-    private sealed record AccountSecurityState(int SecurityVersion, AccountStatus Status);
 }
+
+internal sealed record AccountSecurityState(int SecurityVersion, AccountStatus Status, RoleTemplate Role);

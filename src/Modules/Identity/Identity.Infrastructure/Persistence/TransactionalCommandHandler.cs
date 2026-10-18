@@ -31,3 +31,28 @@ internal sealed class TransactionalCommandHandler<TCommand, TResponse>(
         return result;
     }
 }
+
+/// <summary>
+/// Même chose pour une commande sans valeur de retour (ex. bloquer un compte, où le verrou
+/// SELECT … FOR UPDATE sur les Superviseurs ne tient que jusqu'à la fin de la transaction).
+/// </summary>
+internal sealed class TransactionalCommandHandler<TCommand>(
+    ICommandHandler<TCommand> inner,
+    IdentityModuleDbContext db)
+    : ICommandHandler<TCommand>
+    where TCommand : ICommand
+{
+    public async Task<Result> Handle(TCommand command, CancellationToken cancellationToken)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+        var result = await inner.Handle(command, cancellationToken);
+
+        if (result.IsSuccess)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
+
+        return result;
+    }
+}

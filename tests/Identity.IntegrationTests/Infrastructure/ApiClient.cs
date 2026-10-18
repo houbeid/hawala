@@ -41,6 +41,44 @@ public static class ApiClient
     public static Task<HttpResponseMessage> MeAsync(this HttpClient client, string? accessToken) =>
         client.SendAsync(HttpMethod.Get, $"{Auth}/me", accessToken: accessToken);
 
+    public static Task<HttpResponseMessage> GetAgenciesAsync(this HttpClient client, string? accessToken) =>
+        client.SendAsync(HttpMethod.Get, "/api/v1/agencies", accessToken: accessToken);
+
+    /// <param name="body">Objet anonyme : email, phone, fullName, role, agencyId.</param>
+    public static Task<HttpResponseMessage> CreateUserAsync(this HttpClient client, string? accessToken, object body) =>
+        client.SendAsync(HttpMethod.Post, "/api/v1/users", body: body, accessToken: accessToken);
+
+    /// <param name="queryString">Filtres déjà encodés, sans « ? » (ex. « role=Agent&amp;search=abc »), ou null.</param>
+    public static Task<HttpResponseMessage> ListUsersAsync(this HttpClient client, string? accessToken, string? queryString = null) =>
+        client.SendAsync(
+            HttpMethod.Get,
+            string.IsNullOrEmpty(queryString) ? "/api/v1/users" : $"/api/v1/users?{queryString}",
+            accessToken: accessToken);
+
+    public static Task<HttpResponseMessage> GetUserAsync(this HttpClient client, string? accessToken, Guid id) =>
+        client.SendAsync(HttpMethod.Get, $"/api/v1/users/{id}", accessToken: accessToken);
+
+    public static Task<HttpResponseMessage> BlockUserAsync(this HttpClient client, string? accessToken, Guid id) =>
+        client.SendAsync(HttpMethod.Post, $"/api/v1/users/{id}/block", accessToken: accessToken);
+
+    public static Task<HttpResponseMessage> UnblockUserAsync(this HttpClient client, string? accessToken, Guid id) =>
+        client.SendAsync(HttpMethod.Post, $"/api/v1/users/{id}/unblock", accessToken: accessToken);
+
+    /// <param name="body">Objet anonyme : role, agencyId.</param>
+    public static Task<HttpResponseMessage> ChangeUserRoleAsync(this HttpClient client, string? accessToken, Guid id, object body) =>
+        client.SendAsync(HttpMethod.Post, $"/api/v1/users/{id}/change-role", body: body, accessToken: accessToken);
+
+    /// <param name="body">Objet anonyme : agencyId.</param>
+    public static Task<HttpResponseMessage> ChangeUserAgencyAsync(this HttpClient client, string? accessToken, Guid id, object body) =>
+        client.SendAsync(HttpMethod.Post, $"/api/v1/users/{id}/change-agency", body: body, accessToken: accessToken);
+
+    public static Task<HttpResponseMessage> ResetUserPasswordAsync(this HttpClient client, string? accessToken, Guid id) =>
+        client.SendAsync(HttpMethod.Post, $"/api/v1/users/{id}/reset-password", accessToken: accessToken);
+
+    /// <param name="body">Objet anonyme : email, phone, fullName (état complet du profil).</param>
+    public static Task<HttpResponseMessage> UpdateUserProfileAsync(this HttpClient client, string? accessToken, Guid id, object body) =>
+        client.SendAsync(HttpMethod.Put, $"/api/v1/users/{id}", body: body, accessToken: accessToken);
+
     /// <summary>Connexion qui doit réussir : renvoie le jeton d'accès et la valeur du cookie.</summary>
     public static async Task<(string AccessToken, string RefreshCookie)> LoginOkAsync(
         this HttpClient client, string login, string password)

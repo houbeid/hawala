@@ -17,4 +17,11 @@ public enum RefreshTokenRevocationReason
 
     /// <summary>Le mot de passe a changé : les autres sessions sont fermées.</summary>
     PasswordChanged,
+
+    /// <summary>
+    /// Le Superviseur a donné un nouveau mot de passe temporaire (réinitialisation ou déblocage) :
+    /// toutes les sessions du compte sont fermées.
+    /// Nom court volontaire : la colonne est limitée à 20 caractères.
+    /// </summary>
+    PasswordReset,
 }

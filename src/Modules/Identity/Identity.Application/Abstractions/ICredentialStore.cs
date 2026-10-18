@@ -34,4 +34,19 @@ public interface ICredentialStore
 
     /// <summary>Change le mot de passe en vérifiant l'ancien et la politique de mot de passe.</summary>
     Task<Result> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Remplace le mot de passe sans demander l'ancien : réservé au Superviseur (déblocage, réinitialisation).
+    /// Lève aussi le verrouillage après échecs (compteur remis à zéro, fin de verrouillage effacée).
+    /// Enregistre lui-même : l'appelant doit être dans une transaction.
+    /// </summary>
+    Task<Result> ResetPasswordAsync(Guid userId, string newPassword, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Fin du verrouillage (après 5 échecs) des comptes encore verrouillés à <paramref name="now"/>,
+    /// en une seule lecture. Un compte absent du résultat n'est pas verrouillé.
+    /// Sert à la liste des comptes : le Superviseur voit pourquoi un agent ne peut pas se connecter.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, DateTimeOffset>> GetLockoutEndsAsync(
+        IReadOnlyCollection<Guid> userIds, DateTimeOffset now, CancellationToken cancellationToken);
 }
