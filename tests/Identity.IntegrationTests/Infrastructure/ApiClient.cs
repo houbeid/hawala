@@ -79,6 +79,10 @@ public static class ApiClient
     public static Task<HttpResponseMessage> UpdateUserProfileAsync(this HttpClient client, string? accessToken, Guid id, object body) =>
         client.SendAsync(HttpMethod.Put, $"/api/v1/users/{id}", body: body, accessToken: accessToken);
 
+    public static Task<HttpResponseMessage> ChangeAgencyColorAsync(this HttpClient client, string? accessToken, Guid agencyId, string? color) =>
+        client.SendAsync(
+            HttpMethod.Post, $"/api/v1/agencies/{agencyId}/change-color", body: new { color }, accessToken: accessToken);
+
     /// <summary>Connexion qui doit réussir : renvoie le jeton d'accès et la valeur du cookie.</summary>
     public static async Task<(string AccessToken, string RefreshCookie)> LoginOkAsync(
         this HttpClient client, string login, string password)

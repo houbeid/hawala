@@ -27,5 +27,9 @@ public static class OrganizationErrors
     {
         public static readonly Error Invalid =
             Error.Validation("Organization.Color.Invalid", "La couleur doit être au format #RRGGBB (ex. #1E8E3E).");
+
+        // Règle validée : chaque agence a sa propre couleur, pour distinguer Nouakchott de Dakar d'un coup d'œil.
+        public static readonly Error AlreadyUsed =
+            Error.Conflict("Organization.Color.AlreadyUsed", "Cette couleur est déjà utilisée par une autre agence.");
     }
 }

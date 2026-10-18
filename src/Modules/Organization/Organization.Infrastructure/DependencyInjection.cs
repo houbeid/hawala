@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Organization.Application.Abstractions;
 using Organization.Application.Agencies;
+using Organization.Application.Agencies.ChangeAgencyColor;
 using Organization.Application.Agencies.GetAgencies;
 using Organization.Contracts;
 using Organization.Infrastructure.Persistence;
@@ -37,6 +38,9 @@ public static class DependencyInjection
         services.AddScoped<AgencySeeder>();
 
         services.AddScoped<IQueryHandler<GetAgenciesQuery, IReadOnlyList<AgencySummary>>, GetAgenciesQueryHandler>();
+
+        // Une seule table, un seul enregistrement : pas de transaction explicite.
+        services.AddScoped<ICommandHandler<ChangeAgencyColorCommand>, ChangeAgencyColorCommandHandler>();
 
         return services;
     }

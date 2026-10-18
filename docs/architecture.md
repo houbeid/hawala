@@ -1,6 +1,6 @@
 # Architecture — App Hawala Mauritanie–Sénégal
 
-Mis à jour le 17 octobre 2026 — copie exportée depuis Claude Docs (source : https://claude.ai/artifact/Qzcyjj7dCmFiDsQJqKZVi5)
+Mis à jour le 18 octobre 2026 — copie exportée depuis Claude Docs (source : https://claude.ai/artifact/Qzcyjj7dCmFiDsQJqKZVi5)
 
 Un monolithe modulaire en .NET 10 avec PostgreSQL, et une PWA React bilingue (français / arabe) qui fonctionne hors ligne. Toute opération d'argent passe par un grand livre en partie double, ce qui rend le bénéfice, la caisse et le bilan exacts par construction.
 
@@ -180,6 +180,8 @@ Un seul patron possède deux caisses : Nouakchott en MRO, Dakar en FCFA. Il n'y 
 
 Le périmètre est appliqué par un filtre global EF Core sur l'agence ; le choix de l'agence est verrouillé dans l'interface d'un agent.
 
+Couleur d'agence : modifiable par le Superviseur (permission `agencies.manage`) ; chaque agence a sa propre couleur, deux agences ne peuvent pas partager la même. Le changement du nom d'une agence est reporté ; le code (NKC, DKR) ne change jamais.
+
 ## Budget de la caisse
 
 Chaque agence enregistre son budget une fois par jour : c'est sa clôture journalière, dans sa devise (MRO à Nouakchott, FCFA à Dakar).
@@ -327,7 +329,7 @@ La PWA affiche sa version et propose la mise à jour quand une nouvelle version 
 
 Le cœur comptable vient en premier : tout le reste écrit dedans. Chaque phase se termine par une version utilisable.
 
-1. **Fondations** : dépôt, CI, Docker, Identity (connexion, 2FA), Organisation (pays, agences), squelette PWA bilingue avec thème clair / sombre. Fait : authentification (connexion, rafraîchissement, déconnexion, mot de passe, blocage immédiat), permissions côté serveur, agences NKC et DKR, création de compte par le Superviseur ; testé sur PostgreSQL. Restent : gestion des comptes (bloquer, rôle, agence, réinitialisation, liste), 2FA, CI.
+1. **Fondations** : dépôt, CI, Docker, Identity (connexion, 2FA), Organisation (pays, agences), squelette PWA bilingue avec thème clair / sombre. Fait : authentification (connexion, rafraîchissement, déconnexion, mot de passe, blocage immédiat), permissions côté serveur, agences NKC et DKR, gestion des comptes par le Superviseur (création, liste, bloquer / débloquer, rôle, agence, réinitialisation du mot de passe, profil) , couleur d'agence ; 253 tests sur PostgreSQL. Restent : CI, squelette PWA ; 2FA reportée (à discuter).
 2. **Grand livre + Trésorerie + Tiers** : comptes, écritures, soldes, fiche et relevé de tiers. Tests sur les équilibres et les contre-passations.
 3. **Transferts** : taux du jour, formulaire en 3 étapes, répartition des paiements, crédit, livraison, annulation avec motif, historique, temps réel entre agences.
 4. **Caisse** : encaissements, décaissements, virements internes, approvisionnement et retrait du patron, budget de caisse enregistré chaque jour, contrôle de cohérence.

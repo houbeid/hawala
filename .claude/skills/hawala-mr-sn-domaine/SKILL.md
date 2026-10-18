@@ -84,6 +84,7 @@ Mêmes règles pour Nouakchott et Dakar :
 
 - Agences en base (module Organisation) : **NKC** Nouakchott (Mauritanie, MRO, #1E8E3E, Africa/Nouakchott) et **DKR** Dakar (Sénégal, XOF, #1565C0, Africa/Dakar), créées au démarrage si absentes, jamais écrasées. Code = 3 lettres majuscules ; la devise découle du pays ; couleur #RRGGBB.
 - `UserAccount.AgencyId` : obligatoire pour Agent / Caissier / Consultation, **interdit pour un Superviseur** (il voit les deux agences). Pas de clé étrangère entre schémas : l'existence de l'agence est vérifiée par `IAgencyDirectory` (Organization.Contracts).
+- **Couleur d'agence** : le Superviseur la change (permission `agencies.manage`). **Chaque agence a sa propre couleur** : deux agences ne peuvent pas avoir la même (elle sert à distinguer Nouakchott de Dakar d'un coup d'œil). Changer le **nom** d'une agence : reporté, pas maintenant. Le code (NKC, DKR) ne change jamais.
 - **Le Superviseur peut déplacer un compte d'une agence à l'autre** (`ChangeAgency`, SecurityVersion incrémentée).
 - **Le mot de passe temporaire est généré par l'app** (format `xxx-xxx-xxx`, sans 0/O/1/l/I, au moins un chiffre), renvoyé une seule fois dans la réponse de création.
 - Permissions définies dans `Identity.Contracts.Permissions` : `users.manage`, `agencies.manage` (d'autres s'ajouteront avec les modules). Superviseur = toutes ; Agent, Caissier, Consultation = aucune pour l'instant (POINT OUVERT : droits par défaut à faire valider par le patron). Endpoints protégés par `.RequirePermission(Permissions.X)` ; le contrôle passe par `IPermissionChecker`, lu côté serveur (option B).
@@ -192,7 +193,7 @@ Serveur en Europe accepté. Départ : 1 VPS OVHcloud en France (type VPS-2, 4 vC
 
 ## Plan de réalisation
 
-1. Fondations (solution, CI, Docker, Identité, Organisation, squelette PWA bilingue) — faits : authentification complète, permissions côté serveur, module Organisation (agences), création de compte par le Superviseur. Restent : bloquer / débloquer, changer de rôle, changer d'agence, réinitialiser le mot de passe, lister les comptes, couleur d'agence, 2FA du Superviseur, CI.
+1. Fondations (solution, CI, Docker, Identité, Organisation, squelette PWA bilingue) — faits : authentification complète, permissions côté serveur, module Organisation (agences), gestion des comptes par le Superviseur (création, liste, bloquer / débloquer, rôle, agence, réinitialisation, profil). couleur d'agence. Restent : CI, squelette PWA ; 2FA du Superviseur reportée (à discuter).
 2. Grand livre + Trésorerie + Tiers
 3. Transferts
 4. Caisse et clôture journalière (approvisionnement / retrait du patron, budget de la caisse, contrôle de cohérence)
@@ -207,6 +208,7 @@ Valider les maquettes des écrans de transfert (création en 3 étapes, livraiso
 ## Questions ouvertes
 
 - Droits par défaut des rôles Agent, Caissier et Consultation ?
+- 2FA TOTP du Superviseur : **reportée**, à discuter avec l'utilisateur avant tout code (que peut faire un Superviseur qui ne l'a pas encore activée ?).
 - Audit de « qui a créé / modifié ce compte » : à brancher quand le module Audit existera.
 
 - Que contient le bouton « + » de l'écran de modification d'un transfert (livraison, annulation, autre) ?

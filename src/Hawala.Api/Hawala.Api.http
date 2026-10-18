@@ -1,6 +1,17 @@
 # Requêtes de test manuel (VS Code : extension REST Client ; Visual Studio / Rider : natif).
-# Remplace le port par celui affiché au démarrage (« Now listening on: http://localhost:XXXX »).
-@api = http://localhost:5000/api/v1/auth
+# Port : celui de launchSettings.json (profil http). À changer si « Now listening on » affiche autre chose.
+@host = http://localhost:5215
+@api = {{host}}/api/v1/auth
+@users = {{host}}/api/v1/users
+
+# Coller ici le accessToken reçu à la connexion (compte au mot de passe déjà changé).
+@token = COLLER_LE_ACCESS_TOKEN_ICI
+
+# Coller ici l'id d'un compte (renvoyé à la création ou lu dans la liste).
+@userId = COLLER_L_ID_DU_COMPTE_ICI
+
+# Coller ici l'id d'une agence (lu dans GET /agencies).
+@agencyId = COLLER_L_ID_DE_L_AGENCE_ICI
 
 ### Connexion (email ou téléphone dans le même champ)
 POST {{api}}/login
@@ -11,9 +22,9 @@ Content-Type: application/json
   "password": "remplace-par-le-mot-de-passe-temporaire"
 }
 
-### Changement du mot de passe temporaire (coller le accessToken reçu)
+### Changement du mot de passe temporaire
 POST {{api}}/change-password
-Authorization: Bearer COLLER_LE_ACCESS_TOKEN_ICI
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -21,12 +32,90 @@ Content-Type: application/json
   "newPassword": "remplace-par-un-nouveau-mot-de-passe-1"
 }
 
+### Compte connecté
+GET {{api}}/me
+Authorization: Bearer {{token}}
+
 ### Rafraîchissement (le cookie hawala_refresh est envoyé automatiquement)
 POST {{api}}/refresh
 
 ### Déconnexion
 POST {{api}}/logout
 
-### Liste des agences (coller un accessToken de compte au mot de passe déjà changé)
-GET http://localhost:5215/api/v1/agencies
-Authorization: Bearer COLLER_LE_ACCESS_TOKEN_ICI
+### Liste des agences
+GET {{host}}/api/v1/agencies
+Authorization: Bearer {{token}}
+
+### Changer la couleur d'une agence (Superviseur, permission agencies.manage ; couleur unique par agence)
+POST {{host}}/api/v1/agencies/{{agencyId}}/change-color
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "color": "#1E8E3E"
+}
+
+# --- Gestion des comptes (Superviseur, permission users.manage) -----------
+
+### Créer un compte (le mot de passe temporaire n'est affiché qu'une fois)
+POST {{users}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "email": "agent.fictif@example.com",
+  "phone": "+221 77 000 00 00",
+  "fullName": "Agent Fictif",
+  "role": "Agent",
+  "agencyId": "{{agencyId}}"
+}
+
+### Lister les comptes (tous les filtres sont facultatifs)
+GET {{users}}?role=Agent&status=Active&search=fictif
+Authorization: Bearer {{token}}
+
+### Fiche d'un compte
+GET {{users}}/{{userId}}
+Authorization: Bearer {{token}}
+
+### Modifier le profil (état complet : un téléphone absent est retiré)
+PUT {{users}}/{{userId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "email": "agent.fictif@example.com",
+  "phone": "+221 77 000 00 00",
+  "fullName": "Agent Fictif Corrigé"
+}
+
+### Bloquer un compte (coupe ses sessions)
+POST {{users}}/{{userId}}/block
+Authorization: Bearer {{token}}
+
+### Débloquer un compte (nouveau mot de passe temporaire, affiché une fois)
+POST {{users}}/{{userId}}/unblock
+Authorization: Bearer {{token}}
+
+### Changer le rôle (agencyId absent pour un Superviseur)
+POST {{users}}/{{userId}}/change-role
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "role": "Cashier",
+  "agencyId": "{{agencyId}}"
+}
+
+### Changer d'agence
+POST {{users}}/{{userId}}/change-agency
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "agencyId": "{{agencyId}}"
+}
+
+### Réinitialiser le mot de passe (nouveau mot de passe temporaire, affiché une fois)
+POST {{users}}/{{userId}}/reset-password
+Authorization: Bearer {{token}}

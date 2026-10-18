@@ -35,28 +35,36 @@ Développeur : Hamade (Windows, PowerShell, Docker Desktop, VS Code). **Toujours
 - `Result` / `Result<T>` / `Error` avec `ErrorType` ; codes stables `Module.Groupe.Raison` (ex. `Identity.Account.EmailTaken`). L'API les traduit en ProblemDetails avec un champ `code` via `ErrorResults.ToProblem()`.
 - `IClock` injecté (jamais `DateTime.Now`), IDs UUID v7 via `IdGenerator`. Montants en `decimal` / `numeric(18,2)`.
 - Minimal APIs sous `/api/v1`, une route par cas d'usage. Tout endpoint est protégé par défaut ; permission métier via `.RequirePermission(Permissions.X)`. Énumérations renvoyées en texte (`JsonStringEnumConverter`).
-- Commande qui touche à la fois les tables ASP.NET Identity et les nôtres : l'enregistrer avec `AddTransactional<TCommand, TResponse, THandler>` (décorateur `TransactionalCommandHandler`).
+- Commande qui touche à la fois les tables ASP.NET Identity et les nôtres, ou qui pose un verrou (`CountActiveSupervisorsForUpdateAsync`) : l'enregistrer avec `AddTransactional<TCommand, TResponse, THandler>`, ou `AddTransactional<TCommand, THandler>` pour une commande sans valeur de retour (décorateurs `TransactionalCommandHandler`).
+- L'auteur d'une action (contrôle « soi-même ») est lu dans le JWT par `ClaimsPrincipal.TryGetAccountId` (`Hawala.Api/Configuration`) et passé à la commande en `ActorId`, jamais lu dans le corps de la requête.
+- Valeurs d'énumération reçues en texte (rôle, statut) : `EnumNameParser.TryParse<T>` (insensible à la casse, refuse les nombres).
 - Migrations : `dotnet ef migrations add <Nom> --project src/Modules/X/X.Infrastructure --startup-project src/Hawala.Api --context <XDbContext> --output-dir Persistence\Migrations`. Elles s'appliquent au démarrage (Organisation d'abord, puis Identité).
 - Tests : xUnit, intégration via `WebApplicationFactory` (environnement `Testing`) + Testcontainers `new PostgreSqlBuilder("postgres:17")`, fixture de collection partagée (`ApiCollection`). Helpers : `TestAccounts`, `ApiClient` (lire les corps avec `ReadJsonAsync`, qui relit le texte).
 
-## État actuel (17 octobre 2026)
+## État actuel (18 octobre 2026)
 
-Fait et testé sur PostgreSQL (dernier résultat confirmé : **167 réussis, 0 échec**) :
+Fait et testé sur PostgreSQL (dernier résultat confirmé : **253 réussis, 0 échec**) :
 
 - SharedKernel (Result, Error, IClock, IdGenerator, Messaging, Currency MRO/XOF).
 - Identité : connexion email ou téléphone, verrouillage 5 échecs / 15 min, JWT 15 min (`sub`, `sv`, `pwd_change`, `jti`), refresh token rotatif 12 h en cookie `hawala_refresh` (haché, rejeu = révocation de la famille), logout, changement de mot de passe (ferme les autres sessions), `GET /api/v1/auth/me`, contrôle de la SecurityVersion à chaque requête (cache 30 s vidé par intercepteur EF), permissions côté serveur (option B), premier Superviseur créé depuis la configuration.
-- Organisation : agences NKC et DKR créées au démarrage, `GET /api/v1/agencies`, `IAgencyDirectory` dans les Contracts.
+- Organisation : agences NKC et DKR créées au démarrage (jamais écrasées), `GET /api/v1/agencies`, `IAgencyDirectory` dans les Contracts, `POST /api/v1/agencies/{id}/change-color` (permission `agencies.manage`, couleur unique par agence, tests dans `tests/Identity.IntegrationTests/Organization/`).
 - Comptes rattachés à une agence (`AgencyId`, interdit pour un Superviseur), migration `AddAccountAgency`.
-- `POST /api/v1/users` (permission `users.manage`) : création d'un compte avec mot de passe temporaire généré, 201 + `{ id, temporaryPassword }`. Code écrit (10 fichiers + référence de projet Identity.Application → Organization.Contracts) ; **à vérifier qu'il est bien copié dans le dépôt, puis `dotnet test` à lancer** (tests dans `tests/Identity.IntegrationTests/Users/CreateUserTests.cs`).
+- Gestion des comptes sous `/api/v1/users` (permission `users.manage`), tests dans `tests/Identity.IntegrationTests/Users/` :
+  - `POST /users` : création, mot de passe temporaire généré, 201 + `{ id, temporaryPassword }` ;
+  - `GET /users` (filtres `agencyId`, `role`, `status`, `search` ; tri par nom ; « verrouillé jusqu'à ») et `GET /users/{id}` ;
+  - `POST /users/{id}/block` (coupe les sessions, verrou FOR UPDATE, pas soi-même) et `/unblock` (nouveau mot de passe temporaire, verrouillage levé) ;
+  - `POST /users/{id}/change-role` (avec l'agence ; pas soi-même ; dernier Superviseur actif protégé) et `/change-agency` ;
+  - `POST /users/{id}/reset-password` (nouveau mot de passe, verrouillage levé, sessions coupées ; pas soi-même ; un compte bloqué reste bloqué) ;
+  - `PUT /users/{id}` : nom, email, téléphone (vide = retiré), sessions conservées.
+- Exemples de requêtes pour les essais manuels : `src/Hawala.Api/Hawala.Api.http`.
 
-## Prochaine étape : gestion des comptes (suite)
+## Prochaine étape
 
-1. Bloquer / débloquer un compte (`Block(activeSupervisorCount)` avec `CountActiveSupervisorsForUpdateAsync` dans une transaction ; le blocage coupe les sessions).
-2. Changer le rôle (avec l'agence), changer d'agence (`ChangeAgency`), réinitialiser le mot de passe (nouveau mot de passe temporaire généré, `PasswordResetBySupervisor`).
-3. Lister les comptes (`GET /api/v1/users`).
-4. Changer la couleur d'une agence (permission `agencies.manage`).
-5. Tests d'intégration de tout cela.
-6. Puis 2FA TOTP du Superviseur.
+1. CI (GitHub Actions).
+
+Reporté aussi : changer le nom d'une agence (le code NKC / DKR ne change jamais).
+
+**Reporté, à discuter avec Hamade avant tout code** : 2FA TOTP du Superviseur (notamment : que peut faire un Superviseur qui ne l'a pas encore activée ?). Ne pas la proposer comme prochaine étape.
 
 Ensuite : Money / arrondi / taux, Grand livre, Trésorerie, Tiers, Taux, Transferts, Caisse (budget journalier, contrôle de cohérence 5 %), Bénéfice, Bilan, Notifications, Audit, CI, déploiement. Renommer un jour `Identity.IntegrationTests` en `Hawala.IntegrationTests`.
 
@@ -65,7 +73,10 @@ Ensuite : Money / arrondi / taux, Grand livre, Trésorerie, Tiers, Taux, Transfe
 - Fenêtre rare de ≤ 30 s due au cache de session.
 - Deux rafraîchissements simultanés peuvent réussir tous les deux : le frontend devra sérialiser les refresh.
 - Course sur un index unique (email / téléphone) = 500 au lieu de 409.
-- Audit de « qui a créé le compte » : POINT OUVERT, à brancher avec le module Audit.
+- Audit de « qui a créé / bloqué / modifié le compte » : POINT OUVERT, à brancher avec le module Audit.
+- Couleur d'agence unique vérifiée dans le handler, sans index unique en base (course très improbable entre deux Superviseurs) : POINT OUVERT dans `ChangeAgencyColorCommandHandler`.
+- Liste des comptes sans pagination, recherche texte faite en mémoire (quelques dizaines de comptes) : POINT OUVERT dans `UserAccountRepository`.
+- Le test de concurrence du blocage croisé appelle le handler directement (pas par HTTP) ; il éprouve le verrou de façon probable, pas certaine.
 
 ## Questions ouvertes pour le patron
 
