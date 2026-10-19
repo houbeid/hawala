@@ -214,6 +214,28 @@ public sealed class Party
         return account.ChangeOpeningBalance(newOpeningBalance);
     }
 
+    /// <summary>
+    /// Le Superviseur fixe le plafond de crédit du tiers dans une agence, dans la devise de l'agence (vérifiée par l'Application).
+    /// Règles validées : positif ou nul ; 0 = aucun crédit autorisé ; null = pas de plafond. Bloquant en phase 3 (transferts).
+    /// Aucune écriture : le plafond ne déplace pas d'argent.
+    /// </summary>
+    public Result SetCreditLimit(Guid agencyId, decimal? creditLimit)
+    {
+        if (creditLimit < 0m)
+        {
+            return PartiesErrors.Party.CreditLimitNegative;
+        }
+
+        var account = _agencyAccounts.Find(a => a.AgencyId == agencyId);
+        if (account is null)
+        {
+            return PartiesErrors.Party.AgencyAccountNotFound;
+        }
+
+        account.SetCreditLimit(creditLimit);
+        return Result.Success();
+    }
+
     /// <summary>Texte facultatif : espaces retirés, vide = absent.</summary>
     private static string? Optional(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();

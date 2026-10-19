@@ -23,7 +23,8 @@ public sealed record PartySummary(
     IReadOnlyList<PartyAgencyBalance>? Balances);
 
 /// <param name="Currency">MRO à Nouakchott, XOF à Dakar.</param>
-public sealed record PartyAgencyBalance(Guid AgencyId, Currency Currency, decimal Balance);
+/// <param name="CreditLimit">Plafond de crédit dans cette agence ; 0 = aucun crédit ; null = pas de plafond.</param>
+public sealed record PartyAgencyBalance(Guid AgencyId, Currency Currency, decimal Balance, decimal? CreditLimit);
 
 /// <summary>La liste, avec ce que l'écran de l'app actuelle affiche en tête : « 12 / 73 » et les totaux.</summary>
 /// <param name="Count">Nombre de tiers renvoyés (après filtres).</param>

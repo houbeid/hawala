@@ -30,7 +30,7 @@ internal sealed record VisiblePartyBalances(
                 .Select(a =>
                 {
                     var balance = ByLedgerAccount[a.LedgerAccountId];
-                    return new PartyAgencyBalance(a.AgencyId, balance.Currency, balance.Amount);
+                    return new PartyAgencyBalance(a.AgencyId, balance.Currency, balance.Amount, a.CreditLimit);
                 }),
         ];
     }

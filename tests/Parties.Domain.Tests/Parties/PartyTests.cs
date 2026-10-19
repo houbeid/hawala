@@ -171,6 +171,33 @@ public class PartyTests
         Assert.Equal(PartiesErrors.Party.AgencyAccountNotFound, party.ChangeOpeningBalance(Guid.NewGuid(), 100m).Error);
     }
 
+    // --- Plafond de crédit -------------------------------------------------
+
+    [Fact]
+    public void Credit_limit_is_set_per_agency_zero_allowed_and_null_removes_it()
+    {
+        var party = WithBothAgencies();
+
+        Assert.True(party.SetCreditLimit(Nouakchott, 500_000m).IsSuccess);
+        Assert.True(party.SetCreditLimit(Dakar, 0m).IsSuccess);
+
+        Assert.Equal(500_000m, party.AgencyAccounts.Single(a => a.AgencyId == Nouakchott).CreditLimit);
+        Assert.Equal(0m, party.AgencyAccounts.Single(a => a.AgencyId == Dakar).CreditLimit);
+
+        Assert.True(party.SetCreditLimit(Nouakchott, null).IsSuccess);
+        Assert.Null(party.AgencyAccounts.Single(a => a.AgencyId == Nouakchott).CreditLimit);
+    }
+
+    [Fact]
+    public void Negative_credit_limit_or_unknown_agency_is_refused()
+    {
+        var party = WithBothAgencies();
+
+        Assert.Equal(PartiesErrors.Party.CreditLimitNegative, party.SetCreditLimit(Nouakchott, -1m).Error);
+        Assert.Equal(PartiesErrors.Party.AgencyAccountNotFound, party.SetCreditLimit(Guid.NewGuid(), 100m).Error);
+        Assert.All(party.AgencyAccounts, a => Assert.Null(a.CreditLimit));
+    }
+
     // --- Comptes par agence ------------------------------------------------
 
     [Fact]

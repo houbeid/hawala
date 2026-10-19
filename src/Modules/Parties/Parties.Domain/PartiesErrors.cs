@@ -34,6 +34,9 @@ public static class PartiesErrors
         public static readonly Error Archived =
             Error.Conflict("Parties.Party.Archived", "Ce tiers est archivé : le désarchiver d'abord.");
 
+        public static readonly Error CreditLimitNegative =
+            Error.Validation("Parties.Party.CreditLimitNegative", "Le plafond de crédit est positif ou nul (0 = aucun crédit ; vide = pas de plafond).");
+
         public static readonly Error AmountRequired =
             Error.Validation("Parties.Party.AmountRequired", "Le montant est obligatoire (positif : il nous doit ; négatif : on lui doit).");
 

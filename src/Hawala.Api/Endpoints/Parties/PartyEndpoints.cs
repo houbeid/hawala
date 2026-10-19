@@ -7,6 +7,7 @@ using Parties.Application.Features.Parties;
 using Parties.Application.Features.Parties.CreateParty;
 using Parties.Application.Features.Parties.GetParty;
 using Parties.Application.Features.Parties.ListParties;
+using Parties.Application.Features.Parties.SetCreditLimit;
 using Parties.Application.Features.Parties.SetOpeningBalance;
 using Parties.Application.Features.Parties.UpdateParty;
 
@@ -40,6 +41,9 @@ public static class PartyEndpoints
     /// <param name="OperationDate">Date de l'écriture d'ouverture (aaaa-mm-jj) ; aujourd'hui si absente.</param>
     public sealed record SetOpeningBalanceRequest(decimal? Amount, DateOnly? OperationDate);
 
+    /// <param name="CreditLimit">Devise de l'agence ; positif ou nul (0 = aucun crédit) ; null ou absent = pas de plafond.</param>
+    public sealed record SetCreditLimitRequest(decimal? CreditLimit);
+
     public static IEndpointRouteBuilder MapPartyEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/v1/parties").WithTags("Tiers");
@@ -54,8 +58,21 @@ public static class PartyEndpoints
         group.MapPut("/{id:guid}", UpdateParty).RequirePermission(Permissions.PartiesManage);
         group.MapPut("/{id:guid}/agencies/{agencyId:guid}/opening-balance", SetOpeningBalance)
             .RequirePermission(Permissions.PartiesManage);
+        group.MapPut("/{id:guid}/agencies/{agencyId:guid}/credit-limit", SetCreditLimit)
+            .RequirePermission(Permissions.PartiesManage);
 
         return app;
+    }
+
+    private static async Task<IResult> SetCreditLimit(
+        Guid id,
+        Guid agencyId,
+        SetCreditLimitRequest request,
+        ICommandHandler<SetCreditLimitCommand> handler,
+        CancellationToken cancellationToken)
+    {
+        var result = await handler.Handle(new SetCreditLimitCommand(id, agencyId, request.CreditLimit), cancellationToken);
+        return result.IsSuccess ? TypedResults.NoContent() : result.Error.ToProblem();
     }
 
     private static async Task<IResult> SetOpeningBalance(

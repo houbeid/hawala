@@ -133,6 +133,11 @@ public static class ApiClient
         client.SendAsync(
             HttpMethod.Put, $"/api/v1/parties/{partyId}/agencies/{agencyId}/opening-balance", body: body, accessToken: accessToken);
 
+    public static Task<HttpResponseMessage> SetCreditLimitAsync(
+        this HttpClient client, string? accessToken, Guid partyId, Guid agencyId, decimal? creditLimit) =>
+        client.SendAsync(
+            HttpMethod.Put, $"/api/v1/parties/{partyId}/agencies/{agencyId}/credit-limit", body: new { creditLimit }, accessToken: accessToken);
+
     /// <summary>Connexion qui doit réussir : renvoie le jeton d'accès et la valeur du cookie.</summary>
     public static async Task<(string AccessToken, string RefreshCookie)> LoginOkAsync(
         this HttpClient client, string login, string password)

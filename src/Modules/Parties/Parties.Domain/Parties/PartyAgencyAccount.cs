@@ -34,6 +34,8 @@ public sealed class PartyAgencyAccount
     /// </summary>
     public decimal? CreditLimit { get; private set; }
 
+    internal void SetCreditLimit(decimal? creditLimit) => CreditLimit = creditLimit;
+
     /// <returns>La différence à passer au grand livre (nouveau − ancien) ; zéro si rien ne change.</returns>
     internal decimal ChangeOpeningBalance(decimal newOpeningBalance)
     {

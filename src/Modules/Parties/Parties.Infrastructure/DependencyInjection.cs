@@ -10,6 +10,7 @@ using Parties.Application.Features.Parties;
 using Parties.Application.Features.Parties.CreateParty;
 using Parties.Application.Features.Parties.GetParty;
 using Parties.Application.Features.Parties.ListParties;
+using Parties.Application.Features.Parties.SetCreditLimit;
 using Parties.Application.Features.Parties.SetOpeningBalance;
 using Parties.Application.Features.Parties.UpdateParty;
 using Parties.Infrastructure.Persistence;
@@ -45,6 +46,7 @@ public static class DependencyInjection
 
         // Une seule table, un seul enregistrement : pas de transaction explicite.
         services.AddScoped<ICommandHandler<UpdatePartyCommand>, UpdatePartyCommandHandler>();
+        services.AddScoped<ICommandHandler<SetCreditLimitCommand>, SetCreditLimitCommandHandler>();
 
         // Écrit dans deux schémas (parties + ledger) : une seule transaction commune.
         services.AddSharedTransactional<CreatePartyCommand, Guid, CreatePartyCommandHandler>();
