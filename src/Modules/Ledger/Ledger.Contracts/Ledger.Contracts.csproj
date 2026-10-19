@@ -1,0 +1,7 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Hawala.SharedKernel\Hawala.SharedKernel.csproj" />
+  </ItemGroup>
+
+</Project>

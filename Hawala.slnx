@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Hawala.Api/Hawala.Api.csproj" />
+    <Project Path="src/Hawala.SharedInfrastructure/Hawala.SharedInfrastructure.csproj" />
     <Project Path="src/Hawala.SharedKernel/Hawala.SharedKernel.csproj" />
   </Folder>
   <Folder Name="/src/Modules/" />
@@ -10,17 +11,30 @@
     <Project Path="src/Modules/Identity/Identity.Domain/Identity.Domain.csproj" />
     <Project Path="src/Modules/Identity/Identity.Infrastructure/Identity.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Ledger/">
+    <Project Path="src/Modules/Ledger/Ledger.Application/Ledger.Application.csproj" />
+    <Project Path="src/Modules/Ledger/Ledger.Contracts/Ledger.Contracts.csproj" />
+    <Project Path="src/Modules/Ledger/Ledger.Domain/Ledger.Domain.csproj" />
+    <Project Path="src/Modules/Ledger/Ledger.Infrastructure/Ledger.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/Modules/Organization/">
     <Project Path="src/Modules/Organization/Organization.Application/Organization.Application.csproj" />
     <Project Path="src/Modules/Organization/Organization.Contracts/Organization.Contracts.csproj" />
     <Project Path="src/Modules/Organization/Organization.Domain/Organization.Domain.csproj" />
     <Project Path="src/Modules/Organization/Organization.Infrastructure/Organization.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Treasury/">
+    <Project Path="src/Modules/Treasury/Treasury.Application/Treasury.Application.csproj" />
+    <Project Path="src/Modules/Treasury/Treasury.Domain/Treasury.Domain.csproj" />
+    <Project Path="src/Modules/Treasury/Treasury.Infrastructure/Treasury.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Architecture.Tests/Architecture.Tests.csproj" />
     <Project Path="tests/Hawala.SharedKernel.Tests/Hawala.SharedKernel.Tests.csproj" />
     <Project Path="tests/Identity.Domain.Tests/Identity.Domain.Tests.csproj" />
     <Project Path="tests/Identity.IntegrationTests/Identity.IntegrationTests.csproj" />
+    <Project Path="tests/Ledger.Domain.Tests/Ledger.Domain.Tests.csproj" />
     <Project Path="tests/Organization.Domain.Tests/Organization.Domain.Tests.csproj" />
+    <Project Path="tests/Treasury.Domain.Tests/Treasury.Domain.Tests.csproj" />
   </Folder>
 </Solution>

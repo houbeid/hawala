@@ -1,5 +1,6 @@
 using Hawala.SharedKernel.Messaging;
 using Hawala.SharedKernel.Results;
+using Hawala.SharedKernel.Text;
 using Identity.Application.Abstractions;
 using Identity.Domain;
 using Identity.Domain.Accounts;
@@ -28,7 +29,7 @@ public sealed class ChangeUserRoleCommandHandler(
             return IdentityErrors.Account.CannotChangeOwnRole;
         }
 
-        if (!EnumNameParser.TryParse<RoleTemplate>(command.Role, out var role))
+        if (!EnumNames.TryParse<RoleTemplate>(command.Role, out var role))
         {
             return IdentityErrors.Account.RoleInvalid;
         }

@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Briques techniques partagées par l'Infrastructure des modules d'argent (EF Core et Npgsql autorisés ici).
+    Jamais référencé par un Domain ni par une Application : vérifié par Architecture.Tests.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Hawala.SharedKernel\Hawala.SharedKernel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+
+</Project>

@@ -1,5 +1,6 @@
 using Hawala.SharedKernel.Messaging;
 using Hawala.SharedKernel.Results;
+using Hawala.SharedKernel.Text;
 using Hawala.SharedKernel.Time;
 using Identity.Application.Abstractions;
 using Identity.Domain;
@@ -24,7 +25,7 @@ public sealed class ListUsersQueryHandler(
         RoleTemplate? role = null;
         if (!string.IsNullOrWhiteSpace(query.Role))
         {
-            if (!EnumNameParser.TryParse<RoleTemplate>(query.Role, out var parsedRole))
+            if (!EnumNames.TryParse<RoleTemplate>(query.Role, out var parsedRole))
             {
                 return IdentityErrors.Account.RoleInvalid;
             }
@@ -35,7 +36,7 @@ public sealed class ListUsersQueryHandler(
         AccountStatus? status = null;
         if (!string.IsNullOrWhiteSpace(query.Status))
         {
-            if (!EnumNameParser.TryParse<AccountStatus>(query.Status, out var parsedStatus))
+            if (!EnumNames.TryParse<AccountStatus>(query.Status, out var parsedStatus))
             {
                 return IdentityErrors.Account.StatusInvalid;
             }

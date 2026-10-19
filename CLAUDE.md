@@ -11,7 +11,7 @@ Développeur : Hamade (Windows, PowerShell, Docker Desktop, VS Code). **Toujours
 
 ## Méthode de travail (imposée par Hamade)
 
-- Avancer **sous-dossier par sous-dossier** : les fichiers d'un même sous-dossier sont écrits ensemble, puis on s'arrête et on attend son retour.
+- Avancer **une fonctionnalité complète par tour** (option A, choisie le 19 octobre 2026) : Domain → Application → Infrastructure → Api → tests d'une même fonctionnalité, puis build + tests, et on s'arrête en attendant son retour. Chaque tour se termine au vert. S'arrêter quand même en cours de tour pour : une question métier, une modification risquée d'un fichier déjà testé, une migration à générer (c'est Hamade qui la lance), un problème de conception. Les simples ajouts à des fichiers testés sont signalés dans le compte rendu.
 - Ordre strict : Domain → Application → Infrastructure → Api, puis les tests.
 - **Tests à la fin de chaque fonctionnalité** (`dotnet build` puis `dotnet test`). Ne jamais laisser une suite rouge.
 - **Prévenir avant de modifier un fichier déjà testé** : quel fichier, pourquoi, quel risque.
@@ -43,9 +43,9 @@ Développeur : Hamade (Windows, PowerShell, Docker Desktop, VS Code). **Toujours
 
 ## État actuel (18 octobre 2026)
 
-Fait et testé sur PostgreSQL (dernier résultat confirmé : **253 réussis, 0 échec**) :
+Fait et testé sur PostgreSQL (dernier résultat confirmé : **375 réussis, 0 échec**) :
 
-- SharedKernel (Result, Error, IClock, IdGenerator, Messaging, Currency MRO/XOF).
+- SharedKernel (Result, Error, IClock, IdGenerator, Messaging, Currency MRO/XOF) ; `Money` (FCFA entier, MRO ≤ 2 décimales, saisie MRU ≤ 3 décimales × 10, montant trop précis refusé, MRO + XOF = exception) et `ExchangeRate` (MRO pour 5 000 FCFA, ≤ 2 décimales, `ToTransferMro` arrondi une fois en AwayFromZero).
 - Identité : connexion email ou téléphone, verrouillage 5 échecs / 15 min, JWT 15 min (`sub`, `sv`, `pwd_change`, `jti`), refresh token rotatif 12 h en cookie `hawala_refresh` (haché, rejeu = révocation de la famille), logout, changement de mot de passe (ferme les autres sessions), `GET /api/v1/auth/me`, contrôle de la SecurityVersion à chaque requête (cache 30 s vidé par intercepteur EF), permissions côté serveur (option B), premier Superviseur créé depuis la configuration.
 - Organisation : agences NKC et DKR créées au démarrage (jamais écrasées), `GET /api/v1/agencies`, `IAgencyDirectory` dans les Contracts, `POST /api/v1/agencies/{id}/change-color` (permission `agencies.manage`, couleur unique par agence, tests dans `tests/Identity.IntegrationTests/Organization/`).
 - Comptes rattachés à une agence (`AgencyId`, interdit pour un Superviseur), migration `AddAccountAgency`.
@@ -57,12 +57,18 @@ Fait et testé sur PostgreSQL (dernier résultat confirmé : **253 réussis, 0 �
   - `POST /users/{id}/reset-password` (nouveau mot de passe, verrouillage levé, sessions coupées ; pas soi-même ; un compte bloqué reste bloqué) ;
   - `PUT /users/{id}` : nom, email, téléphone (vide = retiré), sessions conservées.
 - Exemples de requêtes pour les essais manuels : `src/Hawala.Api/Hawala.Api.http`.
+- **Grand livre** (module `Ledger`, schéma `ledger`, migration `AddLedger`) : comptes (caisse, tiers, système par agence), écritures en partie double équilibrées par devise, contre-passation (motif obligatoire, une seule, jamais d'une contre-passation), soldes débit − crédit avec date `asOf`. Porte publique : `ILedger` (Ledger.Contracts), pas de route HTTP. En base : déclencheurs d'immuabilité (UPDATE / DELETE / TRUNCATE refusés, SQLSTATE 23001), équilibre par devise et deux lignes minimum au COMMIT (23514). Tests : `tests/Ledger.Domain.Tests`, `tests/Identity.IntegrationTests/Ledger/`.
+- **`Hawala.SharedInfrastructure`** : `SharedConnection` (une connexion PostgreSQL par requête pour les modules d'argent, option A) et le décorateur de transaction commun : une commande qui écrit dans plusieurs schémas s'enregistre avec `AddSharedTransactional<…>`, et chaque `DbContext` d'un module d'argent implémente `ISharedTransactionParticipant`.
+- **Périmètre par agence** : `IAgencyScope` (Identity.Contracts), rempli par `SessionValidator` à chaque requête ; filtre global EF Core dans les `DbContext` concernés (`IgnoreQueryFilters` seulement pour une règle qui vaut pour toute l'agence, comme l'unicité d'un nom). Sans session validée : aucune agence visible.
+- **Trésorerie** (module `Treasury`, schéma `treasury`, migration `AddTreasury`) : `POST /api/v1/treasury-accounts` (permission `treasury.manage`) crée le compte et son compte au grand livre dans une même transaction ; nom unique par agence (sans tenir compte de la casse) ; devise = celle de l'agence. Tests : `tests/Treasury.Domain.Tests`, `tests/Identity.IntegrationTests/Treasury/`. `GET /api/v1/treasury-accounts` et `GET /api/v1/treasury-accounts/{id}` : périmètre par agence (404 hors agence), solde seulement avec `cash.budget.read`, comptes désactivés masqués sauf `includeInactive=true`. Restent : renommer, désactiver / réactiver.
+- `EnumNames.TryParse<T>` (SharedKernel) : lecture d'une énumération reçue en texte, pour tous les modules.
+- La migration `AddLedger` contient du SQL ajouté à la main (déclencheurs) : si elle est régénérée, le remettre. `dotnet ef migrations remove` a besoin de la base locale (`docker compose up -d`).
 
 ## Prochaine étape
 
-1. CI (GitHub Actions).
+1. Phase 2 : Trésorerie (module Treasury, avec le décorateur de transaction commun), puis Tiers. Money, arrondi et Grand livre : faits.
 
-Reporté aussi : changer le nom d'une agence (le code NKC / DKR ne change jamais).
+La CI (GitHub Actions) se fait **en dernier** (décision de Hamade). Reporté aussi : changer le nom d'une agence (le code NKC / DKR ne change jamais).
 
 **Reporté, à discuter avec Hamade avant tout code** : 2FA TOTP du Superviseur (notamment : que peut faire un Superviseur qui ne l'a pas encore activée ?). Ne pas la proposer comme prochaine étape.
 
@@ -75,11 +81,11 @@ Ensuite : Money / arrondi / taux, Grand livre, Trésorerie, Tiers, Taux, Transfe
 - Course sur un index unique (email / téléphone) = 500 au lieu de 409.
 - Audit de « qui a créé / bloqué / modifié le compte » : POINT OUVERT, à brancher avec le module Audit.
 - Couleur d'agence unique vérifiée dans le handler, sans index unique en base (course très improbable entre deux Superviseurs) : POINT OUVERT dans `ChangeAgencyColorCommandHandler`.
+- Grand livre : soldes recalculés à chaque lecture (pas de cache) ; date d'opération future non refusée (question ouverte) ; création simultanée d'un même compte système = 500 (index unique). POINT OUVERT dans le code.
 - Liste des comptes sans pagination, recherche texte faite en mémoire (quelques dizaines de comptes) : POINT OUVERT dans `UserAccountRepository`.
 - Le test de concurrence du blocage croisé appelle le handler directement (pas par HTTP) ; il éprouve le verrou de façon probable, pas certaine.
 
 ## Questions ouvertes pour le patron
 
 - Droits par défaut des rôles Agent, Caissier et Consultation.
-- Contenu du bouton « + » de l'écran de modification d'un transfert.
 - Autres alertes du contrôle de cohérence, en plus du « taux inhabituel ».

@@ -79,6 +79,9 @@ Les montants sont en `numeric(18,2)` avec leur code devise (MRO ou XOF), jamais 
 3. On arrondit une seule fois, à la création du transfert ; le montant arrondi est enregistré et jamais recalculé.
 4. Bénéfice et bilan : calcul en pleine précision sur les montants enregistrés, arrondi seulement du total affiché.
 5. MRU ↔ MRO : ×10 exact.
+6. Un taux saisi avec plus de 2 décimales est refusé, jamais arrondi.
+7. Les montants MRO hors transferts (caisse, banque, tiers) peuvent avoir des décimales.
+8. La saisie en MRU avec décimales est acceptée (12,5 MRU = 125 MRO).
 
 Si le test de référence (536 893 MRO) montre un écart, on ajuste le point 4, jamais la règle des transferts.
 
@@ -123,6 +126,15 @@ Le passage MRO ↔ FCFA se fait par un compte système « Position de change »,
 | Encaissement manuel | Trésorerie | Tiers ou produit | locale |
 | Décaissement manuel | Tiers ou charge | Trésorerie | locale |
 | Virement interne | Trésorerie destination | Trésorerie source | locale |
+
+Décisions validées pour le grand livre :
+
+- Sens des soldes : débit − crédit (tiers : positif = rouge, négatif = vert).
+- Comptes système par agence : Position de change, Transferts à livrer, Apports du patron, Écarts et ajustements, Soldes d'ouverture (contrepartie du solde initial d'un tiers, rattachée au capital).
+- Date d'opération saisissable dans le passé, distincte de l'instant d'enregistrement (UTC).
+- Contre-passation : motif obligatoire, une seule par écriture, jamais de contre-passation d'une contre-passation.
+- Transaction sur plusieurs modules : une connexion PostgreSQL par requête, partagée par les DbContext des modules d'argent, et une transaction ouverte par un décorateur commun.
+- En base : déclencheur refusant UPDATE / DELETE sur les écritures, contrôle d'équilibre par devise au COMMIT.
 
 Le sens inverse (reçu de Dakar, payé à Nouakchott) suit la même logique, devises échangées. Le type d'opération fixe le signe : l'agent ne choisit jamais « + » ou « − ».
 
@@ -181,6 +193,12 @@ Un seul patron possède deux caisses : Nouakchott en MRO, Dakar en FCFA. Il n'y 
 Le périmètre est appliqué par un filtre global EF Core sur l'agence ; le choix de l'agence est verrouillé dans l'interface d'un agent.
 
 Couleur d'agence : modifiable par le Superviseur (permission `agencies.manage`) ; chaque agence a sa propre couleur, deux agences ne peuvent pas partager la même. Le changement du nom d'une agence est reporté ; le code (NKC, DKR) ne change jamais.
+
+## Comptes de trésorerie
+
+Décisions validées : caisses, banques et wallets par agence (types Cash, Bank, Wallet), chacun avec son compte au grand livre ouvert dans la même transaction. Seul le Superviseur les gère (`treasury.manage`). Un agent voit les comptes de son agence, et leurs soldes seulement avec `cash.budget.read`. Plusieurs caisses par agence, nom unique par agence. Désactivation seulement à solde nul, réactivation possible. Pas d'unité d'affichage par compte : tout s'affiche en MRO à Nouakchott (FCFA à Dakar) ; le MRU ne sert qu'à la saisie, convertie en MRO × 10. Solde de départ à la mise en service : écriture d'ouverture contre « Soldes d'ouverture ».
+
+Le périmètre par agence est appliqué par un filtre global EF Core, à partir d'un `IAgencyScope` (Identity.Contracts) : l'agence du compte connecté, ou toutes pour un Superviseur.
 
 ## Budget de la caisse
 
@@ -345,6 +363,6 @@ Le cœur comptable vient en premier : tout le reste écrit dedans. Chaque phase 
 - [x] Un transfert à un taux inférieur au taux du jour (3 580 contre 3 629,88) est-il normal, ou faut-il bloquer / alerter ? Réponse : seul le Superviseur fixe les taux ; alerte « taux inhabituel » au-delà de 5 % d'écart avec le taux du jour, sans blocage.
 - [x] Comment Nouakchott et Dakar se règlent entre eux (compensation, banque, transport d'espèces) ? Cela décide du compte de liaison entre agences. Réponse : un seul patron et deux caisses, donc pas de compte de liaison ; le remplissage des caisses est hors périmètre.
 - [x] Un compte peut-il travailler sur les deux pays ? Réponse : un agent = une agence ; seul le Superviseur voit les deux.
-- [ ] Que contient le bouton « + » de l'écran de modification d'un transfert (livraison, annulation, autre) ?
+- [x] Que contient le bouton « + » de l'écran de modification d'un transfert (livraison, annulation, autre) ? Réponse : il ouvre simplement un nouveau transfert vide (raccourci de création, comme « Ajouter » dans la liste) ; il ne livre pas, n'annule pas et ne recopie rien. Aucun effet sur le backend.
 - [x] Faut-il importer l'historique de l'ancienne app, ou seulement les tiers et leurs soldes ? Réponse : seulement les tiers et leurs soldes.
 - [x] Hébergement : contrainte de localisation des données (Mauritanie / Sénégal) ou serveur en Europe acceptable ? Réponse : Europe acceptable.

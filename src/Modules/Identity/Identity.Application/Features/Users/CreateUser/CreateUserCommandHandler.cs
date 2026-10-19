@@ -1,5 +1,6 @@
 using Hawala.SharedKernel.Messaging;
 using Hawala.SharedKernel.Results;
+using Hawala.SharedKernel.Text;
 using Hawala.SharedKernel.Time;
 using Identity.Application.Abstractions;
 using Identity.Domain;
@@ -42,7 +43,7 @@ public sealed class CreateUserCommandHandler(
             phone = parsedPhone.Value;
         }
 
-        if (!EnumNameParser.TryParse<RoleTemplate>(command.Role, out var role))
+        if (!EnumNames.TryParse<RoleTemplate>(command.Role, out var role))
         {
             return IdentityErrors.Account.RoleInvalid;
         }

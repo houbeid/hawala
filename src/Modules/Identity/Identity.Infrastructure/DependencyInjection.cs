@@ -105,6 +105,8 @@ public static class DependencyInjection
                 .AddInterceptors(sp.GetRequiredService<AccountCacheInvalidationInterceptor>()));
 
         services.AddScoped<SessionValidator>();
+        services.AddScoped<AgencyScope>();
+        services.AddScoped<IAgencyScope>(sp => sp.GetRequiredService<AgencyScope>());
         services.AddScoped<IPermissionChecker, PermissionChecker>();
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<IdentityModuleDbContext>());
         services.AddScoped<IUserAccountRepository, UserAccountRepository>();

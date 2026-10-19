@@ -2,8 +2,11 @@ using System.Text.Json.Serialization;
 using Hawala.Api.Configuration;
 using Hawala.Api.Endpoints.Identity;
 using Hawala.Api.Endpoints.Organization;
+using Hawala.Api.Endpoints.Treasury;
 using Identity.Infrastructure;
+using Ledger.Infrastructure;
 using Organization.Infrastructure;
+using Treasury.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +19,8 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 builder.Services.AddOrganizationModule(builder.Configuration);
 builder.Services.AddIdentityModule(builder.Configuration);
+builder.Services.AddLedgerModule(builder.Configuration);
+builder.Services.AddTreasuryModule(builder.Configuration);
 builder.Services.AddHawalaAuthentication();
 
 var app = builder.Build();
@@ -25,6 +30,12 @@ await app.Services.InitializeOrganizationModuleAsync();
 
 // Migrations du schéma « identity » puis premier Superviseur si la base est vide.
 await app.Services.InitializeIdentityModuleAsync();
+
+// Grand livre : tables, index et déclencheurs (immuabilité, équilibre par devise au COMMIT).
+await app.Services.InitializeLedgerModuleAsync();
+
+// Trésorerie : après le grand livre, qu'elle appelle pour ouvrir le compte de chaque caisse.
+await app.Services.InitializeTreasuryModuleAsync();
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
@@ -41,5 +52,6 @@ app.UseAuthorization();
 app.MapAuthEndpoints();
 app.MapUserEndpoints();
 app.MapAgencyEndpoints();
+app.MapTreasuryEndpoints();
 
 await app.RunAsync();

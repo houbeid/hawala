@@ -83,6 +83,20 @@ public static class ApiClient
         client.SendAsync(
             HttpMethod.Post, $"/api/v1/agencies/{agencyId}/change-color", body: new { color }, accessToken: accessToken);
 
+    /// <param name="body">Objet anonyme : name, type, agencyId.</param>
+    public static Task<HttpResponseMessage> CreateTreasuryAccountAsync(this HttpClient client, string? accessToken, object body) =>
+        client.SendAsync(HttpMethod.Post, "/api/v1/treasury-accounts", body: body, accessToken: accessToken);
+
+    /// <param name="queryString">Filtres déjà encodés, sans « ? » (ex. « type=Cash&amp;includeInactive=true »), ou null.</param>
+    public static Task<HttpResponseMessage> ListTreasuryAccountsAsync(this HttpClient client, string? accessToken, string? queryString = null) =>
+        client.SendAsync(
+            HttpMethod.Get,
+            string.IsNullOrEmpty(queryString) ? "/api/v1/treasury-accounts" : $"/api/v1/treasury-accounts?{queryString}",
+            accessToken: accessToken);
+
+    public static Task<HttpResponseMessage> GetTreasuryAccountAsync(this HttpClient client, string? accessToken, Guid id) =>
+        client.SendAsync(HttpMethod.Get, $"/api/v1/treasury-accounts/{id}", accessToken: accessToken);
+
     /// <summary>Connexion qui doit réussir : renvoie le jeton d'accès et la valeur du cookie.</summary>
     public static async Task<(string AccessToken, string RefreshCookie)> LoginOkAsync(
         this HttpClient client, string login, string password)

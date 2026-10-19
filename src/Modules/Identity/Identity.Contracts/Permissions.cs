@@ -13,5 +13,11 @@ public static class Permissions
     /// <summary>Modifier une agence (sa couleur).</summary>
     public const string AgenciesManage = "agencies.manage";
 
-    public static readonly IReadOnlyList<string> All = [UsersManage, AgenciesManage];
+    /// <summary>Créer, renommer, désactiver, réactiver un compte de trésorerie (caisse, banque, wallet).</summary>
+    public const string TreasuryManage = "treasury.manage";
+
+    /// <summary>Lire le budget de la caisse, dont les soldes des comptes de trésorerie de son agence.</summary>
+    public const string CashBudgetRead = "cash.budget.read";
+
+    public static readonly IReadOnlyList<string> All = [UsersManage, AgenciesManage, TreasuryManage, CashBudgetRead];
 }

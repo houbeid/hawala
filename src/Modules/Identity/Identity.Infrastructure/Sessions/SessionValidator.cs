@@ -11,9 +11,9 @@ namespace Identity.Infrastructure.Sessions;
 /// Un compte bloqué, ou dont la SecurityVersion a changé (rôle, agence, mot de passe…), est refusé tout de suite.
 /// L'état (version, statut, rôle) est gardé 30 secondes en mémoire, et retiré du cache dès que le compte
 /// est modifié en base (voir <see cref="AccountCacheInvalidationInterceptor"/>).
-/// Le même état sert à la vérification des permissions : aucune requête en base en plus.
+/// Le même état sert à la vérification des permissions et au périmètre par agence : aucune requête en base en plus.
 /// </summary>
-public sealed class SessionValidator(IdentityModuleDbContext db, IMemoryCache cache)
+public sealed class SessionValidator(IdentityModuleDbContext db, IMemoryCache cache, AgencyScope agencyScope)
 {
     // Filet de sécurité : la suppression du cache à l'enregistrement rend l'effet immédiat dans le cas normal.
     // Seul un cas rare (une lecture concurrente pendant la transaction qui bloque le compte) peut garder
@@ -24,9 +24,17 @@ public sealed class SessionValidator(IdentityModuleDbContext db, IMemoryCache ca
     {
         var state = await GetStateAsync(accountId, cancellationToken);
 
-        return state is not null
+        var isCurrent = state is not null
             && state.Status == AccountStatus.Active
             && state.SecurityVersion == securityVersion;
+
+        // Le périmètre n'est rempli que pour une session valide : sinon il reste vide (aucune agence visible).
+        if (isCurrent)
+        {
+            agencyScope.Set(state!.Role, state.AgencyId);
+        }
+
+        return isCurrent;
     }
 
     internal static string CacheKey(Guid accountId) => $"identity:account-security:{accountId:N}";
@@ -42,7 +50,7 @@ public sealed class SessionValidator(IdentityModuleDbContext db, IMemoryCache ca
         var state = await db.Accounts
             .AsNoTracking()
             .Where(a => a.Id == accountId)
-            .Select(a => new AccountSecurityState(a.SecurityVersion, a.Status, a.Role))
+            .Select(a => new AccountSecurityState(a.SecurityVersion, a.Status, a.Role, a.AgencyId))
             .FirstOrDefaultAsync(cancellationToken);
 
         // Un compte introuvable n'est pas mis en cache : il sera relu à la prochaine requête.
@@ -55,4 +63,8 @@ public sealed class SessionValidator(IdentityModuleDbContext db, IMemoryCache ca
     }
 }
 
-internal sealed record AccountSecurityState(int SecurityVersion, AccountStatus Status, RoleTemplate Role);
+/// <param name="AgencyId">
+/// Agence du compte, pour le périmètre. Toujours à jour dans le cache : changer d'agence ou de rôle
+/// augmente la SecurityVersion et vide le cache (intercepteur EF).
+/// </param>
+internal sealed record AccountSecurityState(int SecurityVersion, AccountStatus Status, RoleTemplate Role, Guid? AgencyId);

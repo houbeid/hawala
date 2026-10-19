@@ -23,7 +23,7 @@ Nouvelle app web (PWA) de transfert d'argent entre Nouakchott et Dakar, inspiré
 - Un seul corridor : Mauritanie ↔ Sénégal. Deux agences : Nouakchott et Dakar.
 - Deux devises seulement : ouguiya et FCFA (XOF).
 - **L'ouguiya est stockée et affichée en MRO** (ancienne ouguiya, 1 MRU = 10 MRO), comme l'app actuelle. « MRO » n'est plus un code ISO : c'est un code interne ; ne pas déléguer le formatage à une lib ISO stricte.
-- Les banques et wallets affichent en MRU : chaque champ de montant affiche son unité et convertit ×10 si la saisie est en MRU.
+- **Tous les affichages sont en MRO**, banques et wallets compris (correction du 19 octobre 2026). Le MRU ne sert qu'à la **saisie** : un montant entré en MRU (ex. lu sur un relevé Bankily) est converti en MRO × 10 ; il n'est jamais affiché en MRU.
 - Montants en `decimal` / `numeric(18,2)`, jamais `float`/`double`.
 
 ## Arrondi (validé)
@@ -33,6 +33,10 @@ Nouvelle app web (PWA) de transfert d'argent entre Nouakchott et Dakar, inspiré
 3. On arrondit une seule fois, à la création du transfert ; le montant arrondi est enregistré et jamais recalculé.
 4. Bénéfice et bilan : calcul en pleine précision sur les montants enregistrés, arrondi seulement du total affiché.
 5. MRU ↔ MRO : ×10 exact.
+6. **Un taux saisi avec plus de 2 décimales est refusé** (jamais arrondi) : le Superviseur voit exactement le taux appliqué.
+7. **Les montants MRO hors transferts** (caisse, banque, tiers) **peuvent avoir des décimales.**
+8. **La saisie en MRU avec décimales est acceptée** (ex. 12,5 MRU d'un relevé Bankily = 125 MRO).
+9. **Au plus 2 décimales en MRO, donc au plus 3 décimales en MRU** (12,345 MRU = 123,45 MRO) ; au-delà, **refusé**, jamais arrondi.
 
 Si le test de référence (536 893 MRO) montre un écart, on ajuste le point 4, jamais la règle des transferts.
 
@@ -117,6 +121,17 @@ Mêmes règles pour Nouakchott et Dakar :
 - **Corriger un solde** (Superviseur seulement, toujours tracé) : (1) modifier le **solde initial d'un tiers par agence, à tout moment**, comme dans l'ancienne app — passe par une écriture d'ouverture de la différence + audit avant / après ; (2) ajustement de solde avec motif obligatoire vers un compte « Écarts et ajustements » ; (3) contre-passation puis nouvelle saisie. Les budgets déjà enregistrés ne changent pas ; le contrôle de cohérence signale ces corrections.
 - Permissions : `cash.budget.read`, `cash.budget.save`.
 
+## Comptes de trésorerie (validé)
+
+- Caisses espèces, banques, wallets (Bankily, Sedad, Wave, Orange Money…) d'une agence : les « méthodes de paiement ». Type : `Cash`, `Bank` ou `Wallet`. Devise = celle de l'agence, jamais saisie. Séparés des tiers (dans l'app actuelle, les banques étaient des tiers « considérés comme banque »).
+- Chaque compte de trésorerie a son compte au grand livre, ouvert dans la même transaction.
+- **Seul le Superviseur** crée, renomme, désactive ou réactive un compte de trésorerie (permission `treasury.manage`).
+- **Un agent voit les comptes de son agence** (pour choisir la méthode de paiement) ; **leurs soldes seulement avec `cash.budget.read`**. Le Superviseur voit les deux agences.
+- **Plusieurs caisses espèces possibles dans une même agence.** **Nom unique dans une agence.**
+- **Désactiver exige un solde nul** ; un compte désactivé peut être **réactivé**.
+- **Pas d'unité d'affichage par compte** : tous les comptes de Nouakchott s'affichent en MRO, ceux de Dakar en FCFA. Une saisie en MRU est seulement convertie en MRO (× 10).
+- **Solde de départ** d'un compte de trésorerie à la mise en service : écriture d'ouverture contre le compte système « Soldes d'ouverture », comme le solde initial d'un tiers.
+
 ## Tiers (validé)
 
 - Les tiers sont les personnes et comptes avec qui il y a du crédit : clients, fournisseurs, personnel, et aussi banques et wallets (Bankily, Sedad, banques…), qui forment la liste « Méthode de paiement ».
@@ -135,6 +150,7 @@ Mêmes règles pour Nouakchott et Dakar :
 - **Livré = le bénéficiaire a reçu son argent.** Il peut être payé par n'importe quel moyen (espèces, Wave, Orange Money, Bankily, banque…) et la livraison peut être répartie ; le total livré doit égaler le montant.
 - Livré et Annulé sont verrouillés ; une correction se fait par contre-passation ; l'annulation exige un motif ; chaque changement est historisé (qui, quand, avant / après).
 - Référence lisible par agence et par jour (ex. TR-NKC-20261013-000052).
+- App actuelle : le bouton « + » noir en bas de l'écran de modification d'un transfert (تغيير الحوالة) ouvre simplement un **nouveau transfert vide** (écran إضافة الحوالة), comme « Ajouter » dans la liste. Il ne livre pas, n'annule pas et ne recopie rien : c'est un raccourci de création, sans effet sur le backend. Le garder ou non dans la nouvelle interface se décidera avec les maquettes.
 - Écran des transferts : cartes du jour « entrées · Nouakchott », « sorties · Nouakchott » (MRO), « montant envoyé · Dakar », « montant livré · Dakar » (FCFA), taux du jour et bénéfice. **Ces cartes sont visibles par le Superviseur seulement.**
 
 ### Code de retrait (validé)
@@ -167,6 +183,11 @@ Nombre de transferts, livrés / non livrés, **taux de livraison par agence**, r
 ## Moteur comptable
 
 - Grand livre en partie double ; seul module qui écrit les montants. Chaque écriture est équilibrée **par devise**.
+- **Sens des soldes : débit − crédit.** Caisse : positif = argent en caisse. Tiers : positif = rouge (il nous doit), négatif = vert (on lui doit).
+- **Comptes système par agence** (donc par devise) : Position de change, Transferts à livrer, Apports du patron, Écarts et ajustements, **Soldes d'ouverture** (contrepartie du solde initial d'un tiers, rattachée au capital comme les Apports du patron : ni gain ni perte).
+- **Une opération peut être saisie avec une date passée** (date d'opération distincte de l'instant d'enregistrement en UTC).
+- **Contre-passation : motif toujours obligatoire** ; **une contre-passation ne peut pas être contre-passée** (pour rétablir, on ressaisit l'opération) ; une écriture n'est contre-passée qu'une fois.
+- **Une commande = une transaction, même sur plusieurs modules** (option A validée) : une seule connexion PostgreSQL par requête, partagée par les DbContext des modules d'argent (Ledger, Treasury, Parties, Transfers, Cash), transaction ouverte par un décorateur commun.
 - Passage MRO ↔ FCFA via un compte système « Position de change ».
 - Écritures immuables : jamais de UPDATE/DELETE, uniquement des contre-passations.
 - Une commande = une transaction PostgreSQL (écritures + entité + audit).
@@ -211,7 +232,6 @@ Valider les maquettes des écrans de transfert (création en 3 étapes, livraiso
 - 2FA TOTP du Superviseur : **reportée**, à discuter avec l'utilisateur avant tout code (que peut faire un Superviseur qui ne l'a pas encore activée ?).
 - Audit de « qui a créé / modifié ce compte » : à brancher quand le module Audit existera.
 
-- Que contient le bouton « + » de l'écran de modification d'un transfert (livraison, annulation, autre) ?
 - Autres alertes du contrôle de cohérence, en plus du « taux inhabituel » ?
 
 Quand une question est tranchée, mettre à jour ce skill (et le document d'architecture).
