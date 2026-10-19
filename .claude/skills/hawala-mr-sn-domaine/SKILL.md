@@ -136,9 +136,29 @@ Mêmes règles pour Nouakchott et Dakar :
 
 - Les tiers sont les personnes et comptes avec qui il y a du crédit : clients, fournisseurs, personnel, et aussi banques et wallets (Bankily, Sedad, banques…), qui forment la liste « Méthode de paiement ».
 - **Rouge = il nous doit (on a de l'argent chez lui). Vert = on lui doit.** Total = rouges − verts.
-- Champs : nom (max 30), téléphone, NNI, adresse, « dans le bilan », « considéré comme banque », compte comptable (41 = clients), solde initial par agence (Nouakchott en MRO, Dakar en FCFA), genre, note.
+- Champs : nom (max 30), téléphone, NNI, adresse, « dans le bilan », compte comptable (41 = clients), solde initial par agence (Nouakchott en MRO, Dakar en FCFA), note. (Le « genre » de l'app actuelle = banque / non banque : supprimé avec la séparation.) (« Considéré comme banque » : supprimé, voir plus bas.)
 - Liste : filtres agence (verrouillé pour un agent), « dans le bilan / hors bilan / tous », solde, type de tiers ; totaux rouge et vert.
 - Nouvelle app : séparer « Comptes de trésorerie » (caisses, banques, wallets) et « Tiers » ; plafond de crédit ; dédoublonnage par téléphone.
+
+### Décisions du 19 octobre 2026 (validées)
+
+- **Un tiers est commun aux deux agences** : une seule fiche, non rattachée à une agence. Il a **un solde par agence** (un compte au grand livre par agence : MRO à Nouakchott, FCFA à Dakar). Un agent voit la fiche, mais **seulement le solde de son agence**.
+- **« Considéré comme banque » est supprimé** : les banques et wallets sont des comptes de trésorerie. Les anciens tiers « banque » deviendront des comptes de trésorerie à la migration (phase 8). **Séparation reconfirmée le 19 octobre 2026** (question « pourquoi pas des tiers comme dans l'app actuelle ? ») : un compte bancaire est notre argent, un tiers est quelqu'un d'autre ; le budget compte les banques à part ; les méthodes de paiement sont les comptes de trésorerie ; règles et droits différents. L'interface pourra montrer les deux dans des écrans proches.
+- App actuelle, écran « Tiers » (« الأطراف ») : recherche (« كلمة البحث »), « 73 / 73 », total net en tête, puis sous la flèche : total vert, total rouge, agence, « Calcul général » (« حساب عام »), « Situation dans le bilan » (« الحالة في الميزانية » : Tous « الكل » / Dans le bilan « داخل الميزانية » / Hors bilan « خارج الميزانية »), « Solde » (« الرصيد » : Tous « الكل » / له « on lui doit » = vert / عليه « il nous doit » = rouge), « Genre du tiers » (« نوع الطرف »). Étiquettes : Client « عميل », Bilan « الميزانية ». Libellés à reprendre pour la traduction arabe.
+- App actuelle : le filtre « Genre du tiers » de la liste = **Banque / Non banque / Tous** (la case « considéré comme banque »), pas Homme / Femme. Il disparaît avec la séparation.
+- **Type de tiers = compte comptable** : Client (41), Fournisseur (40), Personnel (42), Autre.
+- **Obligatoires : nom et type.** Facultatifs : téléphone (E.164, comme les comptes), NNI, adresse, note.
+- **Pas de champ Homme / Femme** (supprimé le 19 octobre 2026) : le « genre » de l'app actuelle désignait banque / non banque, et les banques ne sont plus des tiers.
+- **Téléphone unique** quand il est renseigné (doublon interdit). **NNI unique** quand il est renseigné, sans contrôle de format (les deux pays diffèrent).
+- **Nom non unique** : deux tiers peuvent porter le même nom ; le téléphone les distingue.
+- **Plafond de crédit par tiers et par agence**, dans la devise de l'agence, fixé par le Superviseur ; dépassement = **blocage** du crédit (appliqué en phase 3). Sans plafond fixé : pas de limite.
+- **Un agent peut créer un tiers** (permission `parties.create`, donnée au rôle Agent ; correction du 19 octobre 2026). **Seul le Superviseur le modifie** : fiche, solde initial, plafond, « dans le bilan », archivage (permission `parties.manage`). POINT OUVERT : le droit de créer pour les rôles Caissier et Consultation.
+- **Solde initial : jamais à la création**, toujours par l'action « solde initial par agence » (écriture d'ouverture de la différence), pour un seul chemin tracé. **Date d'opération choisie par le Superviseur** (date du jour par défaut), pour dater les soldes de départ au jour de mise en service lors de la migration (validé le 19 octobre 2026).
+- Téléphone et NNI stockés en clair pour l'instant ; chiffrement au repos + empreinte pour l'unicité et la recherche en phase 6.
+- **Pas de suppression : archivage**, seulement à solde nul dans les deux agences.
+- **Soldes des tiers visibles avec la permission `parties.view_balance`** (comme les soldes de caisse avec `cash.budget.read`).
+- **« Dans le bilan » vrai par défaut**, modifiable par le Superviseur seulement.
+- **Un solde à zéro n'est ni rouge ni vert** (validé le 19 octobre 2026) : il n'apparaît ni avec « عليه » ni avec « له », seulement avec « Tous » (l'app actuelle l'affichait en rouge).
 
 ## Transferts (validé)
 
@@ -227,6 +247,10 @@ Serveur en Europe accepté. Départ : 1 VPS OVHcloud en France (type VPS-2, 4 vC
 Valider les maquettes des écrans de transfert (création en 3 étapes, livraison) avec les utilisateurs avant la phase 3.
 
 ## Questions ouvertes
+
+- Migration (phase 8) : dans l'app actuelle, les deux agences sont aussi des tiers (« فرع دكار », « فرع انواكشوط »), avec un solde (ex. −148 116 001 MRO). La nouvelle app n'a pas de compte de dette entre agences : ces tiers ne sont pas repris tels quels ; comment traiter leur solde à la bascule ?
+- Liste des tiers : rôle du bouton « Calcul général » (« حساب عام »).
+
 
 - Droits par défaut des rôles Agent, Caissier et Consultation ?
 - 2FA TOTP du Superviseur : **reportée**, à discuter avec l'utilisateur avant tout code (que peut faire un Superviseur qui ne l'a pas encore activée ?).

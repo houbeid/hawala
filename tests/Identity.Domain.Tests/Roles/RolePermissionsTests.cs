@@ -26,6 +26,18 @@ public class RolePermissionsTests
     }
 
     [Fact]
+    public void Agent_can_create_a_party_but_not_modify_one()
+    {
+        var granted = RolePermissions.For(RoleTemplate.Agent);
+
+        Assert.Contains(Permissions.PartiesCreate, granted);
+        Assert.DoesNotContain(Permissions.PartiesManage, granted);
+        Assert.DoesNotContain(Permissions.PartiesViewBalance, granted);
+        Assert.DoesNotContain(Permissions.TreasuryManage, granted);
+        Assert.DoesNotContain(Permissions.CashBudgetRead, granted);
+    }
+
+    [Fact]
     public void Every_role_is_covered()
     {
         foreach (var role in Enum.GetValues<RoleTemplate>())

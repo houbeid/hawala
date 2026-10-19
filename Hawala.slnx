@@ -23,6 +23,11 @@
     <Project Path="src/Modules/Organization/Organization.Domain/Organization.Domain.csproj" />
     <Project Path="src/Modules/Organization/Organization.Infrastructure/Organization.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Parties/">
+    <Project Path="src/Modules/Parties/Parties.Application/Parties.Application.csproj" />
+    <Project Path="src/Modules/Parties/Parties.Domain/Parties.Domain.csproj" />
+    <Project Path="src/Modules/Parties/Parties.Infrastructure/Parties.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/Modules/Treasury/">
     <Project Path="src/Modules/Treasury/Treasury.Application/Treasury.Application.csproj" />
     <Project Path="src/Modules/Treasury/Treasury.Domain/Treasury.Domain.csproj" />
@@ -35,6 +40,7 @@
     <Project Path="tests/Identity.IntegrationTests/Identity.IntegrationTests.csproj" />
     <Project Path="tests/Ledger.Domain.Tests/Ledger.Domain.Tests.csproj" />
     <Project Path="tests/Organization.Domain.Tests/Organization.Domain.Tests.csproj" />
+    <Project Path="tests/Parties.Domain.Tests/Parties.Domain.Tests.csproj" />
     <Project Path="tests/Treasury.Domain.Tests/Treasury.Domain.Tests.csproj" />
   </Folder>
 </Solution>

@@ -23,6 +23,12 @@ public interface ILedger
         Guid agencyId,
         CancellationToken cancellationToken);
 
+    /// <summary>Le compte ne reçoit plus d'écriture (ex. caisse désactivée). Son historique et son solde restent.</summary>
+    Task<Result> CloseAccountAsync(Guid accountId, CancellationToken cancellationToken);
+
+    /// <summary>Le compte reçoit de nouveau des écritures (ex. caisse réactivée).</summary>
+    Task<Result> ReopenAccountAsync(Guid accountId, CancellationToken cancellationToken);
+
     /// <summary>Compte système d'une agence : le crée la première fois, le retrouve ensuite (idempotent).</summary>
     Task<Result<Guid>> GetOrCreateSystemAccountAsync(
         SystemAccountRole role,

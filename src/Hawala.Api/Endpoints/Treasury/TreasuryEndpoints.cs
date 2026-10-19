@@ -5,6 +5,9 @@ using Hawala.SharedKernel.Messaging;
 using Identity.Contracts;
 using Treasury.Application.Features.Accounts;
 using Treasury.Application.Features.Accounts.CreateTreasuryAccount;
+using Treasury.Application.Features.Accounts.DeactivateTreasuryAccount;
+using Treasury.Application.Features.Accounts.ReactivateTreasuryAccount;
+using Treasury.Application.Features.Accounts.RenameTreasuryAccount;
 using Treasury.Application.Features.Accounts.GetTreasuryAccount;
 using Treasury.Application.Features.Accounts.ListTreasuryAccounts;
 
@@ -15,6 +18,8 @@ public static class TreasuryEndpoints
 {
     /// <param name="Type">Cash, Bank ou Wallet.</param>
     public sealed record CreateTreasuryAccountRequest(string? Name, string? Type, Guid? AgencyId);
+
+    public sealed record RenameTreasuryAccountRequest(string? Name);
 
     public static IEndpointRouteBuilder MapTreasuryEndpoints(this IEndpointRouteBuilder app)
     {
@@ -27,8 +32,39 @@ public static class TreasuryEndpoints
 
         // Règle validée : seul le Superviseur crée, renomme, désactive ou réactive un compte de trésorerie.
         group.MapPost("", CreateTreasuryAccount).RequirePermission(Permissions.TreasuryManage);
+        group.MapPut("/{id:guid}", RenameTreasuryAccount).RequirePermission(Permissions.TreasuryManage);
+        group.MapPost("/{id:guid}/deactivate", DeactivateTreasuryAccount).RequirePermission(Permissions.TreasuryManage);
+        group.MapPost("/{id:guid}/reactivate", ReactivateTreasuryAccount).RequirePermission(Permissions.TreasuryManage);
 
         return app;
+    }
+
+    private static async Task<IResult> RenameTreasuryAccount(
+        Guid id,
+        RenameTreasuryAccountRequest request,
+        ICommandHandler<RenameTreasuryAccountCommand> handler,
+        CancellationToken cancellationToken)
+    {
+        var result = await handler.Handle(new RenameTreasuryAccountCommand(id, request.Name), cancellationToken);
+        return result.IsSuccess ? TypedResults.NoContent() : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> DeactivateTreasuryAccount(
+        Guid id,
+        ICommandHandler<DeactivateTreasuryAccountCommand> handler,
+        CancellationToken cancellationToken)
+    {
+        var result = await handler.Handle(new DeactivateTreasuryAccountCommand(id), cancellationToken);
+        return result.IsSuccess ? TypedResults.NoContent() : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> ReactivateTreasuryAccount(
+        Guid id,
+        ICommandHandler<ReactivateTreasuryAccountCommand> handler,
+        CancellationToken cancellationToken)
+    {
+        var result = await handler.Handle(new ReactivateTreasuryAccountCommand(id), cancellationToken);
+        return result.IsSuccess ? TypedResults.NoContent() : result.Error.ToProblem();
     }
 
     private static async Task<IResult> ListTreasuryAccounts(

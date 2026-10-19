@@ -12,11 +12,17 @@ namespace Identity.Domain.Roles;
 public static class RolePermissions
 {
     private static readonly HashSet<string> Supervisor = [.. Permissions.All];
+
+    // Règle validée (19 octobre 2026) : un agent peut créer un tiers.
+    private static readonly HashSet<string> Agent = [Permissions.PartiesCreate];
+
+    // POINT OUVERT : Caissier et Consultation, en attente des droits par défaut validés par le patron.
     private static readonly HashSet<string> None = [];
 
     public static IReadOnlySet<string> For(RoleTemplate role) => role switch
     {
         RoleTemplate.Supervisor => Supervisor,
+        RoleTemplate.Agent => Agent,
         _ => None,
     };
 }

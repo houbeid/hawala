@@ -40,6 +40,12 @@ public sealed class LedgerService(
         return account.Value.Id;
     }
 
+    public Task<Result> CloseAccountAsync(Guid accountId, CancellationToken cancellationToken) =>
+        ChangeAccountAsync(accountId, account => account.Close(), cancellationToken);
+
+    public Task<Result> ReopenAccountAsync(Guid accountId, CancellationToken cancellationToken) =>
+        ChangeAccountAsync(accountId, account => account.Reopen(), cancellationToken);
+
     /// <summary>
     /// POINT OUVERT : si deux requêtes créent au même instant le même compte système d'une agence,
     /// l'index unique en base refuse la seconde (erreur 500, comme la course sur l'email des comptes).
@@ -133,6 +139,20 @@ public sealed class LedgerService(
         entries.Add(reversal.Value);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return reversal.Value.Id;
+    }
+
+    private async Task<Result> ChangeAccountAsync(
+        Guid accountId, Action<LedgerAccount> change, CancellationToken cancellationToken)
+    {
+        var account = (await accounts.GetByIdsAsync([accountId], cancellationToken)).SingleOrDefault();
+        if (account is null)
+        {
+            return LedgerErrors.Account.NotFound;
+        }
+
+        change(account);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        return Result.Success();
     }
 
     public async Task<Result<IReadOnlyList<AccountBalance>>> GetBalancesAsync(

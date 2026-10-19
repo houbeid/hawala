@@ -8,6 +8,9 @@ using Treasury.Application.Abstractions;
 using Hawala.SharedKernel.Messaging;
 using Treasury.Application.Features.Accounts;
 using Treasury.Application.Features.Accounts.CreateTreasuryAccount;
+using Treasury.Application.Features.Accounts.DeactivateTreasuryAccount;
+using Treasury.Application.Features.Accounts.ReactivateTreasuryAccount;
+using Treasury.Application.Features.Accounts.RenameTreasuryAccount;
 using Treasury.Application.Features.Accounts.GetTreasuryAccount;
 using Treasury.Application.Features.Accounts.ListTreasuryAccounts;
 using Treasury.Infrastructure.Persistence;
@@ -42,8 +45,13 @@ public static class DependencyInjection
         services.AddScoped<IQueryHandler<ListTreasuryAccountsQuery, IReadOnlyList<TreasuryAccountSummary>>, ListTreasuryAccountsQueryHandler>();
         services.AddScoped<IQueryHandler<GetTreasuryAccountQuery, TreasuryAccountSummary>, GetTreasuryAccountQueryHandler>();
 
-        // Écrit dans deux schémas (treasury + ledger) : une seule transaction commune.
+        // Une seule table, un seul enregistrement : pas de transaction explicite.
+        services.AddScoped<ICommandHandler<RenameTreasuryAccountCommand>, RenameTreasuryAccountCommandHandler>();
+
+        // Écrivent dans deux schémas (treasury + ledger) : une seule transaction commune.
         services.AddSharedTransactional<CreateTreasuryAccountCommand, Guid, CreateTreasuryAccountCommandHandler>();
+        services.AddSharedTransactional<DeactivateTreasuryAccountCommand, DeactivateTreasuryAccountCommandHandler>();
+        services.AddSharedTransactional<ReactivateTreasuryAccountCommand, ReactivateTreasuryAccountCommandHandler>();
 
         return services;
     }

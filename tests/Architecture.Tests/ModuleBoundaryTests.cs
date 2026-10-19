@@ -27,6 +27,10 @@ public class ModuleBoundaryTests
     private static readonly Assembly TreasuryApplication = typeof(Treasury.Application.Abstractions.IUnitOfWork).Assembly;
     private static readonly Assembly TreasuryInfrastructure = typeof(Treasury.Infrastructure.DependencyInjection).Assembly;
 
+    private static readonly Assembly PartiesDomain = typeof(Parties.Domain.PartiesErrors).Assembly;
+    private static readonly Assembly PartiesApplication = typeof(Parties.Application.Abstractions.IUnitOfWork).Assembly;
+    private static readonly Assembly PartiesInfrastructure = typeof(Parties.Infrastructure.DependencyInjection).Assembly;
+
     private static readonly Assembly[] IdentityModule = [IdentityDomain, IdentityApplication, IdentityInfrastructure];
 
     private static readonly Assembly[] OrganizationModule =
@@ -37,10 +41,12 @@ public class ModuleBoundaryTests
 
     private static readonly Assembly[] TreasuryModule = [TreasuryDomain, TreasuryApplication, TreasuryInfrastructure];
 
-    private static readonly Assembly[] DomainLayers = [IdentityDomain, OrganizationDomain, LedgerDomain, TreasuryDomain];
+    private static readonly Assembly[] PartiesModule = [PartiesDomain, PartiesApplication, PartiesInfrastructure];
+
+    private static readonly Assembly[] DomainLayers = [IdentityDomain, OrganizationDomain, LedgerDomain, TreasuryDomain, PartiesDomain];
 
     private static readonly Assembly[] ApplicationLayers =
-        [IdentityApplication, OrganizationApplication, LedgerApplication, TreasuryApplication];
+        [IdentityApplication, OrganizationApplication, LedgerApplication, TreasuryApplication, PartiesApplication];
 
     [Fact]
     public void Identity_sees_Organization_only_through_its_contracts()
@@ -88,16 +94,38 @@ public class ModuleBoundaryTests
     [Fact]
     public void Nobody_depends_on_Treasury_yet()
     {
-        foreach (var assembly in IdentityModule.Concat(OrganizationModule).Concat(LedgerModule))
+        foreach (var assembly in IdentityModule.Concat(OrganizationModule).Concat(LedgerModule).Concat(PartiesModule))
         {
             AssertNoReference(assembly, name => name.StartsWith("Treasury.", StringComparison.Ordinal));
         }
     }
 
     [Fact]
+    public void Parties_sees_other_modules_only_through_their_contracts()
+    {
+        foreach (var assembly in PartiesModule)
+        {
+            AssertNoReference(assembly, name =>
+                (name.StartsWith("Identity.", StringComparison.Ordinal) && name != "Identity.Contracts")
+                || (name.StartsWith("Organization.", StringComparison.Ordinal) && name != "Organization.Contracts")
+                || (name.StartsWith("Ledger.", StringComparison.Ordinal) && name != "Ledger.Contracts")
+                || name.StartsWith("Treasury.", StringComparison.Ordinal));
+        }
+    }
+
+    [Fact]
+    public void Nobody_depends_on_Parties_yet()
+    {
+        foreach (var assembly in IdentityModule.Concat(OrganizationModule).Concat(LedgerModule).Concat(TreasuryModule))
+        {
+            AssertNoReference(assembly, name => name.StartsWith("Parties.", StringComparison.Ordinal));
+        }
+    }
+
+    [Fact]
     public void Other_modules_see_Ledger_only_through_its_contracts()
     {
-        foreach (var assembly in IdentityModule.Concat(OrganizationModule).Concat(TreasuryModule))
+        foreach (var assembly in IdentityModule.Concat(OrganizationModule).Concat(TreasuryModule).Concat(PartiesModule))
         {
             AssertNoReference(assembly, name =>
                 name.StartsWith("Ledger.", StringComparison.Ordinal)

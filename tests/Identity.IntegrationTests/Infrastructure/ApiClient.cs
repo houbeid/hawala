@@ -97,6 +97,42 @@ public static class ApiClient
     public static Task<HttpResponseMessage> GetTreasuryAccountAsync(this HttpClient client, string? accessToken, Guid id) =>
         client.SendAsync(HttpMethod.Get, $"/api/v1/treasury-accounts/{id}", accessToken: accessToken);
 
+    public static Task<HttpResponseMessage> RenameTreasuryAccountAsync(this HttpClient client, string? accessToken, Guid id, string? name) =>
+        client.SendAsync(HttpMethod.Put, $"/api/v1/treasury-accounts/{id}", body: new { name }, accessToken: accessToken);
+
+    public static Task<HttpResponseMessage> DeactivateTreasuryAccountAsync(this HttpClient client, string? accessToken, Guid id) =>
+        client.SendAsync(HttpMethod.Post, $"/api/v1/treasury-accounts/{id}/deactivate", accessToken: accessToken);
+
+    public static Task<HttpResponseMessage> ReactivateTreasuryAccountAsync(this HttpClient client, string? accessToken, Guid id) =>
+        client.SendAsync(HttpMethod.Post, $"/api/v1/treasury-accounts/{id}/reactivate", accessToken: accessToken);
+
+    /// <param name="body">Objet anonyme : name, type, phone, nni, address, gender, note.</param>
+    public static Task<HttpResponseMessage> CreatePartyAsync(this HttpClient client, string? accessToken, object body) =>
+        client.SendAsync(HttpMethod.Post, "/api/v1/parties", body: body, accessToken: accessToken);
+
+    /// <param name="queryString">Filtres déjà encodés, sans « ? », ou null.</param>
+    public static Task<HttpResponseMessage> ListPartiesAsync(this HttpClient client, string? accessToken, string? queryString = null) =>
+        client.SendAsync(
+            HttpMethod.Get,
+            string.IsNullOrEmpty(queryString) ? "/api/v1/parties" : $"/api/v1/parties?{queryString}",
+            accessToken: accessToken);
+
+    public static Task<HttpResponseMessage> GetPartyAsync(this HttpClient client, string? accessToken, Guid id, string? queryString = null) =>
+        client.SendAsync(
+            HttpMethod.Get,
+            string.IsNullOrEmpty(queryString) ? $"/api/v1/parties/{id}" : $"/api/v1/parties/{id}?{queryString}",
+            accessToken: accessToken);
+
+    /// <param name="body">Objet anonyme : name, type, phone, nni, address, note, inBalanceSheet (état complet).</param>
+    public static Task<HttpResponseMessage> UpdatePartyAsync(this HttpClient client, string? accessToken, Guid id, object body) =>
+        client.SendAsync(HttpMethod.Put, $"/api/v1/parties/{id}", body: body, accessToken: accessToken);
+
+    /// <param name="body">Objet anonyme : amount, operationDate (aaaa-mm-jj, facultatif).</param>
+    public static Task<HttpResponseMessage> SetOpeningBalanceAsync(
+        this HttpClient client, string? accessToken, Guid partyId, Guid agencyId, object body) =>
+        client.SendAsync(
+            HttpMethod.Put, $"/api/v1/parties/{partyId}/agencies/{agencyId}/opening-balance", body: body, accessToken: accessToken);
+
     /// <summary>Connexion qui doit réussir : renvoie le jeton d'accès et la valeur du cookie.</summary>
     public static async Task<(string AccessToken, string RefreshCookie)> LoginOkAsync(
         this HttpClient client, string login, string password)

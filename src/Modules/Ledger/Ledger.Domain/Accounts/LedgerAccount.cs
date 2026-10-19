@@ -119,6 +119,9 @@ public sealed class LedgerAccount
     /// <summary>Le compte ne reçoit plus d'écriture (ex. caisse désactivée). Son historique et son solde restent.</summary>
     public void Close() => IsActive = false;
 
+    /// <summary>Le compte reçoit de nouveau des écritures (ex. caisse réactivée par le Superviseur).</summary>
+    public void Reopen() => IsActive = true;
+
     /// <summary>Vérifié pour chaque ligne d'une écriture : compte actif, et montant dans sa devise.</summary>
     public Result EnsureCanReceive(Money amount)
     {

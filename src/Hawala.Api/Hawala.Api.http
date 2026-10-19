@@ -119,3 +119,45 @@ Content-Type: application/json
 ### Réinitialiser le mot de passe (nouveau mot de passe temporaire, affiché une fois)
 POST {{users}}/{{userId}}/reset-password
 Authorization: Bearer {{token}}
+
+# --- Comptes de trésorerie (caisses, banques, wallets) --------------------
+# Lecture : tout compte connecté, dans son agence (les deux pour le Superviseur) ; soldes avec cash.budget.read.
+# Écriture : Superviseur seulement (treasury.manage).
+
+@treasuryId = COLLER_L_ID_DU_COMPTE_DE_TRESORERIE_ICI
+
+### Créer un compte de trésorerie (type : Cash, Bank ou Wallet ; devise = celle de l'agence)
+POST {{host}}/api/v1/treasury-accounts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Caisse principale",
+  "type": "Cash",
+  "agencyId": "{{agencyId}}"
+}
+
+### Lister les comptes de trésorerie (filtres facultatifs)
+GET {{host}}/api/v1/treasury-accounts?type=Cash&includeInactive=false
+Authorization: Bearer {{token}}
+
+### Fiche d'un compte de trésorerie
+GET {{host}}/api/v1/treasury-accounts/{{treasuryId}}
+Authorization: Bearer {{token}}
+
+### Renommer (nom unique dans l'agence)
+PUT {{host}}/api/v1/treasury-accounts/{{treasuryId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Caisse guichet 1"
+}
+
+### Désactiver (solde nul seulement)
+POST {{host}}/api/v1/treasury-accounts/{{treasuryId}}/deactivate
+Authorization: Bearer {{token}}
+
+### Réactiver
+POST {{host}}/api/v1/treasury-accounts/{{treasuryId}}/reactivate
+Authorization: Bearer {{token}}

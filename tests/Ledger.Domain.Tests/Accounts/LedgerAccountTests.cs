@@ -121,6 +121,18 @@ public class LedgerAccountTests
             account.EnsureCanReceive(Money.Create(1000m, Currency.MRO).Value).Error);
     }
 
+    [Fact]
+    public void Reopened_account_receives_again()
+    {
+        var account = MroAccount();
+        account.Close();
+
+        account.Reopen();
+
+        Assert.True(account.IsActive);
+        Assert.True(account.EnsureCanReceive(Money.Create(1000m, Currency.MRO).Value).IsSuccess);
+    }
+
     private static LedgerAccount MroAccount() =>
         LedgerAccount.Open(LedgerAccountKind.Treasury, Owner, "Caisse", Currency.MRO, Nouakchott, Now).Value;
 }

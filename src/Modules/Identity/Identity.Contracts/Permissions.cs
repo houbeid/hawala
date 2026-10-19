@@ -19,5 +19,15 @@ public static class Permissions
     /// <summary>Lire le budget de la caisse, dont les soldes des comptes de trésorerie de son agence.</summary>
     public const string CashBudgetRead = "cash.budget.read";
 
-    public static readonly IReadOnlyList<string> All = [UsersManage, AgenciesManage, TreasuryManage, CashBudgetRead];
+    /// <summary>Créer un tiers (client, fournisseur, personnel). Donnée aussi au rôle Agent (règle validée).</summary>
+    public const string PartiesCreate = "parties.create";
+
+    /// <summary>Modifier un tiers : fiche, solde initial, plafond de crédit, « dans le bilan », archivage.</summary>
+    public const string PartiesManage = "parties.manage";
+
+    /// <summary>Voir les soldes des tiers (de son agence ; des deux pour le Superviseur).</summary>
+    public const string PartiesViewBalance = "parties.view_balance";
+
+    public static readonly IReadOnlyList<string> All =
+        [UsersManage, AgenciesManage, TreasuryManage, CashBudgetRead, PartiesCreate, PartiesManage, PartiesViewBalance];
 }

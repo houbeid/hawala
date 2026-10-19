@@ -200,6 +200,10 @@ Décisions validées : caisses, banques et wallets par agence (types Cash, Bank,
 
 Le périmètre par agence est appliqué par un filtre global EF Core, à partir d'un `IAgencyScope` (Identity.Contracts) : l'agence du compte connecté, ou toutes pour un Superviseur.
 
+## Tiers
+
+Décisions validées : un tiers est commun aux deux agences (une fiche), avec un solde par agence (un compte au grand livre par agence) ; un agent ne voit que le solde de son agence, et seulement avec `parties.view_balance`. Type = compte comptable : Client (41), Fournisseur (40), Personnel (42), Autre. Obligatoires : nom (30 caractères) et type ; téléphone (E.164) et NNI facultatifs mais uniques ; nom non unique ; pas de champ Homme / Femme (le « genre » de l'app actuelle désignait banque / non banque). « Considéré comme banque » supprimé (les banques sont des comptes de trésorerie). Plafond de crédit par tiers et par agence, fixé par le Superviseur, bloquant (appliqué en phase 3). Un agent peut créer un tiers (`parties.create`) ; seul le Superviseur le modifie (`parties.manage` : fiche, solde initial, plafond, « dans le bilan », archivage). Le solde initial n'est jamais saisi à la création : toujours par l'écriture d'ouverture de la différence. Téléphone et NNI en clair jusqu'à la phase 6 (chiffrement + empreinte). Pas de suppression : archivage à solde nul dans les deux agences. « Dans le bilan » vrai par défaut, modifiable par le Superviseur.
+
 ## Budget de la caisse
 
 Chaque agence enregistre son budget une fois par jour : c'est sa clôture journalière, dans sa devise (MRO à Nouakchott, FCFA à Dakar).
