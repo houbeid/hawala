@@ -55,6 +55,9 @@ public static class LedgerErrors
         public static readonly Error SourceEmpty =
             Error.Validation("Ledger.Entry.SourceEmpty", "Le module à l'origine de l'écriture est obligatoire.");
 
+        public static readonly Error FutureDate =
+            Error.Validation("Ledger.Entry.FutureDate", "La date de l'opération ne peut pas être dans le futur.");
+
         public static readonly Error AuthorRequired =
             Error.Validation("Ledger.Entry.AuthorRequired", "L'auteur de l'écriture est obligatoire.");
     }

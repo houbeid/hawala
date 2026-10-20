@@ -13,7 +13,7 @@ namespace Parties.Application.Features.Parties.SetOpeningBalance;
 /// Règle validée : changer le solde initial passe par une écriture d'ouverture DE LA DIFFÉRENCE, contre le compte système
 /// « Soldes d'ouverture » de l'agence (rattaché au capital : ni gain ni perte). Personne n'écrit un solde à la main.
 /// Une seule transaction commune : le solde initial retenu et l'écriture vont ensemble.
-/// POINT OUVERT : date d'opération dans le futur non refusée (même question ouverte que pour le grand livre).
+/// Une date d'opération dans le futur est refusée par le grand livre (règle validée le 20 octobre 2026).
 /// POINT OUVERT : la date du jour est prise en UTC ; Nouakchott et Dakar sont tous deux en UTC+0.
 /// POINT OUVERT : l'audit avant / après arrivera avec le module Audit ; l'écriture garde déjà l'auteur et la date.
 /// </summary>

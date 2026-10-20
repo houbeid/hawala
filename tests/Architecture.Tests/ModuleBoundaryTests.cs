@@ -31,6 +31,10 @@ public class ModuleBoundaryTests
     private static readonly Assembly PartiesApplication = typeof(Parties.Application.Abstractions.IUnitOfWork).Assembly;
     private static readonly Assembly PartiesInfrastructure = typeof(Parties.Infrastructure.DependencyInjection).Assembly;
 
+    private static readonly Assembly RatesDomain = typeof(Rates.Domain.RatesErrors).Assembly;
+    private static readonly Assembly RatesApplication = typeof(Rates.Application.Abstractions.IUnitOfWork).Assembly;
+    private static readonly Assembly RatesInfrastructure = typeof(Rates.Infrastructure.DependencyInjection).Assembly;
+
     private static readonly Assembly[] IdentityModule = [IdentityDomain, IdentityApplication, IdentityInfrastructure];
 
     private static readonly Assembly[] OrganizationModule =
@@ -43,10 +47,12 @@ public class ModuleBoundaryTests
 
     private static readonly Assembly[] PartiesModule = [PartiesDomain, PartiesApplication, PartiesInfrastructure];
 
-    private static readonly Assembly[] DomainLayers = [IdentityDomain, OrganizationDomain, LedgerDomain, TreasuryDomain, PartiesDomain];
+    private static readonly Assembly[] RatesModule = [RatesDomain, RatesApplication, RatesInfrastructure];
+
+    private static readonly Assembly[] DomainLayers = [IdentityDomain, OrganizationDomain, LedgerDomain, TreasuryDomain, PartiesDomain, RatesDomain];
 
     private static readonly Assembly[] ApplicationLayers =
-        [IdentityApplication, OrganizationApplication, LedgerApplication, TreasuryApplication, PartiesApplication];
+        [IdentityApplication, OrganizationApplication, LedgerApplication, TreasuryApplication, PartiesApplication, RatesApplication];
 
     [Fact]
     public void Identity_sees_Organization_only_through_its_contracts()
@@ -110,6 +116,29 @@ public class ModuleBoundaryTests
                 || (name.StartsWith("Organization.", StringComparison.Ordinal) && name != "Organization.Contracts")
                 || (name.StartsWith("Ledger.", StringComparison.Ordinal) && name != "Ledger.Contracts")
                 || name.StartsWith("Treasury.", StringComparison.Ordinal));
+        }
+    }
+
+    [Fact]
+    public void Rates_sees_other_modules_only_through_their_contracts()
+    {
+        foreach (var assembly in RatesModule)
+        {
+            AssertNoReference(assembly, name =>
+                (name.StartsWith("Identity.", StringComparison.Ordinal) && name != "Identity.Contracts")
+                || name.StartsWith("Organization.", StringComparison.Ordinal)
+                || name.StartsWith("Ledger.", StringComparison.Ordinal)
+                || name.StartsWith("Treasury.", StringComparison.Ordinal)
+                || name.StartsWith("Parties.", StringComparison.Ordinal));
+        }
+    }
+
+    [Fact]
+    public void Nobody_depends_on_Rates_yet()
+    {
+        foreach (var assembly in IdentityModule.Concat(OrganizationModule).Concat(LedgerModule).Concat(TreasuryModule).Concat(PartiesModule))
+        {
+            AssertNoReference(assembly, name => name.StartsWith("Rates.", StringComparison.Ordinal));
         }
     }
 

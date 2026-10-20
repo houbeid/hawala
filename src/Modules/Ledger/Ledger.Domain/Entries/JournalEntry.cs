@@ -92,8 +92,8 @@ public sealed class JournalEntry
 
     /// <summary>
     /// Crée une écriture après avoir vérifié toutes les règles.
-    /// POINT OUVERT : une date d'opération dans le futur n'est pas refusée, faute de règle validée
-    /// (proposition faite : la refuser). À trancher avec le patron, puis ajouter le contrôle ici.
+    /// Règle validée (20 octobre 2026) : une date d'opération dans le futur est refusée ; une date passée est permise.
+    /// « Aujourd'hui » est la date UTC de <paramref name="now"/> (Nouakchott et Dakar sont en UTC+0).
     /// </summary>
     public static Result<JournalEntry> Post(
         DateOnly operationDate,
@@ -111,6 +111,11 @@ public sealed class JournalEntry
         if (header.IsFailure)
         {
             return header.Error;
+        }
+
+        if (operationDate > DateOnly.FromDateTime(now.UtcDateTime))
+        {
+            return LedgerErrors.Entry.FutureDate;
         }
 
         if (lines.Count < 2)

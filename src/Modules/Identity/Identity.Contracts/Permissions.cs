@@ -28,6 +28,15 @@ public static class Permissions
     /// <summary>Voir les soldes des tiers (de son agence ; des deux pour le Superviseur).</summary>
     public const string PartiesViewBalance = "parties.view_balance";
 
+    /// <summary>Fixer ou changer les deux taux du jour (prix d'achat, prix de vente). Superviseur seulement (règle validée).</summary>
+    public const string RatesSetDaily = "rates.set_daily";
+
+    /// <summary>Voir le bénéfice, la commission et le prix d'achat. Superviseur seulement (règle validée).</summary>
+    public const string ProfitView = "profit.view";
+
     public static readonly IReadOnlyList<string> All =
-        [UsersManage, AgenciesManage, TreasuryManage, CashBudgetRead, PartiesCreate, PartiesManage, PartiesViewBalance];
+    [
+        UsersManage, AgenciesManage, TreasuryManage, CashBudgetRead, PartiesCreate, PartiesManage, PartiesViewBalance,
+        RatesSetDaily, ProfitView,
+    ];
 }

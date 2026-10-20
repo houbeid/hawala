@@ -84,6 +84,18 @@ public class JournalEntryTests
         Assert.Equal(Now, result.Value.RecordedAt);
     }
 
+    [Fact]
+    public void Future_operation_date_is_refused_today_is_accepted()
+    {
+        EntryLineDraft[] lines = [Debit(_cashNkc, Mro(100m)), Credit(_bankNkc, Mro(100m))];
+
+        var tomorrow = JournalEntry.Post(Today.AddDays(1), "Cash.In", "Cash", null, Author, "Demain", lines, Now);
+        var today = JournalEntry.Post(Today, "Cash.In", "Cash", null, Author, "Aujourd'hui", lines, Now);
+
+        Assert.Equal(LedgerErrors.Entry.FutureDate, tomorrow.Error);
+        Assert.True(today.IsSuccess);
+    }
+
     // --- Refus -------------------------------------------------------------
 
     [Fact]

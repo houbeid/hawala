@@ -24,14 +24,14 @@ public sealed class LedgerStatementTests(ApiFixture fixture)
         var owner = (await ledger.GetOrCreateSystemAccountAsync(
             SystemAccountRole.OwnerContributions, agency, Currency.MRO, CancellationToken.None)).Value;
 
-        await PostAsync(ledger, new DateOnly(2026, 9, 30), cash, owner, 1_000m, "Avant la période");
-        await PostAsync(ledger, new DateOnly(2026, 10, 5), cash, owner, 500m, "Approvisionnement");
-        var outflow = await PostAsync(ledger, new DateOnly(2026, 10, 10), owner, cash, 300m, "Retrait");
-        await PostAsync(ledger, new DateOnly(2026, 11, 2), cash, owner, 9_999m, "Après la période");
-        var reversal = await ledger.ReverseAsync(outflow, new DateOnly(2026, 10, 12), Author, "Retrait saisi deux fois", CancellationToken.None);
+        await PostAsync(ledger, new DateOnly(2026, 8, 31), cash, owner, 1_000m, "Avant la période");
+        await PostAsync(ledger, new DateOnly(2026, 9, 5), cash, owner, 500m, "Approvisionnement");
+        var outflow = await PostAsync(ledger, new DateOnly(2026, 9, 10), owner, cash, 300m, "Retrait");
+        await PostAsync(ledger, new DateOnly(2026, 10, 2), cash, owner, 9_999m, "Après la période");
+        var reversal = await ledger.ReverseAsync(outflow, new DateOnly(2026, 9, 12), Author, "Retrait saisi deux fois", CancellationToken.None);
         Assert.True(reversal.IsSuccess);
 
-        var result = await ledger.GetStatementAsync(cash, new DateOnly(2026, 10, 1), new DateOnly(2026, 10, 31), CancellationToken.None);
+        var result = await ledger.GetStatementAsync(cash, new DateOnly(2026, 9, 1), new DateOnly(2026, 9, 30), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         var statement = result.Value;

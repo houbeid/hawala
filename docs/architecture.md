@@ -184,6 +184,8 @@ Un seul patron possède deux caisses : Nouakchott en MRO, Dakar en FCFA. Il n'y 
 | Transfert Nouakchott → Dakar | L'ouguiya entre dans la caisse de Nouakchott, le FCFA sort de la caisse de Dakar (et inversement), via le compte « Position de change » |
 | Remplissage des caisses | Hors périmètre. L'agent enregistre seulement « Approvisionnement de caisse » ou « Retrait du patron » (montant seul), via un compte « Apports du patron » rattaché au capital |
 | Caisse insuffisante | Livraison autorisée ; la caisse peut passer en négatif, avec un avertissement sans blocage |
+| Taux du jour | Un seul taux par jour pour les deux agences (prix d'achat, prix de vente) ; sans taux du jour, pas de transfert ; modifiable à tout moment, les transferts existants gardent leurs taux ; prix d'achat visible avec `profit.view` seulement |
+| Transferts (décisions du 20 octobre 2026) | Crédit partiel possible ; modification d'un non livré : texte par l'agence d'envoi, montant / taux / répartition par le Superviseur (contre-passation + nouvelle écriture) ; une seule livraison (répartie) ; pas d'annulation d'un livré pour l'instant ; date d'opération future refusée |
 | Création d'un transfert | Toujours par l'agence d'envoi (source = agence de l'agent, verrouillée) ; l'autre agence le voit en « reçu ». Le Superviseur peut créer dans les deux sens |
 | Expéditeur, bénéficiaire, crédit | Expéditeur et bénéficiaire en texte libre ; crédit activé : la dette va sur un tiers choisi dans la liste (créé s'il n'existe pas), en rouge dans l'agence d'envoi |
 | Périmètre d'un agent | Une seule agence. Il voit les transferts envoyés et reçus par son agence, sa caisse et ses tiers ; jamais ceux de l'autre agence. Mêmes règles à Nouakchott et à Dakar |

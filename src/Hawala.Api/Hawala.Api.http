@@ -161,3 +161,24 @@ Authorization: Bearer {{token}}
 ### Réactiver
 POST {{host}}/api/v1/treasury-accounts/{{treasuryId}}/reactivate
 Authorization: Bearer {{token}}
+
+# --- Taux du jour (5 000 FCFA = ? MRO) --------------------------------------
+# Fixer : Superviseur (rates.set_daily). Lire : tout compte connecté ; prix d'achat seulement avec profit.view.
+
+### Fixer ou changer les taux d'une journée
+PUT {{host}}/api/v1/rates/2026-10-20
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "purchaseRate": 3600,
+  "saleRate": 3650
+}
+
+### Taux du jour
+GET {{host}}/api/v1/rates/today
+Authorization: Bearer {{token}}
+
+### Historique (mois en cours par défaut)
+GET {{host}}/api/v1/rates?from=2026-10-01&to=2026-10-31
+Authorization: Bearer {{token}}

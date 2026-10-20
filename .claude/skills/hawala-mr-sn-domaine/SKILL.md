@@ -68,6 +68,10 @@ Mêmes règles pour Nouakchott et Dakar :
 - **Seul le Superviseur fixe ou modifie un taux.** Le prix de vente du jour s'applique automatiquement à chaque nouveau transfert ; le Superviseur peut le changer pour un transfert précis. Les agents des deux agences ne touchent à aucun taux ; le serveur refuse (permissions `rates.set_daily`, `transfers.edit_rate`).
 - **Commission = écart entre prix de vente et prix d'achat × montant.** Exemple : 5 000 000 FCFA vendus à 3 650 (le client paie 3 650 000 MRO), achetés à 3 600 (3 600 000 MRO) → 50 000 MRO. C'est la formule du bénéfice ci-dessous.
 - Chaque transfert garde ses taux (historisés).
+- **Un seul taux du jour pour les deux agences** (un seul corridor), validé le 20 octobre 2026.
+- **Sans taux fixé pour la date de l'opération, pas de transfert** : l'agent voit « taux du jour non fixé ».
+- **Le taux d'un jour peut être changé à tout moment** par le Superviseur ; les transferts déjà créés gardent leurs taux, seuls les nouveaux prennent le nouveau.
+- **Le prix d'achat n'est visible qu'avec la permission `profit.view`** (Superviseur) ; les agents ne voient que le prix de vente.
 - **Alerte « taux de change inhabituel »** si le taux d'un transfert s'écarte de **plus de 5 %** du taux du jour (avec 3 600 : hors de 3 420 à 3 780). Alerte seulement, sans blocage.
 
 ## Comptes et permissions (validé)
@@ -195,6 +199,10 @@ Dans le code aujourd'hui (20 octobre 2026) : `parties.create`, `parties.view_bal
 - **Expéditeur et bénéficiaire : texte libre** (« معلومات المرسل » / « معلومات المتلقي »), tapé à chaque transfert, sans fiche (validé le 20 octobre 2026).
 - **Crédit activé : la dette va sur un tiers choisi dans la liste des tiers** (pas forcément l'expéditeur) ; s'il n'existe pas, l'agent le crée comme nouveau tiers (validé le 20 octobre 2026). Le tiers passe en rouge dans l'agence d'envoi.
 - « Répartition des paiements » : un paiement peut être réparti sur plusieurs comptes ; le total affecté doit égaler le montant, sauf si le crédit est activé.
+- **Crédit partiel possible** : une partie payée (répartie sur des comptes de trésorerie), le reste à crédit ; part à crédit = montant − total payé (validé le 20 octobre 2026).
+- **Modifier un transfert non livré** : expéditeur, bénéficiaire et note par l'agence d'envoi ; montant, taux et répartition par le Superviseur seul, par contre-passation puis nouvelle écriture (validé le 20 octobre 2026).
+- **Une seule livraison**, éventuellement répartie sur plusieurs méthodes ; pas de livraison en plusieurs fois. **Annuler un transfert livré : pas pour l'instant** (livré est verrouillé).
+- **Une date d'opération dans le futur est refusée** (transferts et grand livre ; validé le 20 octobre 2026).
 - **Livré = le bénéficiaire a reçu son argent.** Il peut être payé par n'importe quel moyen (espèces, Wave, Orange Money, Bankily, banque…) et la livraison peut être répartie ; le total livré doit égaler le montant.
 - Livré et Annulé sont verrouillés ; une correction se fait par contre-passation ; l'annulation exige un motif ; chaque changement est historisé (qui, quand, avant / après).
 - Référence lisible : **format de l'app actuelle** (ex. `TR-RS18-HG01-2026-TGNC-20261019-000043`), décision du 20 octobre 2026 ; sens des codes à préciser (voir Questions ouvertes).

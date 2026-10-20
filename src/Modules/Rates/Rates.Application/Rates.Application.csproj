@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Les autres modules ne sont vus que par leurs Contracts (vérifié par Architecture.Tests). -->
+  <ItemGroup>
+    <ProjectReference Include="..\Rates.Domain\Rates.Domain.csproj" />
+    <ProjectReference Include="..\..\Identity\Identity.Contracts\Identity.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

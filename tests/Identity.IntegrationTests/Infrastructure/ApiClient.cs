@@ -151,6 +151,21 @@ public static class ApiClient
             string.IsNullOrEmpty(queryString) ? $"/api/v1/parties/{id}/statement" : $"/api/v1/parties/{id}/statement?{queryString}",
             accessToken: accessToken);
 
+    public static Task<HttpResponseMessage> SetDailyRateAsync(
+        this HttpClient client, string? accessToken, DateOnly date, decimal? purchaseRate, decimal? saleRate) =>
+        client.SendAsync(
+            HttpMethod.Put,
+            $"/api/v1/rates/{date:yyyy-MM-dd}",
+            body: new { purchaseRate, saleRate },
+            accessToken: accessToken);
+
+    /// <param name="path">« today », une date aaaa-mm-jj, ou vide pour la liste (avec queryString).</param>
+    public static Task<HttpResponseMessage> GetRatesAsync(this HttpClient client, string? accessToken, string path, string? queryString = null) =>
+        client.SendAsync(
+            HttpMethod.Get,
+            $"/api/v1/rates{(string.IsNullOrEmpty(path) ? string.Empty : "/" + path)}{(string.IsNullOrEmpty(queryString) ? string.Empty : "?" + queryString)}",
+            accessToken: accessToken);
+
     /// <summary>Connexion qui doit réussir : renvoie le jeton d'accès et la valeur du cookie.</summary>
     public static async Task<(string AccessToken, string RefreshCookie)> LoginOkAsync(
         this HttpClient client, string login, string password)
