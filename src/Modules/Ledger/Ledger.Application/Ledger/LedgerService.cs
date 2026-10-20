@@ -141,6 +141,42 @@ public sealed class LedgerService(
         return reversal.Value.Id;
     }
 
+    public async Task<Result<AccountStatement>> GetStatementAsync(
+        Guid accountId,
+        DateOnly from,
+        DateOnly to,
+        CancellationToken cancellationToken)
+    {
+        if (from > to)
+        {
+            return LedgerErrors.Statement.PeriodInvalid;
+        }
+
+        var account = (await accounts.GetByIdsAsync([accountId], cancellationToken)).SingleOrDefault();
+        if (account is null)
+        {
+            return LedgerErrors.Account.NotFound;
+        }
+
+        // Solde à la veille du début : même calcul que les soldes, une seule requête.
+        var before = await entries.GetBalancesAsync([accountId], from.AddDays(-1), cancellationToken);
+        var opening = before.GetValueOrDefault(accountId);
+
+        var running = opening;
+        var lines = new List<StatementLine>();
+        foreach (var line in await entries.GetAccountLinesAsync(accountId, from, to, cancellationToken))
+        {
+            var debit = line.Side == EntrySide.Debit ? line.Amount : 0m;
+            var credit = line.Side == EntrySide.Credit ? line.Amount : 0m;
+            running += debit - credit;
+            lines.Add(new StatementLine(
+                line.EntryId, line.OperationDate, line.RecordedAt, line.EntryType, line.Label, line.Reason,
+                line.IsReversal, debit, credit, running));
+        }
+
+        return new AccountStatement(accountId, account.Currency, from, to, opening, lines, running);
+    }
+
     private async Task<Result> ChangeAccountAsync(
         Guid accountId, Action<LedgerAccount> change, CancellationToken cancellationToken)
     {

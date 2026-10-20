@@ -70,7 +70,7 @@ Douze modules, chacun avec son schéma SQL et son API. Ils ne se parlent que par
 
 ## Modèle de données
 
-Les montants sont en `numeric(18,2)` avec leur code devise (MRO ou XOF), jamais en `float`. L'ouguiya est stockée et affichée en MRO (ancienne ouguiya, 1 MRU = 10 MRO), comme dans l'app actuelle (décision validée). Les montants lus sur un relevé bancaire ou Bankily, souvent en MRU, sont convertis à la saisie avec l'unité affichée à côté du champ. Les identifiants sont des UUID v7 (triables par date) ; les références lisibles (TR-NKC-20261013-000052) sont générées par une séquence par agence et par jour.
+Les montants sont en `numeric(18,2)` avec leur code devise (MRO ou XOF), jamais en `float`. L'ouguiya est stockée et affichée en MRO (ancienne ouguiya, 1 MRU = 10 MRO), comme dans l'app actuelle (décision validée). Les montants lus sur un relevé bancaire ou Bankily, souvent en MRU, sont convertis à la saisie avec l'unité affichée à côté du champ. Les identifiants sont des UUID v7 (triables par date) ; les références lisibles reprennent le format de l'app actuelle (ex. TR-RS18-HG01-2026-TGNC-20261019-000043, décision du 20 octobre 2026 ; sens des codes à préciser).
 
 **Arrondi** (validé) :
 
@@ -184,6 +184,8 @@ Un seul patron possède deux caisses : Nouakchott en MRO, Dakar en FCFA. Il n'y 
 | Transfert Nouakchott → Dakar | L'ouguiya entre dans la caisse de Nouakchott, le FCFA sort de la caisse de Dakar (et inversement), via le compte « Position de change » |
 | Remplissage des caisses | Hors périmètre. L'agent enregistre seulement « Approvisionnement de caisse » ou « Retrait du patron » (montant seul), via un compte « Apports du patron » rattaché au capital |
 | Caisse insuffisante | Livraison autorisée ; la caisse peut passer en négatif, avec un avertissement sans blocage |
+| Création d'un transfert | Toujours par l'agence d'envoi (source = agence de l'agent, verrouillée) ; l'autre agence le voit en « reçu ». Le Superviseur peut créer dans les deux sens |
+| Expéditeur, bénéficiaire, crédit | Expéditeur et bénéficiaire en texte libre ; crédit activé : la dette va sur un tiers choisi dans la liste (créé s'il n'existe pas), en rouge dans l'agence d'envoi |
 | Périmètre d'un agent | Une seule agence. Il voit les transferts envoyés et reçus par son agence, sa caisse et ses tiers ; jamais ceux de l'autre agence. Mêmes règles à Nouakchott et à Dakar |
 | Périmètre du Superviseur | Les deux agences : comptes, taux, bilan total |
 | Taux | Seul le Superviseur fixe les deux taux du jour : le prix d'achat (taux du marché, T) et le prix de vente (taux client, appliqué automatiquement aux nouveaux transferts, modifiable par lui pour un transfert précis) ; le serveur refuse tout autre compte |
@@ -254,6 +256,7 @@ L'accès se décide en trois couches, vérifiées côté serveur à chaque requ�
 | Couche | Contenu | Mise en œuvre |
 | --- | --- | --- |
 | Permission | `transfers.create`, `transfers.deliver`, `transfers.cancel`, `transfers.edit_rate` (Superviseur seulement), `rates.set_daily` (Superviseur seulement), `transfers.credit`, `cash.create`, `cash.budget.read`, `cash.budget.save`, `parties.view_balance`, `profit.view`, `balance.view`, `export`, `users.manage`… | Policies ASP.NET Core ; modèle de rôle + ajouts / retraits par compte |
+| Droits par défaut | Validés le 20 octobre 2026 (tableau dans le skill) : l'agent crée, livre, fait crédit, crée des tiers, voit les soldes de son agence, n'annule pas ; le caissier livre, tient la caisse et enregistre son budget ; la consultation lit et exporte | `RolePermissions` (Identity.Domain) |
 | Périmètre | Agence du compte (un agent = une agence ; le Superviseur voit les deux), liste de tiers autorisés | Filtre global EF Core sur chaque requête ; jamais seulement côté interface |
 | Plafond | Montant max par transfert, par jour, crédit max | Validation dans le handler de commande |
 
@@ -352,7 +355,7 @@ La PWA affiche sa version et propose la mise à jour quand une nouvelle version 
 Le cœur comptable vient en premier : tout le reste écrit dedans. Chaque phase se termine par une version utilisable.
 
 1. **Fondations** : dépôt, CI, Docker, Identity (connexion, 2FA), Organisation (pays, agences), squelette PWA bilingue avec thème clair / sombre. Fait : authentification (connexion, rafraîchissement, déconnexion, mot de passe, blocage immédiat), permissions côté serveur, agences NKC et DKR, gestion des comptes par le Superviseur (création, liste, bloquer / débloquer, rôle, agence, réinitialisation du mot de passe, profil) , couleur d'agence ; 253 tests sur PostgreSQL. Restent : CI, squelette PWA ; 2FA reportée (à discuter).
-2. **Grand livre + Trésorerie + Tiers** : comptes, écritures, soldes, fiche et relevé de tiers. Tests sur les équilibres et les contre-passations.
+2. **Grand livre + Trésorerie + Tiers** : comptes, écritures, soldes, fiche et relevé de tiers. Tests sur les équilibres et les contre-passations. **Fait (19 octobre 2026)** : grand livre (partie double par devise, contre-passation, relevé, déclencheurs d'immuabilité et d'équilibre en base), trésorerie (caisses, banques, wallets), tiers (fiche commune, solde et plafond par agence, solde initial, archivage, liste avec totaux, relevé) ; 456 tests sur PostgreSQL.
 3. **Transferts** : taux du jour, formulaire en 3 étapes, répartition des paiements, crédit, livraison, annulation avec motif, historique, temps réel entre agences.
 4. **Caisse** : encaissements, décaissements, virements internes, approvisionnement et retrait du patron, budget de caisse enregistré chaque jour, contrôle de cohérence.
 5. **Bénéfice + Bilan** : calculs, snapshots, tableaux de bord. Validation avec les chiffres de l'app actuelle (536 893 et −261 005).

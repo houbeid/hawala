@@ -68,6 +68,12 @@ public static class LedgerErrors
             Error.Validation("Ledger.Line.CurrencyMismatch", "La devise de la ligne doit être celle de son compte.");
     }
 
+    public static class Statement
+    {
+        public static readonly Error PeriodInvalid =
+            Error.Validation("Ledger.Statement.PeriodInvalid", "La date de début doit être avant ou égale à la date de fin.");
+    }
+
     public static class Reversal
     {
         public static readonly Error ReasonRequired =

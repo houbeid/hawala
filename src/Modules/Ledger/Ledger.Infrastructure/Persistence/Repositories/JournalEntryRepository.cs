@@ -53,5 +53,34 @@ internal sealed class JournalEntryRepository(LedgerDbContext db) : IJournalEntry
             .ToDictionaryAsync(b => b.AccountId, b => b.Balance, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<AccountLine>> GetAccountLinesAsync(
+        Guid accountId,
+        DateOnly from,
+        DateOnly to,
+        CancellationToken cancellationToken)
+    {
+        // « from » est un mot réservé dans la syntaxe de requête LINQ : bornes copiées dans des variables.
+        var start = from;
+        var end = to;
+
+        var lines =
+            from line in db.JournalLines.AsNoTracking()
+            join entry in db.JournalEntries.AsNoTracking() on EF.Property<Guid>(line, "EntryId") equals entry.Id
+            where line.AccountId == accountId && entry.OperationDate >= start && entry.OperationDate <= end
+            orderby entry.OperationDate, entry.RecordedAt, line.Id
+            select new AccountLine(
+                entry.Id,
+                entry.OperationDate,
+                entry.RecordedAt,
+                entry.EntryType,
+                entry.Label,
+                entry.Reason,
+                entry.ReversesEntryId != null,
+                line.Side,
+                line.Amount);
+
+        return await lines.ToListAsync(cancellationToken);
+    }
+
     public void Add(JournalEntry entry) => db.JournalEntries.Add(entry);
 }

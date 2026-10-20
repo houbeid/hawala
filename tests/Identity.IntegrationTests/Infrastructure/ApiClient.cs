@@ -138,6 +138,19 @@ public static class ApiClient
         client.SendAsync(
             HttpMethod.Put, $"/api/v1/parties/{partyId}/agencies/{agencyId}/credit-limit", body: new { creditLimit }, accessToken: accessToken);
 
+    public static Task<HttpResponseMessage> ArchivePartyAsync(this HttpClient client, string? accessToken, Guid id) =>
+        client.SendAsync(HttpMethod.Post, $"/api/v1/parties/{id}/archive", accessToken: accessToken);
+
+    public static Task<HttpResponseMessage> UnarchivePartyAsync(this HttpClient client, string? accessToken, Guid id) =>
+        client.SendAsync(HttpMethod.Post, $"/api/v1/parties/{id}/unarchive", accessToken: accessToken);
+
+    /// <param name="queryString">agencyId, from, to (aaaa-mm-jj), déjà encodés, sans « ? », ou null.</param>
+    public static Task<HttpResponseMessage> GetPartyStatementAsync(this HttpClient client, string? accessToken, Guid id, string? queryString = null) =>
+        client.SendAsync(
+            HttpMethod.Get,
+            string.IsNullOrEmpty(queryString) ? $"/api/v1/parties/{id}/statement" : $"/api/v1/parties/{id}/statement?{queryString}",
+            accessToken: accessToken);
+
     /// <summary>Connexion qui doit réussir : renvoie le jeton d'accès et la valeur du cookie.</summary>
     public static async Task<(string AccessToken, string RefreshCookie)> LoginOkAsync(
         this HttpClient client, string login, string password)

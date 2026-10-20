@@ -198,6 +198,36 @@ public class PartyTests
         Assert.All(party.AgencyAccounts, a => Assert.Null(a.CreditLimit));
     }
 
+    // --- Archivage ----------------------------------------------------------
+
+    [Fact]
+    public void Party_with_zero_balances_is_archived_then_unarchived()
+    {
+        var party = WithBothAgencies();
+        var zero = party.AgencyAccounts.ToDictionary(a => a.LedgerAccountId, _ => 0m);
+
+        Assert.True(party.Archive(zero).IsSuccess);
+        Assert.True(party.IsArchived);
+        Assert.Equal(PartiesErrors.Party.AlreadyArchived, party.Archive(zero).Error);
+        Assert.Equal(PartiesErrors.Party.Archived, party.ChangeOpeningBalance(Nouakchott, 100m).Error);
+
+        Assert.True(party.Unarchive().IsSuccess);
+        Assert.False(party.IsArchived);
+        Assert.Equal(PartiesErrors.Party.NotArchived, party.Unarchive().Error);
+    }
+
+    [Fact]
+    public void Money_left_in_either_agency_blocks_archiving()
+    {
+        var party = WithBothAgencies();
+        var dakarAccount = party.AgencyAccounts.Single(a => a.AgencyId == Dakar).LedgerAccountId;
+        var balances = party.AgencyAccounts.ToDictionary(
+            a => a.LedgerAccountId, a => a.LedgerAccountId == dakarAccount ? -1m : 0m);
+
+        Assert.Equal(PartiesErrors.Party.BalanceNotZero, party.Archive(balances).Error);
+        Assert.False(party.IsArchived);
+    }
+
     // --- Comptes par agence ------------------------------------------------
 
     [Fact]

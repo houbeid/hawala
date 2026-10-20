@@ -25,16 +25,41 @@ public class RolePermissionsTests
         Assert.DoesNotContain(Permissions.AgenciesManage, granted);
     }
 
+    // Droits par défaut validés le 20 octobre 2026 (tableau du skill du projet).
+
     [Fact]
-    public void Agent_can_create_a_party_but_not_modify_one()
+    public void Agent_creates_parties_and_sees_balances_but_manages_nothing()
     {
         var granted = RolePermissions.For(RoleTemplate.Agent);
 
         Assert.Contains(Permissions.PartiesCreate, granted);
+        Assert.Contains(Permissions.PartiesViewBalance, granted);
+        Assert.Contains(Permissions.CashBudgetRead, granted);
         Assert.DoesNotContain(Permissions.PartiesManage, granted);
-        Assert.DoesNotContain(Permissions.PartiesViewBalance, granted);
         Assert.DoesNotContain(Permissions.TreasuryManage, granted);
-        Assert.DoesNotContain(Permissions.CashBudgetRead, granted);
+    }
+
+    [Fact]
+    public void Cashier_reads_the_cash_budget_but_not_party_balances()
+    {
+        var granted = RolePermissions.For(RoleTemplate.Cashier);
+
+        Assert.Contains(Permissions.CashBudgetRead, granted);
+        Assert.DoesNotContain(Permissions.PartiesViewBalance, granted);
+        Assert.DoesNotContain(Permissions.PartiesCreate, granted);
+        Assert.DoesNotContain(Permissions.PartiesManage, granted);
+    }
+
+    [Fact]
+    public void Read_only_reads_balances_and_creates_nothing()
+    {
+        var granted = RolePermissions.For(RoleTemplate.ReadOnly);
+
+        Assert.Contains(Permissions.PartiesViewBalance, granted);
+        Assert.Contains(Permissions.CashBudgetRead, granted);
+        Assert.DoesNotContain(Permissions.PartiesCreate, granted);
+        Assert.DoesNotContain(Permissions.PartiesManage, granted);
+        Assert.DoesNotContain(Permissions.TreasuryManage, granted);
     }
 
     [Fact]

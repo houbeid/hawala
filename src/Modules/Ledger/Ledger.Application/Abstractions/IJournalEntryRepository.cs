@@ -27,5 +27,15 @@ public interface IJournalEntryRepository
         DateOnly? asOf,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Lignes d'un compte entre deux dates d'opération incluses, avec l'en-tête de leur écriture, dans l'ordre du relevé
+    /// (date d'opération, instant d'enregistrement, puis id). Lecture seule.
+    /// </summary>
+    Task<IReadOnlyList<AccountLine>> GetAccountLinesAsync(
+        Guid accountId,
+        DateOnly from,
+        DateOnly to,
+        CancellationToken cancellationToken);
+
     void Add(JournalEntry entry);
 }

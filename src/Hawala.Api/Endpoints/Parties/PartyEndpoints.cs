@@ -4,8 +4,10 @@ using Hawala.Api.Errors;
 using Hawala.SharedKernel.Messaging;
 using Identity.Contracts;
 using Parties.Application.Features.Parties;
+using Parties.Application.Features.Parties.ArchiveParty;
 using Parties.Application.Features.Parties.CreateParty;
 using Parties.Application.Features.Parties.GetParty;
+using Parties.Application.Features.Parties.GetPartyStatement;
 using Parties.Application.Features.Parties.ListParties;
 using Parties.Application.Features.Parties.SetCreditLimit;
 using Parties.Application.Features.Parties.SetOpeningBalance;
@@ -53,6 +55,9 @@ public static class PartyEndpoints
         group.MapGet("", ListParties).RequireAuthorization();
         group.MapGet("/{id:guid}", GetParty).RequireAuthorization();
 
+        // Le relevé montre des montants : parties.view_balance est vérifiée par le handler (code d'erreur précis).
+        group.MapGet("/{id:guid}/statement", GetPartyStatement).RequireAuthorization();
+
         // Règle validée : un agent peut créer un tiers ; seul le Superviseur le modifie.
         group.MapPost("", CreateParty).RequirePermission(Permissions.PartiesCreate);
         group.MapPut("/{id:guid}", UpdateParty).RequirePermission(Permissions.PartiesManage);
@@ -60,8 +65,24 @@ public static class PartyEndpoints
             .RequirePermission(Permissions.PartiesManage);
         group.MapPut("/{id:guid}/agencies/{agencyId:guid}/credit-limit", SetCreditLimit)
             .RequirePermission(Permissions.PartiesManage);
+        group.MapPost("/{id:guid}/archive", ArchiveParty).RequirePermission(Permissions.PartiesManage);
+        group.MapPost("/{id:guid}/unarchive", UnarchiveParty).RequirePermission(Permissions.PartiesManage);
 
         return app;
+    }
+
+    private static async Task<IResult> ArchiveParty(
+        Guid id, ICommandHandler<ArchivePartyCommand> handler, CancellationToken cancellationToken)
+    {
+        var result = await handler.Handle(new ArchivePartyCommand(id), cancellationToken);
+        return result.IsSuccess ? TypedResults.NoContent() : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> UnarchiveParty(
+        Guid id, ICommandHandler<UnarchivePartyCommand> handler, CancellationToken cancellationToken)
+    {
+        var result = await handler.Handle(new UnarchivePartyCommand(id), cancellationToken);
+        return result.IsSuccess ? TypedResults.NoContent() : result.Error.ToProblem();
     }
 
     private static async Task<IResult> SetCreditLimit(
@@ -143,6 +164,25 @@ public static class PartyEndpoints
         }
 
         var result = await handler.Handle(new GetPartyQuery(actorId, id, agencyId), cancellationToken);
+
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> GetPartyStatement(
+        Guid id,
+        Guid? agencyId,
+        DateOnly? from,
+        DateOnly? to,
+        ClaimsPrincipal user,
+        IQueryHandler<GetPartyStatementQuery, PartyStatement> handler,
+        CancellationToken cancellationToken)
+    {
+        if (!user.TryGetAccountId(out var actorId))
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        var result = await handler.Handle(new GetPartyStatementQuery(actorId, id, agencyId, from, to), cancellationToken);
 
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.Error.ToProblem();
     }

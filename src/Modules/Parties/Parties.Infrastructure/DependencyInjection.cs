@@ -7,8 +7,10 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Parties.Application.Abstractions;
 using Hawala.SharedKernel.Messaging;
 using Parties.Application.Features.Parties;
+using Parties.Application.Features.Parties.ArchiveParty;
 using Parties.Application.Features.Parties.CreateParty;
 using Parties.Application.Features.Parties.GetParty;
+using Parties.Application.Features.Parties.GetPartyStatement;
 using Parties.Application.Features.Parties.ListParties;
 using Parties.Application.Features.Parties.SetCreditLimit;
 using Parties.Application.Features.Parties.SetOpeningBalance;
@@ -43,6 +45,7 @@ public static class DependencyInjection
 
         services.AddScoped<IQueryHandler<ListPartiesQuery, PartyList>, ListPartiesQueryHandler>();
         services.AddScoped<IQueryHandler<GetPartyQuery, PartySummary>, GetPartyQueryHandler>();
+        services.AddScoped<IQueryHandler<GetPartyStatementQuery, PartyStatement>, GetPartyStatementQueryHandler>();
 
         // Une seule table, un seul enregistrement : pas de transaction explicite.
         services.AddScoped<ICommandHandler<UpdatePartyCommand>, UpdatePartyCommandHandler>();
@@ -51,6 +54,8 @@ public static class DependencyInjection
         // Écrit dans deux schémas (parties + ledger) : une seule transaction commune.
         services.AddSharedTransactional<CreatePartyCommand, Guid, CreatePartyCommandHandler>();
         services.AddSharedTransactional<SetOpeningBalanceCommand, SetOpeningBalanceCommandHandler>();
+        services.AddSharedTransactional<ArchivePartyCommand, ArchivePartyCommandHandler>();
+        services.AddSharedTransactional<UnarchivePartyCommand, UnarchivePartyCommandHandler>();
 
         return services;
     }

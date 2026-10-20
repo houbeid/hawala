@@ -21,7 +21,7 @@ public sealed class ListTreasuryAccountsTests(ApiFixture fixture)
     // --- Périmètre par agence ----------------------------------------------
 
     [Fact]
-    public async Task Agent_sees_only_the_accounts_of_its_agency_and_no_balance()
+    public async Task Agent_sees_only_the_accounts_of_its_agency_with_their_balances()
     {
         var factory = await fixture.GetFactoryAsync();
         using var client = factory.CreateApiClient();
@@ -39,8 +39,8 @@ public sealed class ListTreasuryAccountsTests(ApiFixture fixture)
         Assert.DoesNotContain(accounts, a => a.GetProperty("id").GetGuid() == otherId);
         Assert.All(accounts, a => Assert.Equal(nouakchott, a.GetProperty("agencyId").GetGuid()));
 
-        // Règle validée : un agent voit les comptes mais pas leurs soldes (pas de cash.budget.read).
-        Assert.All(accounts, a => Assert.Equal(JsonValueKind.Null, a.GetProperty("balance").ValueKind));
+        // Droits par défaut validés le 20 octobre 2026 : l'agent a cash.budget.read, il voit les soldes de son agence.
+        Assert.Equal(0m, accounts.Single(a => a.GetProperty("id").GetGuid() == ownId).GetProperty("balance").GetDecimal());
     }
 
     [Fact]
@@ -64,7 +64,7 @@ public sealed class ListTreasuryAccountsTests(ApiFixture fixture)
     }
 
     [Fact]
-    public async Task Agent_reads_an_account_of_its_own_agency_without_balance()
+    public async Task Agent_reads_an_account_of_its_own_agency_with_its_balance()
     {
         var factory = await fixture.GetFactoryAsync();
         using var client = factory.CreateApiClient();
@@ -80,7 +80,7 @@ public sealed class ListTreasuryAccountsTests(ApiFixture fixture)
         var account = await response.ReadJsonAsync();
         Assert.Equal("Bank", account.GetProperty("type").GetString());
         Assert.Equal("XOF", account.GetProperty("currency").GetString());
-        Assert.Equal(JsonValueKind.Null, account.GetProperty("balance").ValueKind);
+        Assert.Equal(0m, account.GetProperty("balance").GetDecimal());
     }
 
     // --- Superviseur et soldes ---------------------------------------------

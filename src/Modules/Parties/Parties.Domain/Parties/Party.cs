@@ -236,6 +236,39 @@ public sealed class Party
         return Result.Success();
     }
 
+    /// <summary>
+    /// Règle validée : pas de suppression, seulement l'archivage, et seulement à solde nul dans les deux agences.
+    /// </summary>
+    /// <param name="balancesByLedgerAccount">Soldes actuels de ses comptes au grand livre, lus par l'Application.</param>
+    public Result Archive(IReadOnlyDictionary<Guid, decimal> balancesByLedgerAccount)
+    {
+        ArgumentNullException.ThrowIfNull(balancesByLedgerAccount);
+
+        if (IsArchived)
+        {
+            return PartiesErrors.Party.AlreadyArchived;
+        }
+
+        if (_agencyAccounts.Exists(a => balancesByLedgerAccount.GetValueOrDefault(a.LedgerAccountId) != 0m))
+        {
+            return PartiesErrors.Party.BalanceNotZero;
+        }
+
+        IsArchived = true;
+        return Result.Success();
+    }
+
+    public Result Unarchive()
+    {
+        if (!IsArchived)
+        {
+            return PartiesErrors.Party.NotArchived;
+        }
+
+        IsArchived = false;
+        return Result.Success();
+    }
+
     /// <summary>Texte facultatif : espaces retirés, vide = absent.</summary>
     private static string? Optional(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();

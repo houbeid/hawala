@@ -52,6 +52,16 @@ public interface ILedger
         string? reason,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Relevé d'un compte entre deux dates d'opération incluses : solde de départ, lignes dans l'ordre
+    /// (date d'opération, puis instant d'enregistrement), solde après chaque ligne, solde de fin.
+    /// </summary>
+    Task<Result<AccountStatement>> GetStatementAsync(
+        Guid accountId,
+        DateOnly from,
+        DateOnly to,
+        CancellationToken cancellationToken);
+
     /// <summary>Soldes (débit − crédit) des comptes demandés, jusqu'à une date d'opération incluse si elle est donnée.</summary>
     Task<Result<IReadOnlyList<AccountBalance>>> GetBalancesAsync(
         IReadOnlyCollection<Guid> accountIds,

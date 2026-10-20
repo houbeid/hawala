@@ -91,7 +91,30 @@ Mêmes règles pour Nouakchott et Dakar :
 - **Couleur d'agence** : le Superviseur la change (permission `agencies.manage`). **Chaque agence a sa propre couleur** : deux agences ne peuvent pas avoir la même (elle sert à distinguer Nouakchott de Dakar d'un coup d'œil). Changer le **nom** d'une agence : reporté, pas maintenant. Le code (NKC, DKR) ne change jamais.
 - **Le Superviseur peut déplacer un compte d'une agence à l'autre** (`ChangeAgency`, SecurityVersion incrémentée).
 - **Le mot de passe temporaire est généré par l'app** (format `xxx-xxx-xxx`, sans 0/O/1/l/I, au moins un chiffre), renvoyé une seule fois dans la réponse de création.
-- Permissions définies dans `Identity.Contracts.Permissions` : `users.manage`, `agencies.manage` (d'autres s'ajouteront avec les modules). Superviseur = toutes ; Agent, Caissier, Consultation = aucune pour l'instant (POINT OUVERT : droits par défaut à faire valider par le patron). Endpoints protégés par `.RequirePermission(Permissions.X)` ; le contrôle passe par `IPermissionChecker`, lu côté serveur (option B).
+- Permissions définies dans `Identity.Contracts.Permissions` (une permission n'y entre qu'avec son premier endpoint). Endpoints protégés par `.RequirePermission(Permissions.X)` ; le contrôle passe par `IPermissionChecker`, lu côté serveur (option B).
+
+### Droits par défaut des rôles (validés le 20 octobre 2026)
+
+Chaque rôle ne voit que son agence (sauf le Superviseur). Ajustables compte par compte en phase 6.
+
+| Permission | Superviseur | Agent | Caissier | Consultation |
+|---|---|---|---|---|
+| Créer un transfert | ✔ | ✔ | ✘ | ✘ |
+| Livrer un transfert | ✔ | ✔ | ✔ | ✘ |
+| Annuler un transfert (motif obligatoire) | ✔ | ✘ | ✘ | ✘ |
+| Activer le crédit (dans le plafond) | ✔ | ✔ | ✘ | ✘ |
+| Modifier le taux d'un transfert ; fixer les taux du jour | ✔ | ✘ | ✘ | ✘ |
+| Créer un tiers (`parties.create`) | ✔ | ✔ | ✘ | ✘ |
+| Modifier un tiers (`parties.manage`) | ✔ | ✘ | ✘ | ✘ |
+| Voir les soldes des tiers de son agence (`parties.view_balance`) | ✔ | ✔ | ✘ | ✔ |
+| Encaissement / décaissement manuel (phase 4) | ✔ | ✔ | ✔ | ✘ |
+| Lire le budget de la caisse (`cash.budget.read`, dont les soldes des comptes de trésorerie) | ✔ | ✔ | ✔ | ✔ |
+| Enregistrer le budget de la caisse | ✔ | ✘ | ✔ | ✘ |
+| Bénéfice, bilan, les quatre cartes | ✔ | ✘ | ✘ | ✘ |
+| Exporter | ✔ | ✘ | ✘ | ✔ |
+| Gérer comptes, agences, caisses | ✔ | ✘ | ✘ | ✘ |
+
+Dans le code aujourd'hui (20 octobre 2026) : `parties.create`, `parties.view_balance`, `cash.budget.read` appliqués selon ce tableau ; les permissions des transferts, de la caisse et de l'export seront ajoutées avec leurs endpoints, et données aux rôles selon ce tableau.
 
 ## Authentification (validé, implémenté)
 
@@ -152,26 +175,45 @@ Mêmes règles pour Nouakchott et Dakar :
 - **Téléphone unique** quand il est renseigné (doublon interdit). **NNI unique** quand il est renseigné, sans contrôle de format (les deux pays diffèrent).
 - **Nom non unique** : deux tiers peuvent porter le même nom ; le téléphone les distingue.
 - **Plafond de crédit par tiers et par agence**, dans la devise de l'agence, fixé par le Superviseur ; dépassement = **blocage** du crédit (appliqué en phase 3). Sans plafond fixé : pas de limite. **Le plafond est positif ou nul : 0 = aucun crédit autorisé ; vide = pas de plafond** ; un plafond négatif est refusé (validé le 19 octobre 2026).
-- **Un agent peut créer un tiers** (permission `parties.create`, donnée au rôle Agent ; correction du 19 octobre 2026). **Seul le Superviseur le modifie** : fiche, solde initial, plafond, « dans le bilan », archivage (permission `parties.manage`). POINT OUVERT : le droit de créer pour les rôles Caissier et Consultation.
+- **Un agent peut créer un tiers** (permission `parties.create`, donnée au rôle Agent ; correction du 19 octobre 2026). **Seul le Superviseur le modifie** : fiche, solde initial, plafond, « dans le bilan », archivage (permission `parties.manage`).
 - **Solde initial : jamais à la création**, toujours par l'action « solde initial par agence » (écriture d'ouverture de la différence), pour un seul chemin tracé. **Date d'opération choisie par le Superviseur** (date du jour par défaut), pour dater les soldes de départ au jour de mise en service lors de la migration (validé le 19 octobre 2026).
 - Téléphone et NNI stockés en clair pour l'instant ; chiffrement au repos + empreinte pour l'unicité et la recherche en phase 6.
-- **Pas de suppression : archivage**, seulement à solde nul dans les deux agences.
+- **Pas de suppression : archivage**, seulement à solde nul dans les deux agences. Archiver ferme aussi les comptes du tiers au grand livre (plus aucune opération possible), désarchiver les rouvre : choix de cohérence avec la désactivation d'un compte de trésorerie (19 octobre 2026).
 - **Soldes des tiers visibles avec la permission `parties.view_balance`** (comme les soldes de caisse avec `cash.budget.read`).
 - **« Dans le bilan » vrai par défaut**, modifiable par le Superviseur seulement.
+- **Relevé d'un tiers** (par agence) : solde au début de la période, chaque écriture avec le solde après la ligne, solde à la fin. **Sans dates : le mois en cours** (du 1er à aujourd'hui) ; `from` / `to` modifiables. Visible avec `parties.view_balance`, dans le périmètre de l'agence (validé le 19 octobre 2026).
 - **Un solde à zéro n'est ni rouge ni vert** (validé le 19 octobre 2026) : il n'apparaît ni avec « عليه » ni avec « له », seulement avec « Tous » (l'app actuelle l'affichait en rouge).
 
 ## Transferts (validé)
 
 - Montant de référence en FCFA (entier). **Montant MRO = FCFA × prix de vente / 5000**, arrondi selon « Arrondi ».
 - Les taux de chaque transfert sont fixés par le Superviseur (voir « Taux et commission »).
+- **C'est l'agence d'envoi qui crée le transfert** (validé le 20 octobre 2026) : l'agence source est celle de l'agent, verrouillée ; l'autre agence le voit arriver en « reçu », à livrer. Le Superviseur peut créer dans les deux sens. On choisit l'agence source et l'agence destination ; « envoyé » / « reçu » dépend de l'agence qui regarde.
+- **Format du taux partout : « 5 000 FCFA = ? MRO »** (3600 = 5 000 FCFA valent 3 600 MRO).
 - Sens : Envoyé / Reçu. Statuts : Non livré → Livré, ou Non livré → Annulé. Nouvelle app : « En attente de synchro » (hors ligne) et « Rejeté » (refus serveur).
 - « Activer le crédit » : le client paie plus tard → dette sur le tiers (rouge).
+- **Expéditeur et bénéficiaire : texte libre** (« معلومات المرسل » / « معلومات المتلقي »), tapé à chaque transfert, sans fiche (validé le 20 octobre 2026).
+- **Crédit activé : la dette va sur un tiers choisi dans la liste des tiers** (pas forcément l'expéditeur) ; s'il n'existe pas, l'agent le crée comme nouveau tiers (validé le 20 octobre 2026). Le tiers passe en rouge dans l'agence d'envoi.
 - « Répartition des paiements » : un paiement peut être réparti sur plusieurs comptes ; le total affecté doit égaler le montant, sauf si le crédit est activé.
 - **Livré = le bénéficiaire a reçu son argent.** Il peut être payé par n'importe quel moyen (espèces, Wave, Orange Money, Bankily, banque…) et la livraison peut être répartie ; le total livré doit égaler le montant.
 - Livré et Annulé sont verrouillés ; une correction se fait par contre-passation ; l'annulation exige un motif ; chaque changement est historisé (qui, quand, avant / après).
-- Référence lisible par agence et par jour (ex. TR-NKC-20261013-000052).
+- Référence lisible : **format de l'app actuelle** (ex. `TR-RS18-HG01-2026-TGNC-20261019-000043`), décision du 20 octobre 2026 ; sens des codes à préciser (voir Questions ouvertes).
 - App actuelle : le bouton « + » noir en bas de l'écran de modification d'un transfert (تغيير الحوالة) ouvre simplement un **nouveau transfert vide** (écran إضافة الحوالة), comme « Ajouter » dans la liste. Il ne livre pas, n'annule pas et ne recopie rien : c'est un raccourci de création, sans effet sur le backend. Le garder ou non dans la nouvelle interface se décidera avec les maquettes.
 - Écran des transferts : cartes du jour « entrées · Nouakchott », « sorties · Nouakchott » (MRO), « montant envoyé · Dakar », « montant livré · Dakar » (FCFA), taux du jour et bénéfice. **Ces cartes sont visibles par le Superviseur seulement.**
+
+### Liste des transferts de l'app actuelle (capture du 20 octobre 2026)
+
+- Onglets « الحوالة » (Transfert) et « الأرباح » (Bénéfices). Recherche, « 22 / 22 نتيجة », total des non livrés en tête (« غير مسلمة », en MRO), période « من / إلى » avec l'heure (par défaut aujourd'hui 00:00 → 23:59), bouton d'export, « + إضافة ».
+- Filtres : « المرحلة » (étape = statut : non livré « غير مسلمة », livré, annulé « ملغى ») et « اتجاه الحوالة » (sens : envoyé, reçu « مستلم »).
+- Panneau sous la flèche (capture du 20 octobre 2026) : sélecteur d'agence, puis les cartes « دخل · نواكشوط » (entrées, MRO), « صرف · نواكشوط » (sorties, MRO), « المبلغ المرسل · دكار » (envoyé, FCFA), « المبلغ المسلم · دكار » (livré, FCFA), « الربح » (bénéfice, MRO), « 5,000 FCFA = ? » (le taux, au format de toute l'app). Puis une section « الأرباح » (Bénéfices) « اليومية » (journalière) avec un champ « 5,000 FCFA = ? MRO » : dans l'app actuelle, le prix d'achat T est saisi là ; dans la nouvelle app, il vient des taux du jour fixés par le Superviseur.
+- Carte : date et heure, statut, référence au format `#TR-RS18-HG01-2026-TGNC-20261019-000043` (différent du format validé `TR-NKC-20261019-000043` ; sens des codes RS18, HG01, TGNC inconnu), « المبلغ المراد تسليمه » (montant à livrer, ex. 10 000 000 MRO pour un transfert Dakar → Nouakchott), taux « 5 000 FCFA = ? » (ex. 3 590,00), expéditeur → bénéficiaire, sens « دكار → نواكشوط ».
+
+### Création d'un transfert dans l'app actuelle (capture du 20 octobre 2026)
+
+- Un seul écran : statut de départ « غير مسلمة » (non livré) ; **« المبلغ (FCFA) » obligatoire : on saisit le FCFA** ; taux « 5,000 FCFA = ? MRO » obligatoire (saisi par l'agent) ; « المبلغ (MRO) » calculé (« MRO » à côté n'est qu'une étiquette, pas un bouton) ; « تفعيل الدين » (activer le crédit) ; « توزيع طرق الدفع » (répartition des paiements, +), ligne « Espèce نقدا », « المجموع الموزع » (total réparti) ; « معلومات المرسل » et « معلومات المتلقي » (expéditeur, bénéficiaire, obligatoires) ; « ملاحظة » (note) ; « حفظ » (enregistrer).
+- Bas de l'écran : « تاريخ العملية » (date de l'opération, **avec l'heure**, modifiable : ex. 20/10/2026 0:51) ; « المصدر » (source, obligatoire, ex. Nouakchott) et « الوجهة » (destination, obligatoire, ex. Dakar). Le sens n'est pas un choix envoyé / reçu : on choisit l'agence source et l'agence destination ; « envoyé » ou « reçu » dépend de l'agence qui regarde. Le transfert gardera date et heure ; le grand livre, la date d'opération.
+- **Confirme la règle validée : le FCFA (entier) est le montant de référence, le MRO est calculé.** Le transfert affiché à 10 000 000 MRO au taux 3 590 correspond à 13 927 577 FCFA saisis (× 3590 / 5000 = 10 000 000,29, arrondi à 10 000 000).
+- Différences voulues dans la nouvelle app : le taux n'est pas saisi par l'agent (prix de vente du jour automatique, modifiable par le Superviseur seul) ; création en 3 étapes ; code de retrait (nouveau).
 
 ### Code de retrait (validé)
 
@@ -199,6 +241,18 @@ Valeur de référence vérifiée : capital 165 500 000, résultat net **−261 0
 ## Tableau de bord (validé)
 
 Nombre de transferts, livrés / non livrés, **taux de livraison par agence**, rapport caisse / capital / bénéfice.
+
+App actuelle (capture du 20 octobre 2026), écran Superviseur qui réunit bilan et tableau de bord :
+- En tête : « الميزانية العامة » (bilan général) 164 132 887 MRO ; « رأس المال الأولي » (capital initial) 165 500 000 MRO ; la formule affichée « خزينة جميع الصناديق + نتيجة الأطراف - الحوالات غير المسلمة » (trésorerie de toutes les caisses + résultat tiers − transferts non livrés) ; « النتيجة الصافية » (résultat net) −1 367 113 MRO, −0,83 %, en rouge. Vérifié : 164 132 887 − 165 500 000 = −1 367 113.
+- Champ « 5 000 FCFA = ? MRO » (taux du bilan, ex. 3600) ; boutons « تحديث » (Actualiser) et « حفظ الميزانية » (Enregistrer le bilan).
+- Quatre cartes, par agence et dans sa devise (Nouakchott MRO, Dakar FCFA), avec un filtre de période (« اليوم » = aujourd'hui) : « المبلغ المرسل » (montant envoyé, avec le nombre de transferts), « الحوالات غير المسلمة » (transferts non livrés), « المبلغ المسلم » (montant livré), « نسبة التسليم » (taux de livraison, %).
+- En bas, le détail de la formule : « خزينة جميع الصناديق » (trésorerie de toutes les caisses), « الحوالات غير المسلمة », « نتيجة الأطراف » (résultat tiers).
+- Les cartes dépendent des transferts (phase 3) ; le bilan et son enregistrement sont en phase 5.
+- Suite de l'écran : « خزينة جميع الصناديق » 277 744 197 MRO = « خزينة النقد » (espèces) 49 730 527 + « خزينة البنوك » (banques) 228 013 670 ; « الحوالات غير المسلمة » 0 ; « نتيجة الأطراف » −113 611 309 MRO = « ديون الأطراف - مستحقات الأطراف » (ce que les tiers nous doivent − ce qu'on leur doit) ; « الميزانية نواكشوط » 48 497 821 MRO et « الميزانية دكار » 160 604 259 FCFA (avec un lien vers le détail) ; « تفاصيل المكونات » (détail des composants, dépliable).
+- **Vérifié sur ces chiffres : bilan général = budget de Nouakchott + budget de Dakar converti au taux du bilan** : 48 497 821 + 160 604 259 × 3600 / 5000 = 164 132 887,48 → affiché 164 132 887. Par les composants arrondis un à un : 277 744 197 − 113 611 309 = 164 132 888 : l'écart d'une unité confirme la règle d'arrondi 4 (pleine précision, seul le total affiché est arrondi). En phase 5, le bilan réutilisera le budget de chaque agence (phase 4).
+- Les banques y sont comptées dans la trésorerie, pas dans le résultat des tiers : l'app actuelle sépare déjà banques et tiers dans ses calculs.
+- Fin du détail des composants : « ديون الأطراف » (ce que les tiers nous doivent) 418 613 857 MRO ; une ligne cachée, déduite « مستحقات الأطراف » (ce qu'on leur doit) 532 225 166 MRO (418 613 857 − 532 225 166 = −113 611 309) ; « الأرباح المحفوظة » (bénéfices enregistrés) 430 074 MRO.
+- « الموازين المحفوظة » (bilans enregistrés, 5) : onglets « Graphique » / « Liste » ; courbe du bilan général et courbe du capital initial par date (24/09, 25/09, 28/09, 10/10, 13/10/2026). Le capital initial varie d'un bilan à l'autre (≈ 157 M fin septembre, ≈ 165,5 M mi-octobre). C'est le « BalanceSnapshot » prévu en phase 5.
 
 ## Moteur comptable
 
@@ -235,7 +289,7 @@ Serveur en Europe accepté. Départ : 1 VPS OVHcloud en France (type VPS-2, 4 vC
 ## Plan de réalisation
 
 1. Fondations (solution, CI, Docker, Identité, Organisation, squelette PWA bilingue) — faits : authentification complète, permissions côté serveur, module Organisation (agences), gestion des comptes par le Superviseur (création, liste, bloquer / débloquer, rôle, agence, réinitialisation, profil). couleur d'agence. Restent : CI, squelette PWA ; 2FA du Superviseur reportée (à discuter).
-2. Grand livre + Trésorerie + Tiers
+2. Grand livre + Trésorerie + Tiers — **fait** (19 octobre 2026).
 3. Transferts
 4. Caisse et clôture journalière (approvisionnement / retrait du patron, budget de la caisse, contrôle de cohérence)
 5. Bénéfice + Bilan
@@ -248,11 +302,15 @@ Valider les maquettes des écrans de transfert (création en 3 étapes, livraiso
 
 ## Questions ouvertes
 
+- **Transferts (phase 3)** : format de référence de l'app actuelle retenu (`TR-RS18-HG01-2026-TGNC-20261019-000043`) : que signifient RS18, HG01, 2026 et TGNC, et comment se génèrent-ils ?
+
+- Bilan (phase 5) : « الأرباح المحفوظة » (bénéfices enregistrés, 430 074 MRO sur la capture) apparaît parmi les composants du bilan mais pas dans sa formule : qu'est-ce exactement, et entre-t-il dans le calcul ?
+- Bilan (phase 5) : le capital initial varie d'un bilan enregistré à l'autre : saisi à la main à chaque bilan, ou calculé (capital de départ + apports du patron − retraits du patron) ?
+
 - Migration (phase 8) : dans l'app actuelle, les deux agences sont aussi des tiers (« فرع دكار », « فرع انواكشوط »), avec un solde (ex. −148 116 001 MRO). La nouvelle app n'a pas de compte de dette entre agences : ces tiers ne sont pas repris tels quels ; comment traiter leur solde à la bascule ?
 - Liste des tiers : rôle du bouton « Calcul général » (« حساب عام »).
 
 
-- Droits par défaut des rôles Agent, Caissier et Consultation ?
 - 2FA TOTP du Superviseur : **reportée**, à discuter avec l'utilisateur avant tout code (que peut faire un Superviseur qui ne l'a pas encore activée ?).
 - Audit de « qui a créé / modifié ce compte » : à brancher quand le module Audit existera.
 

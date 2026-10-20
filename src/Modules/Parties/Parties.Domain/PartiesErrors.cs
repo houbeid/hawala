@@ -34,6 +34,16 @@ public static class PartiesErrors
         public static readonly Error Archived =
             Error.Conflict("Parties.Party.Archived", "Ce tiers est archivé : le désarchiver d'abord.");
 
+        public static readonly Error AlreadyArchived =
+            Error.Conflict("Parties.Party.AlreadyArchived", "Ce tiers est déjà archivé.");
+
+        public static readonly Error NotArchived =
+            Error.Conflict("Parties.Party.NotArchived", "Ce tiers n'est pas archivé.");
+
+        // Règle validée : archivage seulement à solde nul dans les deux agences.
+        public static readonly Error BalanceNotZero =
+            Error.Conflict("Parties.Party.BalanceNotZero", "Le solde doit être nul dans les deux agences pour archiver ce tiers.");
+
         public static readonly Error CreditLimitNegative =
             Error.Validation("Parties.Party.CreditLimitNegative", "Le plafond de crédit est positif ou nul (0 = aucun crédit ; vide = pas de plafond).");
 
@@ -66,6 +76,16 @@ public static class PartiesErrors
 
         public static readonly Error AgencyRequiredForBalanceFilter =
             Error.Validation("Parties.List.AgencyRequiredForBalanceFilter", "Choisir une agence pour filtrer par solde.");
+    }
+
+    public static class Statement
+    {
+        // Un relevé montre des montants : même règle que les soldes.
+        public static readonly Error NotVisible =
+            Error.Forbidden("Parties.Statement.NotVisible", "Le relevé d'un tiers demande la permission de voir les soldes.");
+
+        public static readonly Error AgencyRequired =
+            Error.Validation("Parties.Statement.AgencyRequired", "Choisir l'agence du relevé.");
     }
 
     public static class Phone

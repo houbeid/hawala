@@ -94,17 +94,40 @@ public sealed class ListPartiesTests(ApiFixture fixture)
         Assert.Equal("Parties.List.AgencyRequiredForBalanceFilter", await response.ReadErrorCodeAsync());
     }
 
-    // --- Agent : fiches sans soldes ----------------------------------------
+    // --- Agent : soldes de son agence seulement ----------------------------
 
     [Fact]
-    public async Task Agent_sees_the_parties_but_no_balance_and_cannot_filter_by_balance()
+    public async Task Agent_sees_only_the_balances_of_its_agency_and_filters_on_them()
     {
         var (factory, client, _, data) = await ArrangeAsync();
         var agent = await TestAccounts.CreateAsync(factory, agencyCode: "NKC");
         var (agentToken, _) = await client.LoginOkAsync(agent.Email, agent.Password);
 
         var list = await ListAsync(client, agentToken, $"search={data.Tag}");
-        using var filtered = await client.ListPartiesAsync(agentToken, $"search={data.Tag}&balance=red");
+        var red = await ListAsync(client, agentToken, $"search={data.Tag}&balance=red");
+
+        // Droits par défaut (20 octobre 2026) : l'agent voit les soldes, mais seulement ceux de Nouakchott.
+        Assert.All(
+            list.GetProperty("items").EnumerateArray(),
+            p => Assert.Equal(data.Nouakchott, Assert.Single(p.GetProperty("balances").EnumerateArray()).GetProperty("agencyId").GetGuid()));
+        Assert.Equal(1_000.50m, BalanceOf(Item(list, data.A), data.Nouakchott));
+        Assert.Equal("MRO", Assert.Single(list.GetProperty("totals").EnumerateArray()).GetProperty("currency").GetString());
+
+        // Filtre « solde » sans choisir d'agence : c'est la sienne.
+        Assert.Equal([data.A], Ids(red));
+    }
+
+    // --- Caissier : fiches sans soldes -------------------------------------
+
+    [Fact]
+    public async Task Cashier_sees_the_parties_but_no_balance_and_cannot_filter_by_balance()
+    {
+        var (factory, client, _, data) = await ArrangeAsync();
+        var cashier = await TestAccounts.CreateAsync(factory, RoleTemplate.Cashier, agencyCode: "NKC");
+        var (cashierToken, _) = await client.LoginOkAsync(cashier.Email, cashier.Password);
+
+        var list = await ListAsync(client, cashierToken, $"search={data.Tag}");
+        using var filtered = await client.ListPartiesAsync(cashierToken, $"search={data.Tag}&balance=red");
 
         Assert.Equal(3, list.GetProperty("count").GetInt32());
         Assert.All(
@@ -155,22 +178,29 @@ public sealed class ListPartiesTests(ApiFixture fixture)
     // --- Fiche -------------------------------------------------------------
 
     [Fact]
-    public async Task Party_card_shows_balances_to_the_supervisor_only()
+    public async Task Party_card_shows_both_agencies_to_the_supervisor_one_to_an_agent_none_to_a_cashier()
     {
         var (factory, client, token, data) = await ArrangeAsync();
         var agent = await TestAccounts.CreateAsync(factory, agencyCode: "DKR");
         var (agentToken, _) = await client.LoginOkAsync(agent.Email, agent.Password);
+        var cashier = await TestAccounts.CreateAsync(factory, RoleTemplate.Cashier, agencyCode: "DKR");
+        var (cashierToken, _) = await client.LoginOkAsync(cashier.Email, cashier.Password);
 
         using var supervisorRead = await client.GetPartyAsync(token, data.A);
         using var agentRead = await client.GetPartyAsync(agentToken, data.A);
+        using var cashierRead = await client.GetPartyAsync(cashierToken, data.A);
         using var unknown = await client.GetPartyAsync(token, Guid.NewGuid());
 
         var forSupervisor = await supervisorRead.ReadJsonAsync();
         Assert.Equal(1_000.50m, BalanceOf(forSupervisor, data.Nouakchott));
         Assert.Equal(2, forSupervisor.GetProperty("balances").GetArrayLength());
 
-        Assert.Equal(HttpStatusCode.OK, agentRead.StatusCode);
-        Assert.Equal(JsonValueKind.Null, (await agentRead.ReadJsonAsync()).GetProperty("balances").ValueKind);
+        // Agent de Dakar : seulement le solde de Dakar (0 pour A).
+        var forAgent = await agentRead.ReadJsonAsync();
+        Assert.Equal(data.Dakar, Assert.Single(forAgent.GetProperty("balances").EnumerateArray()).GetProperty("agencyId").GetGuid());
+
+        Assert.Equal(HttpStatusCode.OK, cashierRead.StatusCode);
+        Assert.Equal(JsonValueKind.Null, (await cashierRead.ReadJsonAsync()).GetProperty("balances").ValueKind);
 
         Assert.Equal(HttpStatusCode.NotFound, unknown.StatusCode);
         Assert.Equal("Parties.Party.NotFound", await unknown.ReadErrorCodeAsync());
