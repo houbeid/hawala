@@ -42,6 +42,7 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<PartiesDbContext>());
         services.AddScoped<ISharedTransactionParticipant>(sp => sp.GetRequiredService<PartiesDbContext>());
         services.AddScoped<IPartyRepository, PartyRepository>();
+        services.AddScoped<Parties.Contracts.IPartyCreditAccounts, PartyCreditAccounts>();
 
         services.AddScoped<IQueryHandler<ListPartiesQuery, PartyList>, ListPartiesQueryHandler>();
         services.AddScoped<IQueryHandler<GetPartyQuery, PartySummary>, GetPartyQueryHandler>();

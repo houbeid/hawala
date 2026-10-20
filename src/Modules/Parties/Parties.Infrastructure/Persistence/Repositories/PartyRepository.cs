@@ -56,6 +56,20 @@ internal sealed class PartyRepository(PartiesDbContext db) : IPartyRepository
             p => p.Nni == nni && (excludingPartyId == null || p.Id != excludingPartyId),
             cancellationToken);
 
+    public async Task<bool> LockAgencyAccountAsync(Guid partyId, Guid agencyId, CancellationToken cancellationToken)
+    {
+        var locked = await db.Database
+            .SqlQuery<Guid>($"""
+                SELECT "PartyId" AS "Value"
+                FROM parties.party_agency_accounts
+                WHERE "PartyId" = {partyId} AND "AgencyId" = {agencyId}
+                FOR UPDATE
+                """)
+            .ToListAsync(cancellationToken);
+
+        return locked.Count == 1;
+    }
+
     public void Add(Party party) => db.Parties.Add(party);
 
     /// <summary>

@@ -31,6 +31,7 @@ public static class DependencyInjection
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<RatesDbContext>());
         services.AddScoped<IDailyRateRepository, DailyRateRepository>();
+        services.AddScoped<Rates.Contracts.IDailyRates, DailyRates>();
 
         services.AddScoped<ICommandHandler<SetDailyRateCommand>, SetDailyRateCommandHandler>();
         services.AddScoped<IQueryHandler<GetDailyRateQuery, DailyRateView>, GetDailyRateQueryHandler>();

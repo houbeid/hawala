@@ -32,6 +32,8 @@ public class RolePermissionsTests
     {
         var granted = RolePermissions.For(RoleTemplate.Agent);
 
+        Assert.Contains(Permissions.TransfersCreate, granted);
+        Assert.Contains(Permissions.TransfersCredit, granted);
         Assert.Contains(Permissions.PartiesCreate, granted);
         Assert.Contains(Permissions.PartiesViewBalance, granted);
         Assert.Contains(Permissions.CashBudgetRead, granted);
@@ -45,6 +47,8 @@ public class RolePermissionsTests
         var granted = RolePermissions.For(RoleTemplate.Cashier);
 
         Assert.Contains(Permissions.CashBudgetRead, granted);
+        Assert.DoesNotContain(Permissions.TransfersCreate, granted);
+        Assert.DoesNotContain(Permissions.TransfersCredit, granted);
         Assert.DoesNotContain(Permissions.PartiesViewBalance, granted);
         Assert.DoesNotContain(Permissions.PartiesCreate, granted);
         Assert.DoesNotContain(Permissions.PartiesManage, granted);
@@ -57,6 +61,7 @@ public class RolePermissionsTests
 
         Assert.Contains(Permissions.PartiesViewBalance, granted);
         Assert.Contains(Permissions.CashBudgetRead, granted);
+        Assert.DoesNotContain(Permissions.TransfersCreate, granted);
         Assert.DoesNotContain(Permissions.PartiesCreate, granted);
         Assert.DoesNotContain(Permissions.PartiesManage, granted);
         Assert.DoesNotContain(Permissions.TreasuryManage, granted);

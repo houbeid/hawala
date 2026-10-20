@@ -11,6 +11,9 @@ public interface ITreasuryAccountRepository
     /// <summary>Un compte visible dans le périmètre du compte connecté (suivi), ou null.</summary>
     Task<TreasuryAccount?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
+    /// <summary>Comptes demandés et visibles dans le périmètre, en une lecture. Lecture seule.</summary>
+    Task<IReadOnlyList<TreasuryAccount>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
+
     /// <summary>Comptes visibles dans le périmètre, filtrés, triés par agence, type puis nom. Lecture seule.</summary>
     Task<IReadOnlyList<TreasuryAccount>> ListAsync(TreasuryAccountFilter filter, CancellationToken cancellationToken);
 

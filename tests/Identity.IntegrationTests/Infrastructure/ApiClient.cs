@@ -166,6 +166,30 @@ public static class ApiClient
             $"/api/v1/rates{(string.IsNullOrEmpty(path) ? string.Empty : "/" + path)}{(string.IsNullOrEmpty(queryString) ? string.Empty : "?" + queryString)}",
             accessToken: accessToken);
 
+    /// <param name="idempotencyKey">En-tête Idempotency-Key ; null pour ne pas l'envoyer.</param>
+    public static async Task<HttpResponseMessage> CreateTransferAsync(
+        this HttpClient client, string? accessToken, object body, string? idempotencyKey)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/transfers")
+        {
+            Content = JsonContent.Create(body),
+        };
+
+        if (accessToken is not null)
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        }
+
+        if (idempotencyKey is not null)
+        {
+            request.Headers.Add("Idempotency-Key", idempotencyKey);
+        }
+
+        return await client.SendAsync(request);
+    }
+
     /// <summary>Connexion qui doit réussir : renvoie le jeton d'accès et la valeur du cookie.</summary>
     public static async Task<(string AccessToken, string RefreshCookie)> LoginOkAsync(
         this HttpClient client, string login, string password)

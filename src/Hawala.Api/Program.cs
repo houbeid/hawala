@@ -4,12 +4,14 @@ using Hawala.Api.Endpoints.Identity;
 using Hawala.Api.Endpoints.Organization;
 using Hawala.Api.Endpoints.Parties;
 using Hawala.Api.Endpoints.Rates;
+using Hawala.Api.Endpoints.Transfers;
 using Hawala.Api.Endpoints.Treasury;
 using Identity.Infrastructure;
 using Ledger.Infrastructure;
 using Organization.Infrastructure;
 using Parties.Infrastructure;
 using Rates.Infrastructure;
+using Transfers.Infrastructure;
 using Treasury.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,6 +29,7 @@ builder.Services.AddLedgerModule(builder.Configuration);
 builder.Services.AddTreasuryModule(builder.Configuration);
 builder.Services.AddPartiesModule(builder.Configuration);
 builder.Services.AddRatesModule(builder.Configuration);
+builder.Services.AddTransfersModule(builder.Configuration);
 builder.Services.AddHawalaAuthentication();
 
 var app = builder.Build();
@@ -49,6 +52,9 @@ await app.Services.InitializePartiesModuleAsync();
 // Taux du jour : lus par les transferts.
 await app.Services.InitializeRatesModuleAsync();
 
+// Transferts : en dernier, ils écrivent au grand livre et lisent la trésorerie et les taux.
+await app.Services.InitializeTransfersModuleAsync();
+
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
@@ -67,5 +73,6 @@ app.MapAgencyEndpoints();
 app.MapTreasuryEndpoints();
 app.MapPartyEndpoints();
 app.MapRateEndpoints();
+app.MapTransferEndpoints();
 
 await app.RunAsync();

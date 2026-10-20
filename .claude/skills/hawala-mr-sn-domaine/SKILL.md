@@ -118,7 +118,7 @@ Chaque rôle ne voit que son agence (sauf le Superviseur). Ajustables compte par
 | Exporter | ✔ | ✘ | ✘ | ✔ |
 | Gérer comptes, agences, caisses | ✔ | ✘ | ✘ | ✘ |
 
-Dans le code aujourd'hui (20 octobre 2026) : `parties.create`, `parties.view_balance`, `cash.budget.read` appliqués selon ce tableau ; les permissions des transferts, de la caisse et de l'export seront ajoutées avec leurs endpoints, et données aux rôles selon ce tableau.
+Dans le code aujourd'hui (20 octobre 2026) : `parties.create`, `parties.view_balance`, `cash.budget.read`, `transfers.create` et `transfers.credit` appliqués selon ce tableau ; les autres permissions des transferts, de la caisse et de l'export seront ajoutées avec leurs endpoints, et données aux rôles selon ce tableau.
 
 ## Authentification (validé, implémenté)
 
@@ -200,6 +200,12 @@ Dans le code aujourd'hui (20 octobre 2026) : `parties.create`, `parties.view_bal
 - **Crédit activé : la dette va sur un tiers choisi dans la liste des tiers** (pas forcément l'expéditeur) ; s'il n'existe pas, l'agent le crée comme nouveau tiers (validé le 20 octobre 2026). Le tiers passe en rouge dans l'agence d'envoi.
 - « Répartition des paiements » : un paiement peut être réparti sur plusieurs comptes ; le total affecté doit égaler le montant, sauf si le crédit est activé.
 - **Crédit partiel possible** : une partie payée (répartie sur des comptes de trésorerie), le reste à crédit ; part à crédit = montant − total payé (validé le 20 octobre 2026).
+- **Plafond de crédit, règles d'application (validées le 20 octobre 2026)** :
+  1. contrôle sur le **solde du tiers après le transfert**, dans l'agence d'envoi : solde actuel + part à crédit ≤ plafond (un tiers en vert peut donc consommer ce qu'on lui doit, même avec un plafond de 0) ;
+  2. **crédit total permis** : avec le crédit activé, la répartition peut être vide ;
+  3. **crédit activé mais tout payé : refusé** (« rien à mettre à crédit ») ; payer plus que le montant reste refusé ;
+  4. **le plafond bloque tout le monde, Superviseur compris** : pour aller au-delà, il relève d'abord le plafond.
+  Permission `transfers.credit` (Superviseur, Agent). Tiers archivé refusé. Deux crédits simultanés sur un même tiers passent l'un après l'autre (verrou du compte du tiers dans l'agence).
 - **Modifier un transfert non livré** : expéditeur, bénéficiaire et note par l'agence d'envoi ; montant, taux et répartition par le Superviseur seul, par contre-passation puis nouvelle écriture (validé le 20 octobre 2026).
 - **Une seule livraison**, éventuellement répartie sur plusieurs méthodes ; pas de livraison en plusieurs fois. **Annuler un transfert livré : pas pour l'instant** (livré est verrouillé).
 - **Une date d'opération dans le futur est refusée** (transferts et grand livre ; validé le 20 octobre 2026).

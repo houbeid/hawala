@@ -182,3 +182,46 @@ Authorization: Bearer {{token}}
 ### Historique (mois en cours par défaut)
 GET {{host}}/api/v1/rates?from=2026-10-01&to=2026-10-31
 Authorization: Bearer {{token}}
+
+# --- Transferts ---------------------------------------------------------------
+# Créer : Superviseur et Agent (transfers.create). Le taux du jour de la date d'opération doit être fixé.
+# Un agent crée depuis son agence (sourceAgencyId facultatif) ; le Superviseur indique sourceAgencyId.
+# Changer l'Idempotency-Key à chaque nouveau transfert ; la même clé renvoie le transfert déjà créé (200, sans code).
+
+@destinationAgencyId = COLLER_L_ID_DE_L_AGENCE_DE_DESTINATION_ICI
+
+### Créer un transfert payé comptant (répartition dans la devise de l'agence d'envoi)
+POST {{host}}/api/v1/transfers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: exemple-0001
+
+{
+  "destinationAgencyId": "{{destinationAgencyId}}",
+  "amountXof": 5000000,
+  "senderInfo": "Expéditeur fictif 22200000",
+  "beneficiaryInfo": "Bénéficiaire fictif 770000000",
+  "note": "Note fictive",
+  "payments": [
+    { "treasuryAccountId": "{{treasuryId}}", "amount": 3650000 }
+  ]
+}
+
+@partyId = COLLER_L_ID_DU_TIERS_ICI
+
+### Créer un transfert en partie à crédit (transfers.credit) : 3 650 000 MRO, 1 000 000 payés, 2 650 000 sur le tiers
+POST {{host}}/api/v1/transfers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: exemple-0002
+
+{
+  "destinationAgencyId": "{{destinationAgencyId}}",
+  "amountXof": 5000000,
+  "senderInfo": "Expéditeur fictif 22200000",
+  "beneficiaryInfo": "Bénéficiaire fictif 770000000",
+  "payments": [
+    { "treasuryAccountId": "{{treasuryId}}", "amount": 1000000 }
+  ],
+  "creditPartyId": "{{partyId}}"
+}

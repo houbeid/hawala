@@ -35,6 +35,16 @@ public class ModuleBoundaryTests
     private static readonly Assembly RatesApplication = typeof(Rates.Application.Abstractions.IUnitOfWork).Assembly;
     private static readonly Assembly RatesInfrastructure = typeof(Rates.Infrastructure.DependencyInjection).Assembly;
 
+    private static readonly Assembly TreasuryContracts = typeof(Treasury.Contracts.ITreasuryDirectory).Assembly;
+    private static readonly Assembly PartiesContracts = typeof(Parties.Contracts.IPartyCreditAccounts).Assembly;
+    private static readonly Assembly RatesContracts = typeof(Rates.Contracts.IDailyRates).Assembly;
+
+    private static readonly Assembly TransfersDomain = typeof(Transfers.Domain.TransfersErrors).Assembly;
+    private static readonly Assembly TransfersApplication = typeof(Transfers.Application.Abstractions.IUnitOfWork).Assembly;
+    private static readonly Assembly TransfersInfrastructure = typeof(Transfers.Infrastructure.DependencyInjection).Assembly;
+
+    private static readonly Assembly[] TransfersModule = [TransfersDomain, TransfersApplication, TransfersInfrastructure];
+
     private static readonly Assembly[] IdentityModule = [IdentityDomain, IdentityApplication, IdentityInfrastructure];
 
     private static readonly Assembly[] OrganizationModule =
@@ -49,10 +59,11 @@ public class ModuleBoundaryTests
 
     private static readonly Assembly[] RatesModule = [RatesDomain, RatesApplication, RatesInfrastructure];
 
-    private static readonly Assembly[] DomainLayers = [IdentityDomain, OrganizationDomain, LedgerDomain, TreasuryDomain, PartiesDomain, RatesDomain];
+    private static readonly Assembly[] DomainLayers =
+        [IdentityDomain, OrganizationDomain, LedgerDomain, TreasuryDomain, PartiesDomain, RatesDomain, TransfersDomain];
 
     private static readonly Assembly[] ApplicationLayers =
-        [IdentityApplication, OrganizationApplication, LedgerApplication, TreasuryApplication, PartiesApplication, RatesApplication];
+        [IdentityApplication, OrganizationApplication, LedgerApplication, TreasuryApplication, PartiesApplication, RatesApplication, TransfersApplication];
 
     [Fact]
     public void Identity_sees_Organization_only_through_its_contracts()
@@ -143,6 +154,31 @@ public class ModuleBoundaryTests
     }
 
     [Fact]
+    public void Transfers_sees_other_modules_only_through_their_contracts()
+    {
+        foreach (var assembly in TransfersModule)
+        {
+            AssertNoReference(assembly, name =>
+                (name.StartsWith("Identity.", StringComparison.Ordinal) && name != "Identity.Contracts")
+                || (name.StartsWith("Organization.", StringComparison.Ordinal) && name != "Organization.Contracts")
+                || (name.StartsWith("Ledger.", StringComparison.Ordinal) && name != "Ledger.Contracts")
+                || (name.StartsWith("Treasury.", StringComparison.Ordinal) && name != "Treasury.Contracts")
+                || (name.StartsWith("Rates.", StringComparison.Ordinal) && name != "Rates.Contracts")
+                || (name.StartsWith("Parties.", StringComparison.Ordinal) && name != "Parties.Contracts"));
+        }
+    }
+
+    [Fact]
+    public void Nobody_depends_on_Transfers_yet()
+    {
+        foreach (var assembly in IdentityModule.Concat(OrganizationModule).Concat(LedgerModule)
+                     .Concat(TreasuryModule).Concat(PartiesModule).Concat(RatesModule))
+        {
+            AssertNoReference(assembly, name => name.StartsWith("Transfers.", StringComparison.Ordinal));
+        }
+    }
+
+    [Fact]
     public void Nobody_depends_on_Parties_yet()
     {
         foreach (var assembly in IdentityModule.Concat(OrganizationModule).Concat(LedgerModule).Concat(TreasuryModule))
@@ -196,6 +232,12 @@ public class ModuleBoundaryTests
             name is "Organization.Domain" or "Organization.Application" or "Organization.Infrastructure");
         AssertNoReference(LedgerContracts, name =>
             name is "Ledger.Domain" or "Ledger.Application" or "Ledger.Infrastructure");
+        AssertNoReference(TreasuryContracts, name =>
+            name is "Treasury.Domain" or "Treasury.Application" or "Treasury.Infrastructure");
+        AssertNoReference(PartiesContracts, name =>
+            name is "Parties.Domain" or "Parties.Application" or "Parties.Infrastructure");
+        AssertNoReference(RatesContracts, name =>
+            name is "Rates.Domain" or "Rates.Application" or "Rates.Infrastructure");
     }
 
     private static bool IsFramework(string name) =>

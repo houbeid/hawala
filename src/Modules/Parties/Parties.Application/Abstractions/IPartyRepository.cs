@@ -26,6 +26,12 @@ public interface IPartyRepository
     /// <summary>Un autre tiers a-t-il déjà ce NNI ?</summary>
     Task<bool> NniExistsAsync(string nni, Guid? excludingPartyId, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Verrouille (FOR UPDATE) le compte du tiers dans une agence jusqu'à la fin de la transaction en cours.
+    /// Faux si ce compte n'existe pas.
+    /// </summary>
+    Task<bool> LockAgencyAccountAsync(Guid partyId, Guid agencyId, CancellationToken cancellationToken);
+
     void Add(Party party);
 }
 

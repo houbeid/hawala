@@ -41,6 +41,7 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<TreasuryDbContext>());
         services.AddScoped<ISharedTransactionParticipant>(sp => sp.GetRequiredService<TreasuryDbContext>());
         services.AddScoped<ITreasuryAccountRepository, TreasuryAccountRepository>();
+        services.AddScoped<Treasury.Contracts.ITreasuryDirectory, TreasuryDirectory>();
 
         services.AddScoped<IQueryHandler<ListTreasuryAccountsQuery, IReadOnlyList<TreasuryAccountSummary>>, ListTreasuryAccountsQueryHandler>();
         services.AddScoped<IQueryHandler<GetTreasuryAccountQuery, TreasuryAccountSummary>, GetTreasuryAccountQueryHandler>();

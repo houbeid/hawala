@@ -34,9 +34,15 @@ public static class Permissions
     /// <summary>Voir le bénéfice, la commission et le prix d'achat. Superviseur seulement (règle validée).</summary>
     public const string ProfitView = "profit.view";
 
+    /// <summary>Créer un transfert depuis son agence (Superviseur et Agent, règle validée).</summary>
+    public const string TransfersCreate = "transfers.create";
+
+    /// <summary>Activer le crédit sur un transfert, dans le plafond du tiers (Superviseur et Agent, règle validée).</summary>
+    public const string TransfersCredit = "transfers.credit";
+
     public static readonly IReadOnlyList<string> All =
     [
         UsersManage, AgenciesManage, TreasuryManage, CashBudgetRead, PartiesCreate, PartiesManage, PartiesViewBalance,
-        RatesSetDaily, ProfitView,
+        RatesSetDaily, ProfitView, TransfersCreate, TransfersCredit,
     ];
 }

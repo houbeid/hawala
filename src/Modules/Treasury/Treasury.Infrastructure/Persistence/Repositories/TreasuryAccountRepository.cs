@@ -10,6 +10,16 @@ internal sealed class TreasuryAccountRepository(TreasuryDbContext db) : ITreasur
     public Task<TreasuryAccount?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
         db.Accounts.FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
 
+    public async Task<IReadOnlyList<TreasuryAccount>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(ids);
+
+        return ids.Count == 0
+            ? []
+            : await db.Accounts.AsNoTracking().Where(a => ids.Contains(a.Id)).ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<TreasuryAccount>> ListAsync(
         TreasuryAccountFilter filter, CancellationToken cancellationToken)
     {

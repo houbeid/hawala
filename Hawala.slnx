@@ -25,16 +25,24 @@
   </Folder>
   <Folder Name="/src/Modules/Parties/">
     <Project Path="src/Modules/Parties/Parties.Application/Parties.Application.csproj" />
+    <Project Path="src/Modules/Parties/Parties.Contracts/Parties.Contracts.csproj" />
     <Project Path="src/Modules/Parties/Parties.Domain/Parties.Domain.csproj" />
     <Project Path="src/Modules/Parties/Parties.Infrastructure/Parties.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Modules/Rates/">
     <Project Path="src/Modules/Rates/Rates.Application/Rates.Application.csproj" />
+    <Project Path="src/Modules/Rates/Rates.Contracts/Rates.Contracts.csproj" />
     <Project Path="src/Modules/Rates/Rates.Domain/Rates.Domain.csproj" />
     <Project Path="src/Modules/Rates/Rates.Infrastructure/Rates.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Transfers/">
+    <Project Path="src/Modules/Transfers/Transfers.Application/Transfers.Application.csproj" />
+    <Project Path="src/Modules/Transfers/Transfers.Domain/Transfers.Domain.csproj" />
+    <Project Path="src/Modules/Transfers/Transfers.Infrastructure/Transfers.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/Modules/Treasury/">
     <Project Path="src/Modules/Treasury/Treasury.Application/Treasury.Application.csproj" />
+    <Project Path="src/Modules/Treasury/Treasury.Contracts/Treasury.Contracts.csproj" />
     <Project Path="src/Modules/Treasury/Treasury.Domain/Treasury.Domain.csproj" />
     <Project Path="src/Modules/Treasury/Treasury.Infrastructure/Treasury.Infrastructure.csproj" />
   </Folder>
@@ -47,6 +55,7 @@
     <Project Path="tests/Organization.Domain.Tests/Organization.Domain.Tests.csproj" />
     <Project Path="tests/Parties.Domain.Tests/Parties.Domain.Tests.csproj" />
     <Project Path="tests/Rates.Domain.Tests/Rates.Domain.Tests.csproj" />
+    <Project Path="tests/Transfers.Domain.Tests/Transfers.Domain.Tests.csproj" />
     <Project Path="tests/Treasury.Domain.Tests/Treasury.Domain.Tests.csproj" />
   </Folder>
 </Solution>
