@@ -8,9 +8,18 @@ namespace Hawala.Api.Errors;
 /// </summary>
 public static class ErrorResults
 {
-    public static IResult ToProblem(this Error error)
+    public static IResult ToProblem(this Error error) => error.ToProblem(extra: null);
+
+    /// <param name="extra">Champs ajoutés à la réponse (ex. « remainingAttempts » pour un code de retrait faux).</param>
+    public static IResult ToProblem(this Error error, IReadOnlyDictionary<string, object?>? extra)
     {
         ArgumentNullException.ThrowIfNull(error);
+
+        var extensions = new Dictionary<string, object?> { ["code"] = error.Code };
+        foreach (var (key, value) in extra ?? new Dictionary<string, object?>())
+        {
+            extensions[key] = value;
+        }
 
         var status = error.Type switch
         {
@@ -26,6 +35,6 @@ public static class ErrorResults
             statusCode: status,
             title: error.Code,
             detail: error.Message,
-            extensions: new Dictionary<string, object?> { ["code"] = error.Code });
+            extensions: extensions);
     }
 }

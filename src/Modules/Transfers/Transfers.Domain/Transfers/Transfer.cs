@@ -39,6 +39,9 @@ public sealed class Transfer
     public const int ReferenceMaxLength = 60;
     public const int IdempotencyKeyMaxLength = 100;
 
+    /// <summary>Au 5e code faux, le transfert est bloqué (règle validée) ; déblocage par le Superviseur.</summary>
+    public const int MaxCodeAttempts = 5;
+
     private readonly List<TransferPayment> _payments = [];
 
     // Constructeur réservé à EF Core.
@@ -137,10 +140,61 @@ public sealed class Transfer
 
     public DateTimeOffset CreatedAt { get; private set; }
 
+    /// <summary>Date et heure de la livraison saisies (maintenant par défaut) ; null tant que non livré.</summary>
+    public DateTimeOffset? DeliveryOperationAt { get; private set; }
+
+    /// <summary>Instant d'enregistrement de la livraison.</summary>
+    public DateTimeOffset? DeliveredAt { get; private set; }
+
+    public Guid? DeliveredBy { get; private set; }
+
+    public string? DeliveryNote { get; private set; }
+
+    /// <summary>Écriture du grand livre passée à la livraison.</summary>
+    public Guid? DeliveryEntryId { get; private set; }
+
+    /// <summary>Date et heure de l'annulation saisies (maintenant par défaut) ; null tant que non annulé.</summary>
+    public DateTimeOffset? CancellationOperationAt { get; private set; }
+
+    /// <summary>Instant d'enregistrement de l'annulation.</summary>
+    public DateTimeOffset? CancelledAt { get; private set; }
+
+    public Guid? CancelledBy { get; private set; }
+
+    /// <summary>Motif obligatoire de l'annulation (règle validée).</summary>
+    public string? CancellationReason { get; private set; }
+
+    /// <summary>Contre-passation de l'écriture de création, passée à l'annulation.</summary>
+    public Guid? CancellationEntryId { get; private set; }
+
+    /// <summary>Bloqué après 5 codes faux : plus personne ne livre jusqu'au déblocage par le Superviseur.</summary>
+    public bool IsCodeLocked => FailedCodeAttempts >= MaxCodeAttempts;
+
+    /// <summary>Essais de code restants avant blocage.</summary>
+    public int RemainingCodeAttempts => Math.Max(0, MaxCodeAttempts - FailedCodeAttempts);
+
     public IReadOnlyList<TransferPayment> Payments => _payments;
+
+    /// <summary>
+    /// Bénéfice du transfert en MRO, en pleine précision (règle d'arrondi 4 : seul le total affiché est arrondi).
+    /// Formules validées, T = prix d'achat du jour, F = FCFA, M = MRO enregistré :
+    /// on reçoit des MRO et on paie des FCFA (envoi depuis l'agence en MRO) : B = M − F × T / 5000 ;
+    /// on reçoit des FCFA et on paie des MRO (envoi depuis l'agence en FCFA) : B = F × T / 5000 − M.
+    /// </summary>
+    public decimal ProfitMro
+    {
+        get
+        {
+            var atPurchaseRate = AmountXof * PurchaseRate.MroPer5000Xof / ExchangeRate.XofUnit;
+            return SourceCurrency == Currency.MRO ? AmountMro - atPurchaseRate : atPurchaseRate - AmountMro;
+        }
+    }
 
     /// <summary>Part à crédit en <see cref="Money"/>, ou null sans crédit.</summary>
     public Money? CreditMoney => CreditPartyId is null ? null : Money.Create(CreditAmount, SourceCurrency).Value;
+
+    /// <summary>Montant du transfert dans une devise : MRO enregistré (arrondi à la création) ou FCFA saisi.</summary>
+    public decimal AmountIn(Currency currency) => currency == Currency.MRO ? AmountMro : AmountXof;
 
     /// <summary>Ce que le client paie, dans la devise de l'agence d'envoi.</summary>
     public Money PaidAmount => Money.Create(SourceCurrency == Currency.MRO ? AmountMro : AmountXof, SourceCurrency).Value;
@@ -199,6 +253,184 @@ public sealed class Transfer
         }
 
         return new Transfer(request, amountMro, credit.Value, reference, withdrawalCodeHash, idempotencyKey.Trim(), createdBy, now);
+    }
+
+    /// <summary>Peut-on encore livrer ce transfert ? Non livré et pas bloqué par les codes faux.</summary>
+    public Result EnsureDeliverable() => Status switch
+    {
+        TransferStatus.Delivered => TransfersErrors.Delivery.AlreadyDelivered,
+        TransferStatus.Cancelled => TransfersErrors.Delivery.Cancelled,
+        _ when IsCodeLocked => TransfersErrors.Delivery.CodeLocked,
+        _ => Result.Success(),
+    };
+
+    /// <summary>
+    /// Compte un code faux (par transfert, pas par agent) et renvoie l'erreur à montrer :
+    /// code faux (voir <see cref="RemainingCodeAttempts"/>), ou blocage au 5e.
+    /// </summary>
+    public Error RegisterWrongCode()
+    {
+        if (IsCodeLocked)
+        {
+            return TransfersErrors.Delivery.CodeLocked;
+        }
+
+        FailedCodeAttempts++;
+        return IsCodeLocked
+            ? TransfersErrors.Delivery.CodeLocked
+            : TransfersErrors.Delivery.WrongCode;
+    }
+
+    /// <summary>
+    /// Vérifie une livraison sans rien changer (pour ne pas consommer d'essai de code sur une erreur de saisie) :
+    /// livrable ; date pas dans le futur ni avant le transfert ; répartition dans la devise de destination,
+    /// montants positifs, méthodes distinctes, total = montant à livrer.
+    /// </summary>
+    public Result ValidateDelivery(IReadOnlyList<PaymentLine> lines, DateTimeOffset operationAt, string? note, DateTimeOffset now)
+    {
+        var deliverable = EnsureDeliverable();
+        if (deliverable.IsFailure)
+        {
+            return deliverable;
+        }
+
+        if (operationAt > now)
+        {
+            return TransfersErrors.Transfer.FutureDate;
+        }
+
+        if (operationAt < OperationAt)
+        {
+            return TransfersErrors.Delivery.DateBeforeTransfer;
+        }
+
+        if ((note?.Trim().Length ?? 0) > NoteMaxLength)
+        {
+            return TransfersErrors.Delivery.NoteTooLong;
+        }
+
+        if (lines is null || lines.Count == 0)
+        {
+            return TransfersErrors.Payment.Required;
+        }
+
+        if (lines.Select(l => l.TreasuryAccountId).Distinct().Count() != lines.Count)
+        {
+            return TransfersErrors.Payment.AccountDuplicated;
+        }
+
+        foreach (var line in lines)
+        {
+            if (line.Amount.Currency != DestinationCurrency)
+            {
+                return TransfersErrors.Payment.CurrencyMismatch;
+            }
+
+            if (line.Amount.Amount <= 0m)
+            {
+                return TransfersErrors.Payment.AmountNotPositive;
+            }
+        }
+
+        return lines.Sum(l => l.Amount.Amount) == AmountToDeliver.Amount
+            ? Result.Success()
+            : TransfersErrors.Delivery.TotalMismatch;
+    }
+
+    /// <summary>Livre le transfert (une seule livraison, éventuellement répartie) : il devient « livré » et verrouillé.</summary>
+    public Result Deliver(
+        IReadOnlyList<PaymentLine> lines, DateTimeOffset operationAt, string? note, Guid deliveredBy, DateTimeOffset now)
+    {
+        var valid = ValidateDelivery(lines, operationAt, note, now);
+        if (valid.IsFailure)
+        {
+            return valid;
+        }
+
+        _payments.AddRange(lines.Select(l => new TransferPayment(PaymentStage.Delivery, l.TreasuryAccountId, l.Amount, now)));
+        Status = TransferStatus.Delivered;
+        DeliveryOperationAt = operationAt;
+        DeliveredAt = now;
+        DeliveredBy = deliveredBy;
+        DeliveryNote = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Annule un transfert non livré (Superviseur seulement, règle validée) : motif obligatoire (500 caractères au plus),
+    /// date jamais future ni avant le transfert. Un transfert livré ne s'annule pas (pour l'instant) ;
+    /// un transfert bloqué par les codes faux peut l'être. Annulé = verrouillé.
+    /// </summary>
+    public Result Cancel(string? reason, DateTimeOffset operationAt, Guid cancelledBy, DateTimeOffset now)
+    {
+        if (Status == TransferStatus.Cancelled)
+        {
+            return TransfersErrors.Cancellation.AlreadyCancelled;
+        }
+
+        if (Status == TransferStatus.Delivered)
+        {
+            return TransfersErrors.Cancellation.Delivered;
+        }
+
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            return TransfersErrors.Cancellation.ReasonRequired;
+        }
+
+        if (reason.Trim().Length > NoteMaxLength)
+        {
+            return TransfersErrors.Cancellation.ReasonTooLong;
+        }
+
+        if (operationAt > now)
+        {
+            return TransfersErrors.Transfer.FutureDate;
+        }
+
+        if (operationAt < OperationAt)
+        {
+            return TransfersErrors.Cancellation.DateBeforeTransfer;
+        }
+
+        Status = TransferStatus.Cancelled;
+        CancellationReason = reason.Trim();
+        CancellationOperationAt = operationAt;
+        CancelledAt = now;
+        CancelledBy = cancelledBy;
+        return Result.Success();
+    }
+
+    /// <summary>Rattache la contre-passation de l'écriture de création, une seule fois et seulement après l'annulation.</summary>
+    public void AttachCancellationEntry(Guid entryId)
+    {
+        if (entryId == Guid.Empty)
+        {
+            throw new ArgumentException("Id d'écriture vide.", nameof(entryId));
+        }
+
+        if (Status != TransferStatus.Cancelled || CancellationEntryId is not null)
+        {
+            throw new InvalidOperationException("Contre-passation sans annulation, ou déjà rattachée.");
+        }
+
+        CancellationEntryId = entryId;
+    }
+
+    /// <summary>Rattache l'écriture de livraison, une seule fois.</summary>
+    public void AttachDeliveryEntry(Guid entryId)
+    {
+        if (entryId == Guid.Empty)
+        {
+            throw new ArgumentException("Id d'écriture vide.", nameof(entryId));
+        }
+
+        if (Status != TransferStatus.Delivered || DeliveryEntryId is not null)
+        {
+            throw new InvalidOperationException("Écriture de livraison sans livraison, ou déjà rattachée.");
+        }
+
+        DeliveryEntryId = entryId;
     }
 
     /// <summary>Rattache l'écriture de création, une seule fois : un second appel est un bug de programmation.</summary>

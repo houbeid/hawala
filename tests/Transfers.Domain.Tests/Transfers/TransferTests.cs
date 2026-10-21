@@ -252,4 +252,44 @@ public class TransferTests
         Assert.Equal(0m, transfer.CreditAmount);
         Assert.Null(transfer.CreditMoney);
     }
+
+    // --- Bénéfice ---------------------------------------------------------
+
+    [Fact]
+    public void Profit_of_a_transfer_sent_from_nouakchott_is_the_commission()
+    {
+        // Exemple validé : 5 000 000 FCFA vendus à 3 650, achetés à 3 600 : 50 000 MRO.
+        Assert.Equal(50_000m, Create(NkcToDkr()).Value.ProfitMro);
+    }
+
+    [Fact]
+    public void Profit_of_a_transfer_sent_from_dakar_follows_the_reverse_formula()
+    {
+        // On reçoit 1 000 000 FCFA (valant 720 000 MRO au prix d'achat 3 600) et on paie 715 000 MRO (prix de vente 3 575).
+        var request = new NewTransfer(
+            Dkr, Currency.XOF, Nkc, Currency.MRO,
+            Xof(1_000_000m), Rate(3575m), Rate(3600m),
+            "Expéditeur fictif", "Bénéficiaire fictif", null,
+            Now, [new PaymentLine(Cash, Xof(1_000_000m))]);
+
+        Assert.Equal(5_000m, Create(request).Value.ProfitMro);
+    }
+
+    [Fact]
+    public void Profit_keeps_full_precision()
+    {
+        // 1 FCFA : M = 1 (0,73 arrondi), au prix d'achat 0,72 → B = 0,28.
+        var request = NkcToDkr(new PaymentLine(Cash, Mro(1m))) with { AmountXof = Xof(1m) };
+
+        Assert.Equal(0.28m, Create(request).Value.ProfitMro);
+    }
+
+    [Fact]
+    public void Amount_in_a_currency_reads_the_stored_amounts()
+    {
+        var transfer = Create(NkcToDkr()).Value;
+
+        Assert.Equal(3_650_000m, transfer.AmountIn(Currency.MRO));
+        Assert.Equal(5_000_000m, transfer.AmountIn(Currency.XOF));
+    }
 }

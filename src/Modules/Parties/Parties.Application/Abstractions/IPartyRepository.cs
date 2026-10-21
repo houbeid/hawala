@@ -11,6 +11,9 @@ public interface IPartyRepository
     /// <summary>Un tiers avec ses comptes par agence (suivi), ou null.</summary>
     Task<Party?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
+    /// <summary>Les tiers demandés, archivés compris, en lecture seule ; un id inconnu est absent.</summary>
+    Task<IReadOnlyList<Party>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
+
     /// <summary>
     /// Tiers correspondant aux filtres qui ne dépendent pas du solde, triés par nom. Lecture seule.
     /// POINT OUVERT : pas de pagination (quelques centaines de tiers) ; à ajouter si la liste grossit.

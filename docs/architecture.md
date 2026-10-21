@@ -184,6 +184,7 @@ Un seul patron possède deux caisses : Nouakchott en MRO, Dakar en FCFA. Il n'y 
 | Transfert Nouakchott → Dakar | L'ouguiya entre dans la caisse de Nouakchott, le FCFA sort de la caisse de Dakar (et inversement), via le compte « Position de change » |
 | Remplissage des caisses | Hors périmètre. L'agent enregistre seulement « Approvisionnement de caisse » ou « Retrait du patron » (montant seul), via un compte « Apports du patron » rattaché au capital |
 | Caisse insuffisante | Livraison autorisée ; la caisse peut passer en négatif, avec un avertissement sans blocage |
+| Livraison (décisions du 20 octobre 2026) | Par l'agence de destination seulement (Superviseur : tout transfert) ; code saisi par tous, Superviseur compris ; code faux compté par transfert, blocage au 5e ; transfert à crédit livrable même non remboursé ; sur les caisses actives de l'agence de destination ; date jamais future ni avant le transfert |
 | Taux du jour | Un seul taux par jour pour les deux agences (prix d'achat, prix de vente) ; sans taux du jour, pas de transfert ; modifiable à tout moment, les transferts existants gardent leurs taux ; prix d'achat visible avec `profit.view` seulement |
 | Transferts (décisions du 20 octobre 2026) | Crédit partiel possible ; modification d'un non livré : texte par l'agence d'envoi, montant / taux / répartition par le Superviseur (contre-passation + nouvelle écriture) ; une seule livraison (répartie) ; pas d'annulation d'un livré pour l'instant ; date d'opération future refusée |
 | Création d'un transfert | Toujours par l'agence d'envoi (source = agence de l'agent, verrouillée) ; l'autre agence le voit en « reçu ». Le Superviseur peut créer dans les deux sens |
@@ -192,7 +193,9 @@ Un seul patron possède deux caisses : Nouakchott en MRO, Dakar en FCFA. Il n'y 
 | Périmètre du Superviseur | Les deux agences : comptes, taux, bilan total |
 | Taux | Seul le Superviseur fixe les deux taux du jour : le prix d'achat (taux du marché, T) et le prix de vente (taux client, appliqué automatiquement aux nouveaux transferts, modifiable par lui pour un transfert précis) ; le serveur refuse tout autre compte |
 | Taux du jour | Prix d'achat et prix de vente, « 5 000 FCFA = ? MRO », enregistrés jour par jour. Commission d'un transfert = écart entre les deux × montant (ex. 5 000 000 FCFA vendus à 3 650, achetés à 3 600 : 50 000 MRO) |
-| Ce que voit une agence | Ses montants (acheté, donné au client) et le prix de vente. Prix d'achat, commission et les quatre cartes de l'écran des transferts (entrées, sorties, envoyé, livré) : Superviseur seulement |
+| Annulation (21 octobre 2026) | Superviseur seulement, non livré seulement, motif obligatoire visible des deux agences ; contre-passation de l'écriture de création à la date de l'annulation (remboursement en caisse, dette du crédit effacée) |
+| Cartes de l'écran des transferts (21 octobre 2026) | Pour l'agence choisie A : entrées A et livré par l'autre agence (transferts envoyés par A), envoyé par l'autre agence et sorties A (transferts reçus par A), non livrés, bénéfice de la période, taux ; livrés seulement pour sorties / livré ; annulés exclus ; Superviseur seulement |
+| Ce que voit une agence | Ses montants (acheté, donné au client) et le prix de vente ; pour un transfert reçu, ni la répartition du paiement ni le crédit (réservés à l'agence d'envoi et au Superviseur). Prix d'achat, commission et les quatre cartes de l'écran des transferts (entrées, sorties, envoyé, livré) : Superviseur seulement |
 
 Le périmètre est appliqué par un filtre global EF Core sur l'agence ; le choix de l'agence est verrouillé dans l'interface d'un agent.
 

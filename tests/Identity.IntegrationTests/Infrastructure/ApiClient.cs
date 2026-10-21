@@ -166,6 +166,28 @@ public static class ApiClient
             $"/api/v1/rates{(string.IsNullOrEmpty(path) ? string.Empty : "/" + path)}{(string.IsNullOrEmpty(queryString) ? string.Empty : "?" + queryString)}",
             accessToken: accessToken);
 
+    /// <param name="queryString">Filtres déjà encodés, sans « ? », ou null.</param>
+    public static Task<HttpResponseMessage> ListTransfersAsync(this HttpClient client, string? accessToken, string? queryString = null) =>
+        client.SendAsync(
+            HttpMethod.Get,
+            string.IsNullOrEmpty(queryString) ? "/api/v1/transfers" : $"/api/v1/transfers?{queryString}",
+            accessToken: accessToken);
+
+    public static Task<HttpResponseMessage> CancelTransferAsync(
+        this HttpClient client, string? accessToken, Guid id, string? reason, DateTimeOffset? operationAt = null) =>
+        client.SendAsync(HttpMethod.Post, $"/api/v1/transfers/{id}/cancel", body: new { reason, operationAt }, accessToken: accessToken);
+
+    /// <summary>GET authentifié sur une URL complète (chemin et filtres), pour les routes sans helper dédié.</summary>
+    public static Task<HttpResponseMessage> SendGetAsync(this HttpClient client, string? accessToken, string url) =>
+        client.SendAsync(HttpMethod.Get, url, accessToken: accessToken);
+
+    /// <param name="body">Objet anonyme : code, operationAt, payments [{ treasuryAccountId, amount }], note.</param>
+    public static Task<HttpResponseMessage> DeliverTransferAsync(this HttpClient client, string? accessToken, Guid id, object body) =>
+        client.SendAsync(HttpMethod.Post, $"/api/v1/transfers/{id}/deliver", body: body, accessToken: accessToken);
+
+    public static Task<HttpResponseMessage> GetTransferAsync(this HttpClient client, string? accessToken, Guid id) =>
+        client.SendAsync(HttpMethod.Get, $"/api/v1/transfers/{id}", accessToken: accessToken);
+
     /// <param name="idempotencyKey">En-tête Idempotency-Key ; null pour ne pas l'envoyer.</param>
     public static async Task<HttpResponseMessage> CreateTransferAsync(
         this HttpClient client, string? accessToken, object body, string? idempotencyKey)

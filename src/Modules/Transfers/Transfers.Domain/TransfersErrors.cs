@@ -71,6 +71,84 @@ public static class TransfersErrors
                 "Méthode de paiement inconnue, désactivée ou d'une autre agence.");
     }
 
+    public static class Delivery
+    {
+        public static readonly Error CodeRequired =
+            Error.Validation("Transfers.Delivery.CodeRequired", "Saisir le code de retrait donné par le bénéficiaire.");
+
+        public static readonly Error CodeLocked =
+            Error.Conflict(
+                "Transfers.Delivery.CodeLocked",
+                "Transfert bloqué après 5 codes faux : seul le Superviseur peut le débloquer.");
+
+        public static readonly Error AlreadyDelivered =
+            Error.Conflict("Transfers.Delivery.AlreadyDelivered", "Ce transfert est déjà livré.");
+
+        public static readonly Error Cancelled =
+            Error.Conflict("Transfers.Delivery.Cancelled", "Ce transfert est annulé : il ne peut pas être livré.");
+
+        public static readonly Error NotDestinationAgency =
+            Error.Forbidden("Transfers.Delivery.NotDestinationAgency", "Seule l'agence de destination livre ce transfert.");
+
+        public static readonly Error DateBeforeTransfer =
+            Error.Validation("Transfers.Delivery.DateBeforeTransfer", "La livraison ne peut pas être datée avant le transfert.");
+
+        public static readonly Error TotalMismatch =
+            Error.Validation("Transfers.Delivery.TotalMismatch", "Le total livré doit être égal au montant à livrer.");
+
+        public static readonly Error NoteTooLong =
+            Error.Validation("Transfers.Delivery.NoteTooLong", "Note de livraison : 500 caractères au plus.");
+
+        /// <summary>Code faux ; l'API ajoute le nombre d'essais restants (« remainingAttempts ») à la réponse.</summary>
+        public static readonly Error WrongCode =
+            Error.Validation("Transfers.Delivery.WrongCode", "Code de retrait faux.");
+    }
+
+    public static class Cancellation
+    {
+        public static readonly Error ReasonRequired =
+            Error.Validation("Transfers.Cancellation.ReasonRequired", "Le motif de l'annulation est obligatoire.");
+
+        public static readonly Error ReasonTooLong =
+            Error.Validation("Transfers.Cancellation.ReasonTooLong", "Motif de l'annulation : 500 caractères au plus.");
+
+        public static readonly Error AlreadyCancelled =
+            Error.Conflict("Transfers.Cancellation.AlreadyCancelled", "Ce transfert est déjà annulé.");
+
+        public static readonly Error Delivered =
+            Error.Conflict("Transfers.Cancellation.Delivered", "Un transfert livré ne peut pas être annulé.");
+
+        public static readonly Error DateBeforeTransfer =
+            Error.Validation("Transfers.Cancellation.DateBeforeTransfer", "L'annulation ne peut pas être datée avant le transfert.");
+    }
+
+    public static class Filter
+    {
+        public static readonly Error PeriodInvalid =
+            Error.Validation("Transfers.Filter.PeriodInvalid", "La date de début doit précéder la date de fin.");
+
+        public static readonly Error StatusInvalid =
+            Error.Validation("Transfers.Filter.StatusInvalid", "Statut inconnu : NotDelivered, Delivered ou Cancelled.");
+
+        public static readonly Error DirectionInvalid =
+            Error.Validation("Transfers.Filter.DirectionInvalid", "Sens inconnu : Sent ou Received.");
+
+        public static readonly Error DirectionNeedsAgency =
+            Error.Validation("Transfers.Filter.DirectionNeedsAgency", "Choisir l'agence pour filtrer les transferts envoyés ou reçus.");
+
+        public static readonly Error AgencyNotAllowed =
+            Error.Forbidden("Transfers.Filter.AgencyNotAllowed", "Un agent ne voit que les transferts de son agence.");
+
+        public static readonly Error AgencyRequired =
+            Error.Validation("Transfers.Filter.AgencyRequired", "Choisir l'agence des cartes.");
+
+        public static readonly Error AgencyNotFound =
+            Error.Validation("Transfers.Filter.AgencyNotFound", "Agence inconnue.");
+
+        public static readonly Error PageInvalid =
+            Error.Validation("Transfers.Filter.PageInvalid", "Le numéro de page commence à 1.");
+    }
+
     public static class Credit
     {
         public static readonly Error NotAllowed =

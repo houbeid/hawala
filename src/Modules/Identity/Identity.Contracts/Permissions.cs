@@ -40,9 +40,15 @@ public static class Permissions
     /// <summary>Activer le crédit sur un transfert, dans le plafond du tiers (Superviseur et Agent, règle validée).</summary>
     public const string TransfersCredit = "transfers.credit";
 
+    /// <summary>Livrer un transfert reçu par son agence, avec le code de retrait (Superviseur, Agent, Caissier ; règle validée).</summary>
+    public const string TransfersDeliver = "transfers.deliver";
+
+    /// <summary>Annuler un transfert non livré, avec un motif (Superviseur seulement, règle validée).</summary>
+    public const string TransfersCancel = "transfers.cancel";
+
     public static readonly IReadOnlyList<string> All =
     [
         UsersManage, AgenciesManage, TreasuryManage, CashBudgetRead, PartiesCreate, PartiesManage, PartiesViewBalance,
-        RatesSetDaily, ProfitView, TransfersCreate, TransfersCredit,
+        RatesSetDaily, ProfitView, TransfersCreate, TransfersCredit, TransfersDeliver, TransfersCancel,
     ];
 }

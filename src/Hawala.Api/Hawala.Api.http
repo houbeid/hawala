@@ -225,3 +225,43 @@ Idempotency-Key: exemple-0002
   ],
   "creditPartyId": "{{partyId}}"
 }
+
+### Lister les transferts (aujourd'hui par défaut ; 50 par page)
+GET {{host}}/api/v1/transfers?status=NotDelivered&direction=Sent&page=1
+Authorization: Bearer {{token}}
+
+### Lister les transferts d'une période, avec recherche
+GET {{host}}/api/v1/transfers?from=2026-10-01&to=2026-10-31&search=fictif
+Authorization: Bearer {{token}}
+
+@transferId = COLLER_L_ID_DU_TRANSFERT_ICI
+
+### Fiche d'un transfert
+GET {{host}}/api/v1/transfers/{{transferId}}
+Authorization: Bearer {{token}}
+
+### Livrer un transfert (agence de destination ; code donné par le bénéficiaire ; total = montant à livrer)
+POST {{host}}/api/v1/transfers/{{transferId}}/deliver
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "code": "123456",
+  "payments": [
+    { "treasuryAccountId": "{{treasuryId}}", "amount": 5000000 }
+  ],
+  "note": "Note fictive"
+}
+
+### Cartes de l'écran des transferts (Superviseur ; aujourd'hui par défaut)
+GET {{host}}/api/v1/transfers/summary?agencyId={{agencyId}}
+Authorization: Bearer {{token}}
+
+### Annuler un transfert non livré (Superviseur ; motif obligatoire)
+POST {{host}}/api/v1/transfers/{{transferId}}/cancel
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reason": "Motif fictif"
+}

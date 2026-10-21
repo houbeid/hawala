@@ -21,6 +21,15 @@ internal sealed class TransferConfiguration : IEntityTypeConfiguration<Transfer>
                 "ck_transfers_credit",
                 "(\"CreditPartyId\" IS NULL AND \"CreditAmount\" = 0) OR (\"CreditPartyId\" IS NOT NULL AND \"CreditAmount\" > 0)");
             table.HasCheckConstraint(
+                "ck_transfers_code_attempts",
+                "\"FailedCodeAttempts\" BETWEEN 0 AND 5");
+            table.HasCheckConstraint(
+                "ck_transfers_delivery",
+                "(\"Status\" = 'Delivered') = (\"DeliveredAt\" IS NOT NULL AND \"DeliveryEntryId\" IS NOT NULL)");
+            table.HasCheckConstraint(
+                "ck_transfers_cancellation",
+                "(\"Status\" = 'Cancelled') = (\"CancelledAt\" IS NOT NULL AND \"CancellationReason\" IS NOT NULL AND \"CancellationEntryId\" IS NOT NULL)");
+            table.HasCheckConstraint(
                 "ck_transfers_corridor",
                 "\"SourceAgencyId\" <> \"DestinationAgencyId\" AND \"SourceCurrency\" <> \"DestinationCurrency\"");
         });
@@ -55,6 +64,16 @@ internal sealed class TransferConfiguration : IEntityTypeConfiguration<Transfer>
         builder.Property(t => t.FailedCodeAttempts);
         builder.Property(t => t.IdempotencyKey).HasMaxLength(Transfer.IdempotencyKeyMaxLength).IsRequired();
         builder.Property(t => t.CreationEntryId);
+        builder.Property(t => t.DeliveryOperationAt);
+        builder.Property(t => t.DeliveredAt);
+        builder.Property(t => t.DeliveredBy);
+        builder.Property(t => t.DeliveryNote).HasMaxLength(Transfer.NoteMaxLength);
+        builder.Property(t => t.DeliveryEntryId);
+        builder.Property(t => t.CancellationOperationAt);
+        builder.Property(t => t.CancelledAt);
+        builder.Property(t => t.CancelledBy);
+        builder.Property(t => t.CancellationReason).HasMaxLength(Transfer.NoteMaxLength);
+        builder.Property(t => t.CancellationEntryId);
         builder.Property(t => t.CreatedBy);
         builder.Property(t => t.CreatedAt);
 
@@ -62,6 +81,8 @@ internal sealed class TransferConfiguration : IEntityTypeConfiguration<Transfer>
         builder.Ignore(t => t.PaidAmount);
         builder.Ignore(t => t.AmountToDeliver);
         builder.Ignore(t => t.CreditMoney);
+        builder.Ignore(t => t.IsCodeLocked);
+        builder.Ignore(t => t.RemainingCodeAttempts);
 
         builder.HasIndex(t => t.Reference).IsUnique();
 

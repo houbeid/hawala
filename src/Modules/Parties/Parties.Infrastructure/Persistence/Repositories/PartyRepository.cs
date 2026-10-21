@@ -10,6 +10,15 @@ internal sealed class PartyRepository(PartiesDbContext db) : IPartyRepository
     public Task<Party?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
         db.Parties.FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
 
+    public async Task<IReadOnlyList<Party>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(ids);
+
+        return ids.Count == 0
+            ? []
+            : await db.Parties.AsNoTracking().Where(p => ids.Contains(p.Id)).ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Party>> ListAsync(PartyFilter filter, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(filter);

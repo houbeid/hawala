@@ -2,10 +2,46 @@ using Transfers.Domain.Transfers;
 
 namespace Transfers.Application.Abstractions;
 
+/// <summary>Accès aux transferts. Le périmètre par agence (envoyés ou reçus) est appliqué par le filtre global.</summary>
 public interface ITransferRepository
 {
     void Add(Transfer transfer);
 
     /// <summary>Transfert déjà créé par ce compte avec cette clé (double clic, resynchronisation hors ligne).</summary>
     Task<Transfer?> FindByIdempotencyKeyAsync(Guid createdBy, string idempotencyKey, CancellationToken cancellationToken);
+
+    /// <summary>Un transfert visible du compte connecté, en lecture seule, ou null.</summary>
+    Task<Transfer?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Un transfert visible, suivi et VERROUILLÉ (FOR UPDATE) jusqu'à la fin de la transaction en cours,
+    /// pour le modifier (livraison…) sans course entre deux agents. Null s'il est inconnu ou hors périmètre.
+    /// </summary>
+    Task<Transfer?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken);
+
+    /// <summary>Tous les transferts visibles qui répondent aux filtres, sans pagination (calcul des cartes).</summary>
+    Task<IReadOnlyList<Transfer>> ListAllAsync(TransferFilter filter, CancellationToken cancellationToken);
+
+    /// <summary>Nombre de transferts visibles, sans aucun filtre (le « 392 » de « 24 / 392 »).</summary>
+    Task<int> CountVisibleAsync(CancellationToken cancellationToken);
+
+    /// <summary>Une page de transferts visibles, du plus récent au plus ancien (date d'opération), et le nombre total.</summary>
+    Task<(IReadOnlyList<Transfer> Items, int TotalCount)> ListAsync(
+        TransferFilter filter, int skip, int take, CancellationToken cancellationToken);
 }
+
+/// <summary>Filtres de la liste. Un champ null = pas de filtre.</summary>
+/// <param name="From">Début de la période (inclus), sur la date d'opération.</param>
+/// <param name="ToExclusive">Fin de la période (exclue).</param>
+/// <param name="SourceAgencyId">« Envoyés » par cette agence.</param>
+/// <param name="DestinationAgencyId">« Reçus » par cette agence.</param>
+/// <param name="EitherAgencyId">Envoyés ou reçus par cette agence (Superviseur qui choisit une agence).</param>
+/// <param name="Search">Texte cherché dans la référence, l'expéditeur, le bénéficiaire et la note.</param>
+public sealed record TransferFilter(
+    DateTimeOffset From,
+    DateTimeOffset ToExclusive,
+    TransferStatus? Status = null,
+    Guid? SourceAgencyId = null,
+    Guid? DestinationAgencyId = null,
+    Guid? EitherAgencyId = null,
+    string? Search = null);

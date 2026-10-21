@@ -16,12 +16,12 @@ public static class RolePermissions
     // s'ajouteront avec leurs endpoints, selon le même tableau.
     private static readonly HashSet<string> Supervisor = [.. Permissions.All];
 
-    // L'agent : crée des transferts (crédit compris) et des tiers, voit les soldes des tiers et des caisses de son agence.
+    // L'agent : crée et livre des transferts (crédit compris), crée des tiers, voit les soldes des tiers et des caisses de son agence.
     private static readonly HashSet<string> Agent =
-        [Permissions.TransfersCreate, Permissions.TransfersCredit, Permissions.PartiesCreate, Permissions.PartiesViewBalance, Permissions.CashBudgetRead];
+        [Permissions.TransfersCreate, Permissions.TransfersCredit, Permissions.TransfersDeliver, Permissions.PartiesCreate, Permissions.PartiesViewBalance, Permissions.CashBudgetRead];
 
-    // Le caissier : tient la caisse ; ne voit pas les soldes des tiers.
-    private static readonly HashSet<string> Cashier = [Permissions.CashBudgetRead];
+    // Le caissier : tient la caisse et livre les transferts ; ne voit pas les soldes des tiers.
+    private static readonly HashSet<string> Cashier = [Permissions.TransfersDeliver, Permissions.CashBudgetRead];
 
     // La consultation : lit seulement.
     private static readonly HashSet<string> ReadOnly = [Permissions.PartiesViewBalance, Permissions.CashBudgetRead];

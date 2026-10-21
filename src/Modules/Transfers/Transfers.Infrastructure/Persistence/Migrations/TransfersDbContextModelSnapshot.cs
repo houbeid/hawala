@@ -41,6 +41,22 @@ namespace Transfers.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<Guid?>("CancellationEntryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("CancellationOperationAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CancellationReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTimeOffset?>("CancelledAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CancelledBy")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -56,6 +72,22 @@ namespace Transfers.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid?>("CreditPartyId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("DeliveredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeliveredBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("DeliveryEntryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DeliveryNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTimeOffset?>("DeliveryOperationAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("DestinationAgencyId")
                         .HasColumnType("uuid");
@@ -134,9 +166,15 @@ namespace Transfers.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("ck_transfers_amounts_positive", "\"AmountXof\" > 0 AND \"AmountMro\" > 0");
 
+                            t.HasCheckConstraint("ck_transfers_cancellation", "(\"Status\" = 'Cancelled') = (\"CancelledAt\" IS NOT NULL AND \"CancellationReason\" IS NOT NULL AND \"CancellationEntryId\" IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_transfers_code_attempts", "\"FailedCodeAttempts\" BETWEEN 0 AND 5");
+
                             t.HasCheckConstraint("ck_transfers_corridor", "\"SourceAgencyId\" <> \"DestinationAgencyId\" AND \"SourceCurrency\" <> \"DestinationCurrency\"");
 
                             t.HasCheckConstraint("ck_transfers_credit", "(\"CreditPartyId\" IS NULL AND \"CreditAmount\" = 0) OR (\"CreditPartyId\" IS NOT NULL AND \"CreditAmount\" > 0)");
+
+                            t.HasCheckConstraint("ck_transfers_delivery", "(\"Status\" = 'Delivered') = (\"DeliveredAt\" IS NOT NULL AND \"DeliveryEntryId\" IS NOT NULL)");
                         });
                 });
 

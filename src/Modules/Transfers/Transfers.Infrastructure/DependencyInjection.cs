@@ -5,7 +5,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Transfers.Application.Abstractions;
+using Hawala.SharedKernel.Messaging;
+using Transfers.Application.Features.Transfers;
+using Transfers.Application.Features.Transfers.CancelTransfer;
 using Transfers.Application.Features.Transfers.CreateTransfer;
+using Transfers.Application.Features.Transfers.DeliverTransfer;
+using Transfers.Application.Features.Transfers.GetTransfer;
+using Transfers.Application.Features.Transfers.GetTransferSummary;
+using Transfers.Application.Features.Transfers.ListTransfers;
 using Transfers.Infrastructure.Persistence;
 using Transfers.Infrastructure.Persistence.Repositories;
 using Transfers.Infrastructure.Security;
@@ -36,9 +43,20 @@ public static class DependencyInjection
         services.AddScoped<ITransferRepository, TransferRepository>();
         services.AddScoped<ITransferReferenceGenerator, TransferReferenceGenerator>();
         services.AddSingleton<IWithdrawalCodeHasher, Pbkdf2WithdrawalCodeHasher>();
+        services.AddScoped<TransferViews>();
+
+        services.AddScoped<IQueryHandler<ListTransfersQuery, TransferList>, ListTransfersQueryHandler>();
+        services.AddScoped<IQueryHandler<GetTransferQuery, TransferView>, GetTransferQueryHandler>();
+        services.AddScoped<IQueryHandler<GetTransferSummaryQuery, TransferSummary>, GetTransferSummaryQueryHandler>();
 
         // Écrit dans deux schémas (transfers + ledger) : une seule transaction commune.
         services.AddSharedTransactional<CreateTransferCommand, CreatedTransfer, CreateTransferCommandHandler>();
+
+        // Livraison : transfert + grand livre ; un code faux est aussi enregistré (succès technique qui porte le refus).
+        services.AddSharedTransactional<DeliverTransferCommand, DeliveryOutcome, DeliverTransferCommandHandler>();
+
+        // Annulation : transfert + contre-passation au grand livre, ensemble.
+        services.AddSharedTransactional<CancelTransferCommand, CancelTransferCommandHandler>();
 
         return services;
     }

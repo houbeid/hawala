@@ -118,7 +118,7 @@ Chaque rôle ne voit que son agence (sauf le Superviseur). Ajustables compte par
 | Exporter | ✔ | ✘ | ✘ | ✔ |
 | Gérer comptes, agences, caisses | ✔ | ✘ | ✘ | ✘ |
 
-Dans le code aujourd'hui (20 octobre 2026) : `parties.create`, `parties.view_balance`, `cash.budget.read`, `transfers.create` et `transfers.credit` appliqués selon ce tableau ; les autres permissions des transferts, de la caisse et de l'export seront ajoutées avec leurs endpoints, et données aux rôles selon ce tableau.
+Dans le code aujourd'hui (20 octobre 2026) : `parties.create`, `parties.view_balance`, `cash.budget.read`, `transfers.create`, `transfers.credit`, `transfers.deliver` et `transfers.cancel` appliqués selon ce tableau ; les autres permissions des transferts, de la caisse et de l'export seront ajoutées avec leurs endpoints, et données aux rôles selon ce tableau.
 
 ## Authentification (validé, implémenté)
 
@@ -200,6 +200,30 @@ Dans le code aujourd'hui (20 octobre 2026) : `parties.create`, `parties.view_bal
 - **Crédit activé : la dette va sur un tiers choisi dans la liste des tiers** (pas forcément l'expéditeur) ; s'il n'existe pas, l'agent le crée comme nouveau tiers (validé le 20 octobre 2026). Le tiers passe en rouge dans l'agence d'envoi.
 - « Répartition des paiements » : un paiement peut être réparti sur plusieurs comptes ; le total affecté doit égaler le montant, sauf si le crédit est activé.
 - **Crédit partiel possible** : une partie payée (répartie sur des comptes de trésorerie), le reste à crédit ; part à crédit = montant − total payé (validé le 20 octobre 2026).
+- **Annulation, application (21 octobre 2026)** : Superviseur seulement (`transfers.cancel`) ; non livré seulement (un transfert bloqué par les codes faux peut être annulé) ; motif obligatoire (500 caractères au plus), visible des deux agences ; date de l'annulation maintenant par défaut, jamais future ni avant le transfert ; contre-passation de l'écriture de création **à la date de l'annulation** (les budgets déjà enregistrés ne changent pas) : remboursement depuis les caisses de l'agence d'envoi, dette du crédit effacée, « Transferts à livrer » soldé. Annulé = verrouillé (plus de livraison) ; exclu des cartes.
+- **Cartes de l'écran des transferts (lues sur l'app actuelle et validées le 21 octobre 2026)** : pour l'agence choisie A (l'autre : B), deux groupes de transferts, chacun dans les deux devises :
+  « دخل · A » (entrées, devise de A) = payé à A pour les transferts envoyés par A ; « المبلغ المسلم · B » (livré, devise de B) = remis par B sur ces transferts ;
+  « المبلغ المرسل · B » (envoyé, devise de B) = payé à B pour les transferts envoyés par B ; « صرف · A » (sorties, devise de A) = remis par A sur ces transferts ;
+  « غير مسلمة » = ce que A doit encore payer ; « الربح » = somme des bénéfices de la période, dans les deux sens ; « 5,000 FCFA = ? » = taux du dernier jour de la période.
+  Sorties et livré : transferts livrés seulement ; entrées et envoyé : tous les non annulés ; annulés exclus partout. Mêmes filtres que la liste (période sur la date d'opération, aujourd'hui par défaut ; recherche). Superviseur seulement (`profit.view`). Vérifié sur une capture : entrées NKC 371 868 637 MRO ≈ livré Dakar 514 058 901 FCFA × 3 616,98 / 5 000. La liste affiche aussi « 24 / 392 » (filtrés / tous).
+- **Budget de la caisse, écart à trancher en phase 4** : l'app actuelle (« Bilan par caisse ») calcule espèces + banques + soldes débiteurs − soldes créditeurs, **sans** soustraire les transferts non livrés (capture du 21 octobre 2026 : 35 492 511 + 52 232 424 + 242 899 766 − 235 035 941 = 95 588 760 FCFA). La règle validée les soustrait : à confirmer avec Hamade avant la phase 4.
+- **Livraison, règles d'application (validées le 20 octobre 2026)** :
+  1. seule l'**agence de destination** livre ; le Superviseur peut livrer tout transfert ;
+  2. un transfert **à crédit non remboursé se livre quand même** (la dette reste sur le tiers, dans l'agence d'envoi) ;
+  3. le **code est saisi par tous, Superviseur compris**, pour une livraison normale (livrer sans code : action à part, pièce d'identité + motif) ;
+  4. code faux **compté par transfert**, enregistré même si la livraison est refusée ; la réponse donne les essais restants ; au 5e, transfert bloqué (reste « non livré ») jusqu'au déblocage par le Superviseur ; les erreurs de saisie sont vérifiées avant le code et ne consomment pas d'essai ;
+  5. date de livraison : maintenant par défaut, passée permise, jamais future ni avant le transfert ;
+  6. caisse en négatif : livraison acceptée, la réponse liste les caisses passées en négatif avec leur nouveau solde ;
+  7. livraison sur les **caisses actives de l'agence de destination** seulement ; livrer en créditant un tiers (dépôt du bénéficiaire) : pas pour l'instant (POINT OUVERT).
+  Permission `transfers.deliver` (Superviseur, Agent, Caissier). Deux livraisons simultanées : une seule passe (verrou du transfert).
+- **Ordre des tours de la phase 3 changé (20 octobre 2026)** : la livraison avant les cartes du Superviseur, pour que « sorties » et « montant livré » soient justes dès le départ.
+- **Lecture des transferts (validée le 20 octobre 2026)** :
+  1. l'agence de destination voit référence, statut, dates, expéditeur, bénéficiaire, note, les deux montants et le prix de vente ; **la répartition du paiement et le crédit (tiers, part à crédit) sont réservés à l'agence d'envoi et au Superviseur** ;
+  2. liste sur la date d'opération, **aujourd'hui par défaut**, du plus récent au plus ancien, **50 par page** avec le nombre total ;
+  3. filtres : statut, sens (envoyé / reçu vu depuis l'agence), agence (Superviseur), recherche texte (référence, expéditeur, bénéficiaire, note, sans tenir compte de la casse) ;
+  4. avec `profit.view` : prix d'achat et **bénéfice de chaque transfert** en pleine précision (formules validées) ; sinon null ;
+  5. le nom du tiers du crédit est affiché (agence d'envoi et Superviseur) ;
+  le code de retrait n'est jamais renvoyé ; hors périmètre = 404.
 - **Plafond de crédit, règles d'application (validées le 20 octobre 2026)** :
   1. contrôle sur le **solde du tiers après le transfert**, dans l'agence d'envoi : solde actuel + part à crédit ≤ plafond (un tiers en vert peut donc consommer ce qu'on lui doit, même avec un plafond de 0) ;
   2. **crédit total permis** : avec le crédit activé, la répartition peut être vide ;
