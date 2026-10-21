@@ -5,8 +5,14 @@
     <Project Path="src/Hawala.SharedKernel/Hawala.SharedKernel.csproj" />
   </Folder>
   <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Balance/">
+    <Project Path="src/Modules/Balance/Balance.Application/Balance.Application.csproj" />
+    <Project Path="src/Modules/Balance/Balance.Domain/Balance.Domain.csproj" />
+    <Project Path="src/Modules/Balance/Balance.Infrastructure/Balance.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/Modules/Cash/">
     <Project Path="src/Modules/Cash/Cash.Application/Cash.Application.csproj" />
+    <Project Path="src/Modules/Cash/Cash.Contracts/Cash.Contracts.csproj" />
     <Project Path="src/Modules/Cash/Cash.Domain/Cash.Domain.csproj" />
     <Project Path="src/Modules/Cash/Cash.Infrastructure/Cash.Infrastructure.csproj" />
   </Folder>
@@ -34,6 +40,12 @@
     <Project Path="src/Modules/Parties/Parties.Domain/Parties.Domain.csproj" />
     <Project Path="src/Modules/Parties/Parties.Infrastructure/Parties.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Profit/">
+    <Project Path="src/Modules/Profit/Profit.Application/Profit.Application.csproj" />
+    <Project Path="src/Modules/Profit/Profit.Contracts/Profit.Contracts.csproj" />
+    <Project Path="src/Modules/Profit/Profit.Domain/Profit.Domain.csproj" />
+    <Project Path="src/Modules/Profit/Profit.Infrastructure/Profit.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/Modules/Rates/">
     <Project Path="src/Modules/Rates/Rates.Application/Rates.Application.csproj" />
     <Project Path="src/Modules/Rates/Rates.Contracts/Rates.Contracts.csproj" />
@@ -54,6 +66,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Architecture.Tests/Architecture.Tests.csproj" />
+    <Project Path="tests/Balance.Domain.Tests/Balance.Domain.Tests.csproj" />
     <Project Path="tests/Cash.Domain.Tests/Cash.Domain.Tests.csproj" />
     <Project Path="tests/Hawala.SharedKernel.Tests/Hawala.SharedKernel.Tests.csproj" />
     <Project Path="tests/Identity.Domain.Tests/Identity.Domain.Tests.csproj" />
@@ -61,6 +74,7 @@
     <Project Path="tests/Ledger.Domain.Tests/Ledger.Domain.Tests.csproj" />
     <Project Path="tests/Organization.Domain.Tests/Organization.Domain.Tests.csproj" />
     <Project Path="tests/Parties.Domain.Tests/Parties.Domain.Tests.csproj" />
+    <Project Path="tests/Profit.Domain.Tests/Profit.Domain.Tests.csproj" />
     <Project Path="tests/Rates.Domain.Tests/Rates.Domain.Tests.csproj" />
     <Project Path="tests/Transfers.Domain.Tests/Transfers.Domain.Tests.csproj" />
     <Project Path="tests/Treasury.Domain.Tests/Treasury.Domain.Tests.csproj" />

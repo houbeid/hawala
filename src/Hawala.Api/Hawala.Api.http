@@ -419,3 +419,59 @@ Content-Type: application/json
 ### Historique des budgets (30 derniers jours par défaut)
 GET {{host}}/api/v1/cash-budget/snapshots?agencyId={{agencyId}}
 Authorization: Bearer {{token}}
+
+### Contrôle de cohérence avant d'enregistrer le budget (depuis le dernier budget par défaut ; since pour choisir)
+GET {{host}}/api/v1/cash-budget/coherence?agencyId={{agencyId}}
+Authorization: Bearer {{token}}
+
+# --- Bénéfice (Superviseur, profit.view) ------------------------------------------
+
+### Bénéfice d'une période, une ligne par jour (agencyId absent : les deux agences)
+GET {{host}}/api/v1/profit?from=2026-10-01&to=2026-10-31
+Authorization: Bearer {{token}}
+
+### Détail d'un jour, transfert par transfert
+GET {{host}}/api/v1/profit/days/2026-10-21
+Authorization: Bearer {{token}}
+
+### Enregistrer le bénéfice du jour (agencyId absent : bénéfice général des deux agences)
+POST {{host}}/api/v1/profit/snapshots
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "agencyId": "{{agencyId}}"
+}
+
+### Photos du bénéfice (30 derniers jours par défaut)
+GET {{host}}/api/v1/profit/snapshots?agencyId={{agencyId}}
+Authorization: Bearer {{token}}
+
+# --- Bilan général (Superviseur) ---------------------------------------------------
+
+### Saisir le capital initial (MRO ; chaque saisie est gardée)
+PUT {{host}}/api/v1/balance/capital
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 165500000,
+  "reason": "Mise en service (fictif)"
+}
+
+### Bilan en direct (rate absent : prix d'achat du jour)
+GET {{host}}/api/v1/balance?rate=3600
+Authorization: Bearer {{token}}
+
+### Enregistrer le bilan du jour
+POST {{host}}/api/v1/balance/snapshots
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "rate": 3600
+}
+
+### Historique des bilans (30 derniers jours par défaut)
+GET {{host}}/api/v1/balance/snapshots
+Authorization: Bearer {{token}}

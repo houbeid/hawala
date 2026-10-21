@@ -145,6 +145,7 @@ Dans le code aujourd'hui (20 octobre 2026) : `parties.create`, `parties.view_bal
   6. **pas de comptage physique de la caisse en V1** (un écart constaté se corrige par un ajustement) ;
   7. alertes du contrôle de cohérence (sans blocage, gardées avec le budget) : taux d'un transfert à plus de 5 % du taux du jour, ajustements de solde, solde initial d'un tiers changé, mouvements et transferts annulés, livraisons sans code, caisses en négatif ;
   8. **le budget soustrait les transferts non livrés** (tranché le 21 octobre 2026) ;
+  12. **contrôle de cohérence (fait le 21 octobre 2026)** : période = depuis l'heure d'enregistrement du dernier budget d'un jour passé (minuit aujourd'hui s'il n'y en a pas), modifiable ; on regarde ce qui a été ENREGISTRÉ pendant la période (une opération antidatée saisie après compte) ; taux inhabituel = prix de vente du transfert à plus de 5 % du prix de vente du jour de l'opération, sur un transfert créé ou modifié pendant la période ; les alertes et le début de la période sont gardés avec la photo du budget.
   11. **budget (fait le 21 octobre 2026)** : espèces = comptes « Cash », banques = « Bank » et « Wallet », débiteurs / créditeurs = tiers « dans le bilan » (créditeurs en positif), non livrés = solde créditeur de « Transferts à livrer » de l'agence ; photo du jour calculée par le serveur (`cash.budget.save` : Superviseur, Caissier), remplacée le même jour ; historique 30 derniers jours par défaut.
   10. **corrections (faites le 21 octobre 2026)** : permission `cash.manage` (Superviseur seulement) ; un mouvement annulé reste dans la liste avec son motif mais ne compte plus dans les totaux ; ajustement = **différence signée** (positive : le solde monte — caisse plus pleine, tiers plus en rouge ; négative : il baisse), même convention que le solde initial.
   9. **virement interne** : d'un compte de trésorerie vers un autre **de la même agence**, sans tiers, deux lignes (débit destination / crédit origine) ; ni entrée ni sortie pour l'agence ; permission `cash.create` (choix provisoire, à confirmer).
@@ -291,6 +292,18 @@ Dans le code aujourd'hui (20 octobre 2026) : `parties.create`, `parties.view_bal
 3. L'agent de destination saisit le code pour livrer ; il ne peut jamais le lire.
 4. Stocké haché ; 5 essais faux → transfert bloqué, déblocage par le Superviseur.
 5. Code perdu : livraison par le Superviseur avec pièce d'identité + motif obligatoire (audit), ou nouveau code demandé à l'agence d'envoi.
+
+### Phase 5, décisions du 21 octobre 2026
+
+- **Écran « Bénéfice »** (l'onglet de l'app actuelle est vide à cause d'un bug ; proposition validée) : Superviseur seulement (`profit.view`) ; période (aujourd'hui par défaut) et agence (une, ou les deux) ; total de la période en MRO ; **une ligne par jour** (date, nombre de transferts, montant envoyé en FCFA, prix d'achat du jour, bénéfice du jour, enregistré ou non) ; un jour s'ouvre sur **une ligne par transfert** (référence, sens, FCFA, MRO, prix de vente, prix d'achat, bénéfice) ; bouton « Enregistrer le bénéfice du jour » (photo, réenregistrable le même jour) ; export plus tard.
+- **Bénéfice du jour enregistré (fait le 21 octobre 2026)** : photo du jour courant seulement (comme le budget), pour une agence ou pour les deux (bénéfice général), remplacée si on la réenregistre le même jour ; Superviseur (`profit.view`) ; bénéfice gardé en pleine précision (10 décimales).
+- **Bénéfice d'une agence = transferts qu'elle a envoyés** ; les deux agences ensemble = bénéfice général ; annulés exclus ; jour = date d'opération ; pleine précision, seul l'affichage arrondit.
+- **Capital pris en compte dans le bilan** = capital initial + approvisionnements − retraits du patron (compte « Apports du patron », rattaché au capital).
+- **Taux du bilan** : prix d'achat du jour par défaut, modifiable par le Superviseur avant d'enregistrer.
+- **Capital initial** : saisi et modifiable par le Superviseur, chaque changement tracé ; chaque photo du bilan garde le capital utilisé.
+- **Chiffres de référence** (536 893 et −261 005) : test sur données fictives qui les reproduisent ; vérification sur les vraies données à la migration (phase 8). Aucune vraie donnée dans le code.
+- **« الأرباح المحفوظة »** : cumul des bénéfices du jour enregistrés, affiché à titre d'information dans le bilan, non ajouté au capital.
+- **Bilan général (fait le 21 octobre 2026)** : bilan = budget de l'agence en MRO + budget de l'agence en FCFA × taux / 5000 (les budgets soustrayant déjà les non livrés) ; reproduit les chiffres de l'app actuelle (164 132 887 ; −1 367 113, −0,83 % ; −261 005, −0,16 %) ; sans capital saisi, pas de résultat net ; photo du jour courant, remplacée le même jour ; permissions `balance.view` et `balance.manage` (Superviseur).
 
 ## Bénéfice (validé)
 

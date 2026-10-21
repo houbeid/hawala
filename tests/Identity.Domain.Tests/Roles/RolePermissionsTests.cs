@@ -29,6 +29,8 @@ public class RolePermissionsTests
         Assert.DoesNotContain(Permissions.TransfersManageCode, granted);
         Assert.DoesNotContain(Permissions.TransfersEditRate, granted);
         Assert.DoesNotContain(Permissions.CashManage, granted);
+        Assert.DoesNotContain(Permissions.BalanceView, granted);
+        Assert.DoesNotContain(Permissions.BalanceManage, granted);
     }
 
     // Droits par défaut validés le 20 octobre 2026 (tableau du skill du projet).

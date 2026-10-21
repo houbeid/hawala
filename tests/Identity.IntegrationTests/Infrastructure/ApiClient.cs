@@ -222,6 +222,10 @@ public static class ApiClient
     public static Task<HttpResponseMessage> CreateBalanceAdjustmentAsync(this HttpClient client, string? accessToken, object body) =>
         client.SendAsync(HttpMethod.Post, "/api/v1/balance-adjustments", body: body, accessToken: accessToken);
 
+    /// <summary>PUT authentifié d'un corps JSON sur une URL, pour les routes sans helper dédié.</summary>
+    public static Task<HttpResponseMessage> PutJsonAsync(this HttpClient client, string? accessToken, string url, object body) =>
+        client.SendAsync(HttpMethod.Put, url, body: body, accessToken: accessToken);
+
     /// <summary>POST authentifié d'un corps JSON sur une URL, pour les routes sans helper dédié.</summary>
     public static Task<HttpResponseMessage> PostJsonAsync(this HttpClient client, string? accessToken, string url, object body) =>
         client.SendAsync(HttpMethod.Post, url, body: body, accessToken: accessToken);

@@ -43,6 +43,7 @@ public static class DependencyInjection
         services.AddScoped<ICashBudgetSnapshotRepository, CashBudgetSnapshotRepository>();
         services.AddScoped<CashBudgetCalculator>();
         services.AddScoped<CoherenceChecker>();
+        services.AddScoped<Cash.Contracts.ICashBudgets, CashBudgets>();
         services.AddScoped<IQueryHandler<GetCoherenceCheckQuery, CoherenceCheckView>, GetCoherenceCheckQueryHandler>();
         services.AddScoped<IQueryHandler<GetCashBudgetQuery, CashBudgetView>, GetCashBudgetQueryHandler>();
         services.AddScoped<IQueryHandler<ListCashBudgetSnapshotsQuery, IReadOnlyList<CashBudgetSnapshotView>>, ListCashBudgetSnapshotsQueryHandler>();

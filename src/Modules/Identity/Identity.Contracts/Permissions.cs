@@ -63,9 +63,15 @@ public static class Permissions
     /// <summary>Enregistrer le budget de la caisse du jour (Superviseur, Caissier ; règle validée).</summary>
     public const string CashBudgetSave = "cash.budget.save";
 
+    /// <summary>Lire le bilan général, son historique et le capital initial (Superviseur seulement, règle validée).</summary>
+    public const string BalanceView = "balance.view";
+
+    /// <summary>Saisir le capital initial et enregistrer le bilan du jour (Superviseur seulement).</summary>
+    public const string BalanceManage = "balance.manage";
+
     public static readonly IReadOnlyList<string> All =
     [
         UsersManage, AgenciesManage, TreasuryManage, CashBudgetRead, PartiesCreate, PartiesManage, PartiesViewBalance,
-        RatesSetDaily, ProfitView, TransfersCreate, TransfersCredit, TransfersDeliver, TransfersCancel, TransfersManageCode, TransfersEditRate, CashCreate, CashManage, CashBudgetSave,
+        RatesSetDaily, ProfitView, TransfersCreate, TransfersCredit, TransfersDeliver, TransfersCancel, TransfersManageCode, TransfersEditRate, CashCreate, CashManage, CashBudgetSave, BalanceView, BalanceManage,
     ];
 }

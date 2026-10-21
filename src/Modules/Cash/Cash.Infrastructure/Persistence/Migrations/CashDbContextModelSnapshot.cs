@@ -97,6 +97,9 @@ namespace Cash.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
+                    b.Property<DateTimeOffset?>("CheckedSince")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<decimal>("Creditors")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
@@ -122,6 +125,11 @@ namespace Cash.Infrastructure.Persistence.Migrations
                     b.Property<decimal>("Undelivered")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("_alerts")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("Alerts");
 
                     b.HasKey("Id");
 

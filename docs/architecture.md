@@ -227,6 +227,7 @@ Chaque agence enregistre son budget une fois par jour : c'est sa clôture journa
 - **Enregistrement** : une photo datée du budget. L'historique affiche ces photos sur une période, avec une courbe.
 - **Contrôle de cohérence** : analyse les opérations faites depuis le dernier budget enregistré et signale les anomalies avant validation.
 - **Alerte « taux de change inhabituel »** : le taux d'un transfert s'écarte de plus de 5 % du taux du jour (avec 3 600 : hors de 3 420 à 3 780). Alerte seulement, sans blocage.
+- **Autres alertes** (21 octobre 2026) : ajustement de solde, solde initial d'un tiers changé, mouvement de caisse ou transfert annulé, livraison sans code, compte de trésorerie en négatif. Elles portent sur ce qui a été enregistré depuis le dernier budget et sont gardées avec la photo du budget.
 - **Permissions** : `cash.budget.read` (lire le budget) et `cash.budget.save` (l'enregistrer).
 
 Ce budget par agence donne le résultat de chaque agence sans règle de partage du bénéfice ; le bilan général reste réservé au Superviseur.

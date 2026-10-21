@@ -52,6 +52,7 @@ public static class DependencyInjection
         services.AddSingleton<IWithdrawalCodeHasher, Pbkdf2WithdrawalCodeHasher>();
         services.AddScoped<TransferViews>();
         services.AddScoped<Transfers.Contracts.ITransferMonitor, TransferMonitor>();
+        services.AddScoped<Transfers.Contracts.ITransferProfits, TransferProfits>();
 
         // Temps réel : notifications gardées pendant la requête, envoyées après validation. Sans hub (tâche de fond) : rien.
         services.AddScoped<TransferChangeBuffer>();

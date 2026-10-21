@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Les autres modules ne sont vus que par leurs Contracts (vérifié par Architecture.Tests). -->
+  <ItemGroup>
+    <ProjectReference Include="..\Profit.Domain\Profit.Domain.csproj" />
+    <ProjectReference Include="..\Profit.Contracts\Profit.Contracts.csproj" />
+    <ProjectReference Include="..\..\Organization\Organization.Contracts\Organization.Contracts.csproj" />
+    <ProjectReference Include="..\..\Identity\Identity.Contracts\Identity.Contracts.csproj" />
+    <ProjectReference Include="..\..\Transfers\Transfers.Contracts\Transfers.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

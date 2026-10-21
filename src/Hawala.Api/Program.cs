@@ -1,9 +1,12 @@
 using System.Text.Json.Serialization;
 using Hawala.Api.Configuration;
+using Balance.Infrastructure;
 using Cash.Infrastructure;
+using Hawala.Api.Endpoints.Balance;
 using Hawala.Api.Endpoints.Cash;
 using Hawala.Api.Endpoints.Identity;
 using Hawala.Api.Endpoints.Organization;
+using Hawala.Api.Endpoints.Profit;
 using Hawala.Api.Endpoints.Parties;
 using Hawala.Api.Endpoints.Rates;
 using Hawala.Api.Endpoints.Transfers;
@@ -13,6 +16,7 @@ using Identity.Infrastructure;
 using Ledger.Infrastructure;
 using Organization.Infrastructure;
 using Parties.Infrastructure;
+using Profit.Infrastructure;
 using Rates.Infrastructure;
 using Transfers.Application.Abstractions;
 using Transfers.Infrastructure;
@@ -35,6 +39,8 @@ builder.Services.AddPartiesModule(builder.Configuration);
 builder.Services.AddRatesModule(builder.Configuration);
 builder.Services.AddTransfersModule(builder.Configuration);
 builder.Services.AddCashModule(builder.Configuration);
+builder.Services.AddProfitModule(builder.Configuration);
+builder.Services.AddBalanceModule(builder.Configuration);
 builder.Services.AddHawalaAuthentication();
 
 // Temps réel : un hub, des groupes par agence et pour les Superviseurs ; les Transferts publient après validation.
@@ -68,6 +74,12 @@ await app.Services.InitializeTransfersModuleAsync();
 // Caisse : mouvements manuels, écrits au grand livre.
 await app.Services.InitializeCashModuleAsync();
 
+// Bénéfice : photos du bénéfice du jour.
+await app.Services.InitializeProfitModuleAsync();
+
+// Bilan général : capital initial et photos du bilan.
+await app.Services.InitializeBalanceModuleAsync();
+
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
@@ -88,6 +100,8 @@ app.MapPartyEndpoints();
 app.MapRateEndpoints();
 app.MapTransferEndpoints();
 app.MapCashEndpoints();
+app.MapProfitEndpoints();
+app.MapBalanceEndpoints();
 app.MapHub<LiveHub>(LiveHub.Path);
 
 await app.RunAsync();
