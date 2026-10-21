@@ -2,53 +2,35 @@ using Hawala.SharedKernel.Money;
 
 namespace Balance.Domain;
 
-/// <summary>Ce que le bilan lit ailleurs : les deux budgets, le capital et les apports du patron, chacun dans sa devise.</summary>
-/// <param name="MroBudget">Budget de l'agence en MRO (Nouakchott).</param>
-/// <param name="XofBudget">Budget de l'agence en FCFA (Dakar).</param>
-/// <param name="Rate">Taux du bilan (MRO pour 5 000 FCFA) : prix d'achat du jour par défaut, modifiable par le Superviseur.</param>
-/// <param name="InitialCapital">Capital initial en MRO ; null s'il n'a pas encore été saisi.</param>
-/// <param name="MroOwnerContributions">Approvisionnements − retraits du patron à Nouakchott (MRO).</param>
-/// <param name="XofOwnerContributions">Approvisionnements − retraits du patron à Dakar (FCFA).</param>
-public sealed record BalanceInputs(
-    decimal MroBudget,
-    decimal XofBudget,
-    ExchangeRate Rate,
-    decimal? InitialCapital,
-    decimal MroOwnerContributions,
-    decimal XofOwnerContributions);
+/// <summary>Ce que le bilan d'une caisse lit ailleurs, tout dans la devise de la caisse (aucune conversion).</summary>
+/// <param name="Budget">Budget de la caisse (espèces + banques + débiteurs − créditeurs − non livrés).</param>
+/// <param name="InitialCapital">Capital initial de la caisse ; null s'il n'a pas encore été saisi.</param>
+/// <param name="OwnerContributions">Approvisionnements − retraits du patron dans cette caisse.</param>
+public sealed record BalanceInputs(Currency Currency, decimal Budget, decimal? InitialCapital, decimal OwnerContributions);
 
 /// <summary>
-/// Bilan général (règles validées), tout en MRO au taux du bilan, en pleine précision (seul l'affichage arrondit) :
-/// bilan général = budget de Nouakchott + budget de Dakar converti
-///   (= trésorerie + résultat tiers − transferts non livrés, les budgets les soustrayant déjà) ;
-/// capital pris en compte = capital initial + approvisionnements − retraits du patron (21 octobre 2026) ;
-/// résultat net = bilan général − capital pris en compte, et son pourcentage du capital.
+/// Bilan d'une caisse (décision du 21 octobre 2026 : « deux caisses, deux capitaux », sans total converti) :
+/// capital pris en compte = capital initial de la caisse + approvisionnements − retraits du patron de cette caisse ;
+/// résultat net = budget de la caisse − capital pris en compte, et son pourcentage du capital.
+/// Tout dans la devise de la caisse : le taux du jour n'a aucun effet. Pleine précision, seul l'affichage arrondit.
 /// </summary>
 public sealed record BalanceFigures(
-    decimal MroBudget,
-    decimal XofBudget,
-    decimal XofBudgetInMro,
-    decimal GeneralBalance,
+    Currency Currency,
+    decimal Budget,
     decimal? InitialCapital,
-    decimal OwnerContributionsMro,
+    decimal OwnerContributions,
     decimal? CapitalUsed,
     decimal? NetResult,
-    decimal? NetResultPercent,
-    decimal Rate)
+    decimal? NetResultPercent)
 {
     public static BalanceFigures Compute(BalanceInputs inputs)
     {
         ArgumentNullException.ThrowIfNull(inputs);
 
-        var rate = inputs.Rate.MroPer5000Xof;
-        var xofInMro = inputs.XofBudget * rate / ExchangeRate.XofUnit;
-        var general = inputs.MroBudget + xofInMro;
-        var contributions = inputs.MroOwnerContributions + (inputs.XofOwnerContributions * rate / ExchangeRate.XofUnit);
-        var capital = inputs.InitialCapital + contributions;
-        var net = general - capital;
+        var capital = inputs.InitialCapital + inputs.OwnerContributions;
+        var net = inputs.Budget - capital;
         decimal? percent = capital is { } c && c != 0m ? net / c * 100m : null;
 
-        return new BalanceFigures(
-            inputs.MroBudget, inputs.XofBudget, xofInMro, general, inputs.InitialCapital, contributions, capital, net, percent, rate);
+        return new BalanceFigures(inputs.Currency, inputs.Budget, inputs.InitialCapital, inputs.OwnerContributions, capital, net, percent);
     }
 }

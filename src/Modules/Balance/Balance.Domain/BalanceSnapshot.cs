@@ -1,10 +1,11 @@
 using Hawala.SharedKernel.Ids;
+using Hawala.SharedKernel.Money;
 
 namespace Balance.Domain;
 
 /// <summary>
-/// Photo datée du bilan général (« Enregistrer le bilan ») : une par jour, le jour courant seulement, remplacée si on la
-/// réenregistre le même jour ; garde le taux, les deux budgets, le capital utilisé et le résultat net.
+/// Photo datée du bilan d'une caisse (« Enregistrer le bilan ») : une par caisse et par jour, le jour courant seulement,
+/// remplacée si on la réenregistre le même jour ; tout dans la devise de la caisse.
 /// </summary>
 public sealed class BalanceSnapshot
 {
@@ -13,28 +14,27 @@ public sealed class BalanceSnapshot
     {
     }
 
-    private BalanceSnapshot(DateOnly date, BalanceFigures figures, decimal savedProfits, Guid savedBy, DateTimeOffset now)
+    private BalanceSnapshot(Guid agencyId, DateOnly date, BalanceFigures figures, decimal savedProfitsMro, Guid savedBy, DateTimeOffset now)
     {
         Id = IdGenerator.NewId(now);
+        AgencyId = agencyId;
         Date = date;
-        Apply(figures, savedProfits, savedBy, now);
+        Apply(figures, savedProfitsMro, savedBy, now);
     }
 
     public Guid Id { get; private set; }
 
+    public Guid AgencyId { get; private set; }
+
     public DateOnly Date { get; private set; }
 
-    public decimal Rate { get; private set; }
+    public Currency Currency { get; private set; }
 
-    public decimal MroBudget { get; private set; }
-
-    public decimal XofBudget { get; private set; }
-
-    public decimal GeneralBalance { get; private set; }
+    public decimal Budget { get; private set; }
 
     public decimal? InitialCapital { get; private set; }
 
-    public decimal OwnerContributionsMro { get; private set; }
+    public decimal OwnerContributions { get; private set; }
 
     public decimal? CapitalUsed { get; private set; }
 
@@ -42,37 +42,36 @@ public sealed class BalanceSnapshot
 
     public decimal? NetResultPercent { get; private set; }
 
-    /// <summary>« الأرباح المحفوظة » : cumul des bénéfices du jour enregistrés, à titre d'information.</summary>
-    public decimal SavedProfits { get; private set; }
+    /// <summary>« الأرباح المحفوظة » de la caisse : cumul des bénéfices du jour enregistrés (toujours en MRO), à titre d'information.</summary>
+    public decimal SavedProfitsMro { get; private set; }
 
     public Guid SavedBy { get; private set; }
 
     public DateTimeOffset SavedAt { get; private set; }
 
-    public static BalanceSnapshot Create(DateOnly date, BalanceFigures figures, decimal savedProfits, Guid savedBy, DateTimeOffset now)
+    public static BalanceSnapshot Create(
+        Guid agencyId, DateOnly date, BalanceFigures figures, decimal savedProfitsMro, Guid savedBy, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(figures);
-        return new BalanceSnapshot(date, figures, savedProfits, savedBy, now);
+        return new BalanceSnapshot(agencyId, date, figures, savedProfitsMro, savedBy, now);
     }
 
-    public void Replace(BalanceFigures figures, decimal savedProfits, Guid savedBy, DateTimeOffset now)
+    public void Replace(BalanceFigures figures, decimal savedProfitsMro, Guid savedBy, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(figures);
-        Apply(figures, savedProfits, savedBy, now);
+        Apply(figures, savedProfitsMro, savedBy, now);
     }
 
-    private void Apply(BalanceFigures figures, decimal savedProfits, Guid savedBy, DateTimeOffset now)
+    private void Apply(BalanceFigures figures, decimal savedProfitsMro, Guid savedBy, DateTimeOffset now)
     {
-        Rate = figures.Rate;
-        MroBudget = figures.MroBudget;
-        XofBudget = figures.XofBudget;
-        GeneralBalance = figures.GeneralBalance;
+        Currency = figures.Currency;
+        Budget = figures.Budget;
         InitialCapital = figures.InitialCapital;
-        OwnerContributionsMro = figures.OwnerContributionsMro;
+        OwnerContributions = figures.OwnerContributions;
         CapitalUsed = figures.CapitalUsed;
         NetResult = figures.NetResult;
         NetResultPercent = figures.NetResultPercent;
-        SavedProfits = savedProfits;
+        SavedProfitsMro = savedProfitsMro;
         SavedBy = savedBy;
         SavedAt = now;
     }

@@ -33,11 +33,11 @@ public static class DependencyInjection
         services.AddScoped<IBalanceSnapshotRepository, BalanceSnapshotRepository>();
 
         services.AddScoped<BalanceHandlers>();
-        services.AddScoped<IQueryHandler<GetBalanceQuery, BalanceView>>(sp => sp.GetRequiredService<BalanceHandlers>());
+        services.AddScoped<IQueryHandler<GetBalanceQuery, BalanceOverview>>(sp => sp.GetRequiredService<BalanceHandlers>());
         services.AddScoped<ICommandHandler<SaveBalanceCommand, BalanceSnapshotView>>(sp => sp.GetRequiredService<BalanceHandlers>());
         services.AddScoped<IQueryHandler<ListBalanceSnapshotsQuery, IReadOnlyList<BalanceSnapshotView>>>(sp => sp.GetRequiredService<BalanceHandlers>());
         services.AddScoped<ICommandHandler<SetInitialCapitalCommand>>(sp => sp.GetRequiredService<BalanceHandlers>());
-        services.AddScoped<IQueryHandler<GetCapitalQuery, CapitalView>>(sp => sp.GetRequiredService<BalanceHandlers>());
+        services.AddScoped<IQueryHandler<GetCapitalQuery, IReadOnlyList<CaisseCapitalView>>>(sp => sp.GetRequiredService<BalanceHandlers>());
 
         return services;
     }

@@ -4,8 +4,8 @@ namespace Profit.Contracts;
 public interface IProfitHistory
 {
     /// <summary>
-    /// « الأرباح المحفوظة » : cumul des bénéfices du jour enregistrés pour les deux agences (photos générales),
-    /// à titre d'information (validé le 21 octobre 2026 : non ajouté au capital).
+    /// « الأرباح المحفوظة » d'une caisse : cumul des bénéfices du jour enregistrés pour cette agence (transferts qu'elle a envoyés),
+    /// en MRO, à titre d'information (validé le 21 octobre 2026 : non ajouté au capital).
     /// </summary>
-    Task<decimal> SumSavedProfitsAsync(CancellationToken cancellationToken);
+    Task<decimal> SumSavedProfitsAsync(Guid agencyId, CancellationToken cancellationToken);
 }

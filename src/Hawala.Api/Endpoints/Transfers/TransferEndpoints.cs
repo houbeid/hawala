@@ -15,6 +15,7 @@ using Transfers.Application.Features.Transfers.EditTransferAmounts;
 using Transfers.Application.Features.Transfers.EditTransferTexts;
 using Transfers.Application.Features.Transfers.GetTransfer;
 using Transfers.Application.Features.Transfers.GetTransferHistory;
+using Transfers.Application.Features.Transfers.GetTransferDashboard;
 using Transfers.Application.Features.Transfers.GetTransferSummary;
 using Transfers.Application.Features.Transfers.ListTransfers;
 
@@ -60,6 +61,9 @@ public static class TransferEndpoints
         // Cartes du panneau : toutes pour le Superviseur (profit.view) ; pour les autres comptes, leur agence seulement :
         // acheté (entrées), vendu (sorties), non livrés et prix de vente (règle validée le 21 octobre 2026).
         group.MapGet("/summary", GetTransferSummary).RequireAuthorization();
+
+        // Tableau de bord : quatre cartes par caisse, dans sa devise ; Superviseur seulement (écran du bilan).
+        group.MapGet("/dashboard", GetTransferDashboard).RequirePermission(Permissions.BalanceView);
 
         group.MapPost("", CreateTransfer).RequirePermission(Permissions.TransfersCreate);
         group.MapPost("/{id:guid}/deliver", DeliverTransfer).RequirePermission(Permissions.TransfersDeliver);
@@ -322,6 +326,18 @@ public static class TransferEndpoints
         }
 
         var result = await handler.Handle(new GetTransferSummaryQuery(actorId, agencyId, from, to, search), cancellationToken);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    /// <param name="from">Premier jour, aujourd'hui par défaut.</param>
+    /// <param name="to">Dernier jour inclus, aujourd'hui par défaut.</param>
+    private static async Task<IResult> GetTransferDashboard(
+        DateOnly? from,
+        DateOnly? to,
+        IQueryHandler<GetTransferDashboardQuery, TransferDashboard> handler,
+        CancellationToken cancellationToken)
+    {
+        var result = await handler.Handle(new GetTransferDashboardQuery(from, to), cancellationToken);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.Error.ToProblem();
     }
 

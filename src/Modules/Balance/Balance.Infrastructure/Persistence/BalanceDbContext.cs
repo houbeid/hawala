@@ -29,11 +29,13 @@ public sealed class BalanceDbContext(DbContextOptions<BalanceDbContext> options)
                 table.HasCheckConstraint("ck_capital_changes_amount_positive", "\"Amount\" > 0"));
             change.HasKey(c => c.Id);
             change.Property(c => c.Id).ValueGeneratedNever();
+            change.Property(c => c.AgencyId);
             change.Property(c => c.Amount).HasPrecision(18, 2);
+            change.Property(c => c.Currency).HasConversion<string>().HasMaxLength(3);
             change.Property(c => c.Reason).HasMaxLength(CapitalChange.ReasonMaxLength);
             change.Property(c => c.SetBy);
             change.Property(c => c.SetAt);
-            change.HasIndex(c => c.SetAt);
+            change.HasIndex(c => new { c.AgencyId, c.SetAt });
         });
 
         modelBuilder.Entity<BalanceSnapshot>(snapshot =>
@@ -41,24 +43,23 @@ public sealed class BalanceDbContext(DbContextOptions<BalanceDbContext> options)
             snapshot.ToTable("balance_snapshots");
             snapshot.HasKey(s => s.Id);
             snapshot.Property(s => s.Id).ValueGeneratedNever();
+            snapshot.Property(s => s.AgencyId);
             snapshot.Property(s => s.Date);
-            snapshot.Property(s => s.Rate).HasPrecision(18, 2);
-            snapshot.Property(s => s.MroBudget).HasPrecision(18, 2);
-            snapshot.Property(s => s.XofBudget).HasPrecision(18, 2);
-
-            // Pleine précision (règle d'arrondi 4) : les montants convertis ont plus de 2 décimales.
-            snapshot.Property(s => s.GeneralBalance).HasPrecision(28, 10);
+            snapshot.Property(s => s.Currency).HasConversion<string>().HasMaxLength(3);
+            snapshot.Property(s => s.Budget).HasPrecision(18, 2);
             snapshot.Property(s => s.InitialCapital).HasPrecision(18, 2);
-            snapshot.Property(s => s.OwnerContributionsMro).HasPrecision(28, 10);
-            snapshot.Property(s => s.CapitalUsed).HasPrecision(28, 10);
-            snapshot.Property(s => s.NetResult).HasPrecision(28, 10);
+            snapshot.Property(s => s.OwnerContributions).HasPrecision(18, 2);
+            snapshot.Property(s => s.CapitalUsed).HasPrecision(18, 2);
+            snapshot.Property(s => s.NetResult).HasPrecision(18, 2);
+
+            // Pleine précision (règle d'arrondi 4) : pourcentage et bénéfices cumulés.
             snapshot.Property(s => s.NetResultPercent).HasPrecision(28, 10);
-            snapshot.Property(s => s.SavedProfits).HasPrecision(28, 10);
+            snapshot.Property(s => s.SavedProfitsMro).HasPrecision(28, 10);
             snapshot.Property(s => s.SavedBy);
             snapshot.Property(s => s.SavedAt);
 
-            // Une photo par jour.
-            snapshot.HasIndex(s => s.Date).IsUnique();
+            // Une photo par caisse et par jour.
+            snapshot.HasIndex(s => new { s.AgencyId, s.Date }).IsUnique();
         });
     }
 }
@@ -67,8 +68,11 @@ internal sealed class CapitalRepository(BalanceDbContext db) : ICapitalRepositor
 {
     public void Add(CapitalChange change) => db.CapitalChanges.Add(change);
 
-    public Task<CapitalChange?> GetCurrentAsync(CancellationToken cancellationToken) =>
-        db.CapitalChanges.AsNoTracking().OrderByDescending(c => c.SetAt).ThenByDescending(c => c.Id).FirstOrDefaultAsync(cancellationToken);
+    public Task<CapitalChange?> GetCurrentAsync(Guid agencyId, CancellationToken cancellationToken) =>
+        db.CapitalChanges.AsNoTracking()
+            .Where(c => c.AgencyId == agencyId)
+            .OrderByDescending(c => c.SetAt).ThenByDescending(c => c.Id)
+            .FirstOrDefaultAsync(cancellationToken);
 
     public async Task<IReadOnlyList<CapitalChange>> ListAsync(CancellationToken cancellationToken) =>
         await db.CapitalChanges.AsNoTracking().OrderByDescending(c => c.SetAt).ThenByDescending(c => c.Id).ToListAsync(cancellationToken);
@@ -78,9 +82,13 @@ internal sealed class BalanceSnapshotRepository(BalanceDbContext db) : IBalanceS
 {
     public void Add(BalanceSnapshot snapshot) => db.Snapshots.Add(snapshot);
 
-    public Task<BalanceSnapshot?> GetAsync(DateOnly date, CancellationToken cancellationToken) =>
-        db.Snapshots.FirstOrDefaultAsync(s => s.Date == date, cancellationToken);
+    public Task<BalanceSnapshot?> GetAsync(Guid agencyId, DateOnly date, CancellationToken cancellationToken) =>
+        db.Snapshots.FirstOrDefaultAsync(s => s.AgencyId == agencyId && s.Date == date, cancellationToken);
 
-    public async Task<IReadOnlyList<BalanceSnapshot>> ListAsync(DateOnly from, DateOnly to, CancellationToken cancellationToken) =>
-        await db.Snapshots.AsNoTracking().Where(s => s.Date >= from && s.Date <= to).OrderBy(s => s.Date).ToListAsync(cancellationToken);
+    public async Task<IReadOnlyList<BalanceSnapshot>> ListAsync(
+        Guid? agencyId, DateOnly from, DateOnly to, CancellationToken cancellationToken) =>
+        await db.Snapshots.AsNoTracking()
+            .Where(s => (agencyId == null || s.AgencyId == agencyId) && s.Date >= from && s.Date <= to)
+            .OrderBy(s => s.Date).ThenBy(s => s.AgencyId)
+            .ToListAsync(cancellationToken);
 }

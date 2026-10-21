@@ -229,7 +229,7 @@ public class ModuleBoundaryTests
                 (name.StartsWith("Identity.", StringComparison.Ordinal) && name != "Identity.Contracts")
                 || (name.StartsWith("Organization.", StringComparison.Ordinal) && name != "Organization.Contracts")
                 || (name.StartsWith("Ledger.", StringComparison.Ordinal) && name != "Ledger.Contracts")
-                || (name.StartsWith("Rates.", StringComparison.Ordinal) && name != "Rates.Contracts")
+                || name.StartsWith("Rates.", StringComparison.Ordinal)
                 || (name.StartsWith("Cash.", StringComparison.Ordinal) && name != "Cash.Contracts")
                 || (name.StartsWith("Profit.", StringComparison.Ordinal) && name != "Profit.Contracts")
                 || name.StartsWith("Transfers.", StringComparison.Ordinal)

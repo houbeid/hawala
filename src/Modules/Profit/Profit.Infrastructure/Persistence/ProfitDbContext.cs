@@ -50,8 +50,8 @@ internal sealed class ProfitSnapshotRepository(ProfitDbContext db) : IProfitSnap
     public Task<ProfitSnapshot?> GetAsync(Guid? agencyId, DateOnly date, CancellationToken cancellationToken) =>
         db.Snapshots.FirstOrDefaultAsync(s => s.AgencyId == agencyId && s.Date == date, cancellationToken);
 
-    public async Task<decimal> SumGeneralProfitsAsync(CancellationToken cancellationToken) =>
-        await db.Snapshots.Where(s => s.AgencyId == null).SumAsync(s => s.ProfitMro, cancellationToken);
+    public async Task<decimal> SumProfitsAsync(Guid agencyId, CancellationToken cancellationToken) =>
+        await db.Snapshots.Where(s => s.AgencyId == agencyId).SumAsync(s => s.ProfitMro, cancellationToken);
 
     public async Task<IReadOnlyList<ProfitSnapshot>> ListAsync(
         Guid? agencyId, DateOnly from, DateOnly to, CancellationToken cancellationToken) =>

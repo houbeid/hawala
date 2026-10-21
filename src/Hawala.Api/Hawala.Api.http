@@ -447,31 +447,42 @@ Content-Type: application/json
 GET {{host}}/api/v1/profit/snapshots?agencyId={{agencyId}}
 Authorization: Bearer {{token}}
 
-# --- Bilan général (Superviseur) ---------------------------------------------------
+# --- Tableau de bord (Superviseur) -------------------------------------------------
 
-### Saisir le capital initial (MRO ; chaque saisie est gardée)
+### Quatre cartes par caisse (aujourd'hui par défaut)
+GET {{host}}/api/v1/transfers/dashboard?from=2026-10-01&to=2026-10-21
+Authorization: Bearer {{token}}
+
+# --- Bilan par caisse (Superviseur) ------------------------------------------------
+
+### Saisir le capital initial d'une caisse (dans sa devise ; chaque saisie est gardée)
 PUT {{host}}/api/v1/balance/capital
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
+  "agencyId": "{{agencyId}}",
   "amount": 165500000,
   "reason": "Mise en service (fictif)"
 }
 
-### Bilan en direct (rate absent : prix d'achat du jour)
-GET {{host}}/api/v1/balance?rate=3600
+### Capital des deux caisses et historique
+GET {{host}}/api/v1/balance/capital
 Authorization: Bearer {{token}}
 
-### Enregistrer le bilan du jour
+### Bilan en direct des deux caisses (sans taux, sans total converti)
+GET {{host}}/api/v1/balance
+Authorization: Bearer {{token}}
+
+### Enregistrer le bilan du jour d'une caisse
 POST {{host}}/api/v1/balance/snapshots
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "rate": 3600
+  "agencyId": "{{agencyId}}"
 }
 
-### Historique des bilans (30 derniers jours par défaut)
-GET {{host}}/api/v1/balance/snapshots
+### Historique des bilans (30 derniers jours par défaut ; agencyId facultatif)
+GET {{host}}/api/v1/balance/snapshots?agencyId={{agencyId}}
 Authorization: Bearer {{token}}

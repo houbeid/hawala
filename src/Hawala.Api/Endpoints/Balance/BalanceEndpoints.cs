@@ -7,15 +7,16 @@ using Identity.Contracts;
 
 namespace Hawala.Api.Endpoints.Balance;
 
-/// <summary>Bilan général (« الميزانية العامة ») : réservé au Superviseur.</summary>
+/// <summary>Bilan par caisse (deux caisses, deux capitaux, sans total converti) : réservé au Superviseur.</summary>
 public static class BalanceEndpoints
 {
-    /// <param name="Rate">Taux du bilan (MRO pour 5 000 FCFA) ; absent : prix d'achat du jour.</param>
-    public sealed record SaveBalanceRequest(decimal? Rate);
+    /// <param name="AgencyId">La caisse (l'agence) à enregistrer.</param>
+    public sealed record SaveBalanceRequest(Guid? AgencyId);
 
-    /// <param name="Amount">Capital initial en MRO.</param>
+    /// <param name="AgencyId">La caisse (l'agence).</param>
+    /// <param name="Amount">Capital initial dans la devise de la caisse (MRO à Nouakchott, FCFA à Dakar).</param>
     /// <param name="Reason">Motif facultatif.</param>
-    public sealed record SetCapitalRequest(decimal? Amount, string? Reason);
+    public sealed record SetCapitalRequest(Guid? AgencyId, decimal? Amount, string? Reason);
 
     public static IEndpointRouteBuilder MapBalanceEndpoints(this IEndpointRouteBuilder app)
     {
@@ -30,16 +31,16 @@ public static class BalanceEndpoints
         return app;
     }
 
-    /// <param name="rate">Taux du bilan ; absent : prix d'achat du jour (« Actualiser » avec un autre taux).</param>
+    /// <summary>Les deux caisses, chacune dans sa devise.</summary>
     private static async Task<IResult> GetBalance(
-        decimal? rate, ClaimsPrincipal user, IQueryHandler<GetBalanceQuery, BalanceView> handler, CancellationToken cancellationToken)
+        ClaimsPrincipal user, IQueryHandler<GetBalanceQuery, BalanceOverview> handler, CancellationToken cancellationToken)
     {
         if (!user.TryGetAccountId(out var actorId))
         {
             return TypedResults.Unauthorized();
         }
 
-        var result = await handler.Handle(new GetBalanceQuery(actorId, rate), cancellationToken);
+        var result = await handler.Handle(new GetBalanceQuery(actorId), cancellationToken);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.Error.ToProblem();
     }
 
@@ -55,11 +56,12 @@ public static class BalanceEndpoints
             return TypedResults.Unauthorized();
         }
 
-        var result = await handler.Handle(new SaveBalanceCommand(actorId, request?.Rate), cancellationToken);
+        var result = await handler.Handle(new SaveBalanceCommand(actorId, request?.AgencyId), cancellationToken);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.Error.ToProblem();
     }
 
     private static async Task<IResult> ListSnapshots(
+        Guid? agencyId,
         DateOnly? from,
         DateOnly? to,
         ClaimsPrincipal user,
@@ -71,12 +73,12 @@ public static class BalanceEndpoints
             return TypedResults.Unauthorized();
         }
 
-        var result = await handler.Handle(new ListBalanceSnapshotsQuery(actorId, from, to), cancellationToken);
+        var result = await handler.Handle(new ListBalanceSnapshotsQuery(actorId, agencyId, from, to), cancellationToken);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.Error.ToProblem();
     }
 
     private static async Task<IResult> GetCapital(
-        ClaimsPrincipal user, IQueryHandler<GetCapitalQuery, CapitalView> handler, CancellationToken cancellationToken)
+        ClaimsPrincipal user, IQueryHandler<GetCapitalQuery, IReadOnlyList<CaisseCapitalView>> handler, CancellationToken cancellationToken)
     {
         if (!user.TryGetAccountId(out var actorId))
         {
@@ -96,7 +98,8 @@ public static class BalanceEndpoints
             return TypedResults.Unauthorized();
         }
 
-        var result = await handler.Handle(new SetInitialCapitalCommand(actorId, request.Amount, request.Reason), cancellationToken);
+        var result = await handler.Handle(
+            new SetInitialCapitalCommand(actorId, request.AgencyId, request.Amount, request.Reason), cancellationToken);
         return result.IsSuccess ? TypedResults.NoContent() : result.Error.ToProblem();
     }
 }

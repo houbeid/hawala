@@ -43,7 +43,7 @@ Si le test de référence (536 893 MRO) montre un écart, on ajuste le point 4, 
 ## Organisation et règlement entre agences (validé)
 
 - **Un seul patron, deux caisses** : une caisse à Nouakchott (MRO), une caisse à Dakar (FCFA).
-- Transfert Nouakchott → Dakar : l'ouguiya entre dans la caisse de Nouakchott, le FCFA sort de la caisse de Dakar (et inversement). Pas de compte de dette entre agences : les deux caisses appartiennent au même patron et le bilan les additionne. Le passage de devise se fait par le compte « Position de change ».
+- Transfert Nouakchott → Dakar : l'ouguiya entre dans la caisse de Nouakchott, le FCFA sort de la caisse de Dakar (et inversement). Pas de compte de dette entre agences : les deux caisses appartiennent au même patron. **Le bilan reste par caisse, sans total converti** (décision du 21 octobre 2026, voir « Bilan par caisse »). Le passage de devise se fait par le compte « Position de change ».
 - Le remplissage des caisses (achat de FCFA, banque, transport…) est **hors périmètre** de l'app. Les agents enregistrent seulement :
   - « Approvisionnement de caisse » (montant seul, sans source) ;
   - « Retrait du patron » (montant seul).
@@ -57,7 +57,7 @@ Mêmes règles pour Nouakchott et Dakar :
 - Un compte agent appartient à **une seule agence** ; le choix de l'agence est verrouillé dans l'interface.
 - Une agence voit **les transferts qu'elle a envoyés et ceux qu'elle a reçus** (à livrer), sa propre caisse et ses propres données, jamais celles de l'autre agence.
 - Une agence voit **ses montants (acheté, donné au client) et le prix de vente**. Elle ne voit **ni le prix d'achat, ni la commission**, ni les quatre cartes de l'écran des transferts : réservés au Superviseur.
-- Le **Superviseur voit les deux agences** (gestion des comptes, taux, commission, bilan total).
+- Le **Superviseur voit les deux agences** (gestion des comptes, taux, commission, bilan des deux caisses).
 - Contrôle côté serveur (filtre global EF Core sur l'agence, champs masqués dans les réponses de l'API), jamais seulement dans l'interface.
 
 ## Taux et commission (validé)
@@ -298,12 +298,13 @@ Dans le code aujourd'hui (20 octobre 2026) : `parties.create`, `parties.view_bal
 - **Écran « Bénéfice »** (l'onglet de l'app actuelle est vide à cause d'un bug ; proposition validée) : Superviseur seulement (`profit.view`) ; période (aujourd'hui par défaut) et agence (une, ou les deux) ; total de la période en MRO ; **une ligne par jour** (date, nombre de transferts, montant envoyé en FCFA, prix d'achat du jour, bénéfice du jour, enregistré ou non) ; un jour s'ouvre sur **une ligne par transfert** (référence, sens, FCFA, MRO, prix de vente, prix d'achat, bénéfice) ; bouton « Enregistrer le bénéfice du jour » (photo, réenregistrable le même jour) ; export plus tard.
 - **Bénéfice du jour enregistré (fait le 21 octobre 2026)** : photo du jour courant seulement (comme le budget), pour une agence ou pour les deux (bénéfice général), remplacée si on la réenregistre le même jour ; Superviseur (`profit.view`) ; bénéfice gardé en pleine précision (10 décimales).
 - **Bénéfice d'une agence = transferts qu'elle a envoyés** ; les deux agences ensemble = bénéfice général ; annulés exclus ; jour = date d'opération ; pleine précision, seul l'affichage arrondit.
-- **Capital pris en compte dans le bilan** = capital initial + approvisionnements − retraits du patron (compte « Apports du patron », rattaché au capital).
-- **Taux du bilan** : prix d'achat du jour par défaut, modifiable par le Superviseur avant d'enregistrer.
-- **Capital initial** : saisi et modifiable par le Superviseur, chaque changement tracé ; chaque photo du bilan garde le capital utilisé.
+- **Capital pris en compte dans le bilan d'une caisse** = capital initial de la caisse + approvisionnements − retraits du patron dans cette caisse (compte « Apports du patron » de l'agence, rattaché au capital).
+- ~~Taux du bilan~~ : **remplacé** le 21 octobre 2026 par le bilan par caisse, sans taux.
+- **Capital initial** : un par caisse, dans sa devise ; saisi et modifiable par le Superviseur, chaque changement tracé ; chaque photo du bilan garde le capital utilisé.
 - **Chiffres de référence** (536 893 et −261 005) : test sur données fictives qui les reproduisent ; vérification sur les vraies données à la migration (phase 8). Aucune vraie donnée dans le code.
-- **« الأرباح المحفوظة »** : cumul des bénéfices du jour enregistrés, affiché à titre d'information dans le bilan, non ajouté au capital.
-- **Bilan général (fait le 21 octobre 2026)** : bilan = budget de l'agence en MRO + budget de l'agence en FCFA × taux / 5000 (les budgets soustrayant déjà les non livrés) ; reproduit les chiffres de l'app actuelle (164 132 887 ; −1 367 113, −0,83 % ; −261 005, −0,16 %) ; sans capital saisi, pas de résultat net ; photo du jour courant, remplacée le même jour ; permissions `balance.view` et `balance.manage` (Superviseur).
+- **« الأرباح المحفوظة »** : cumul des bénéfices du jour enregistrés **de la caisse** (transferts qu'elle a envoyés), en MRO, affiché à titre d'information dans son bilan, non ajouté au capital.
+- ~~Bilan général converti~~ (fait le matin du 21 octobre 2026, **remplacé** le même jour) : budget MRO + budget FCFA × taux / 5000. Abandonné parce que le taux du jour faisait varier le total sans aucune opération.
+- **Bilan par caisse (fait le 21 octobre 2026, « 2 caisses, 2 capitaux », pas de total converti)** : pour chaque agence, résultat net = budget de la caisse (les non livrés déjà soustraits) − capital pris en compte, dans sa devise, % = résultat / capital ; sans capital saisi, pas de résultat net ; une photo par caisse et par jour, remplacée le même jour ; permissions `balance.view` et `balance.manage` (Superviseur). Seul le −0,16 % de référence reste testé (sur une caisse).
 
 ## Bénéfice (validé)
 
@@ -314,15 +315,19 @@ T = prix d'achat du jour (taux du marché, MRO pour 5 000 FCFA), fixé par le Su
 
 Le bénéfice du jour = somme des transferts du jour. Réservé au Superviseur. Valeur de référence vérifiée sur l'app actuelle : **536 893 MRO** (avec T = 3629,88).
 
-## Bilan général (validé)
+## Bilan par caisse (validé le 21 octobre 2026)
 
-`Résultat net = Trésorerie de toutes les caisses + Résultat tiers − Transferts non livrés − Capital initial` (tout en MRO au taux du bilan).
+**Deux caisses, deux capitaux, pas de total converti.** Pour chaque caisse, dans sa devise (Nouakchott en MRO, Dakar en FCFA) :
 
-Valeur de référence vérifiée : capital 165 500 000, résultat net **−261 005 MRO (−0,16 %)**. Les transferts non livrés sont soustraits car l'argent est en caisse mais dû aux bénéficiaires. Écran : taux saisi, « Actualiser », « Enregistrer le bilan », montants envoyés du jour par agence. Réservé au Superviseur.
+`Résultat net = Budget de la caisse − (Capital initial de la caisse + Apports nets du patron dans la caisse)`
+
+Budget de la caisse = espèces + banques + soldes débiteurs − soldes créditeurs − transferts non livrés (phase 4). Le taux du jour n'intervient pas : convertir Dakar en MRO ferait baisser ou monter le total avec le taux, sans aucune opération (raison de la décision). Les transferts non livrés sont soustraits car l'argent est en caisse mais dû aux bénéficiaires. Écran : les deux caisses côte à côte, « Actualiser », « Enregistrer le bilan » par caisse. Réservé au Superviseur.
+
+L'ancienne formule de l'app actuelle (tout en MRO au taux du bilan, référence −261 005 MRO, −0,16 % d'un capital de 165 500 000) est abandonnée ; le −0,16 % reste un test de calcul sur une caisse.
 
 ## Tableau de bord (validé)
 
-Nombre de transferts, livrés / non livrés, **taux de livraison par agence**, rapport caisse / capital / bénéfice.
+**Fait le 21 octobre 2026** (`GET /api/v1/transfers/dashboard?from=&to=`, `balance.view`, Superviseur seulement) : quatre cartes **par caisse, dans sa devise**, sur les transferts **envoyés par la caisse** (annulés exclus) : envoyé (montant + nombre) = livré + non livré ; **taux de livraison en nombre de transferts** (livrés / envoyés × 100, vide sans envoi) ; période sur la date d'opération, **aujourd'hui par défaut**. **Pas de rapport caisse / capital** (le bilan par caisse donne déjà le résultat).
 
 App actuelle (capture du 20 octobre 2026), écran Superviseur qui réunit bilan et tableau de bord :
 - En tête : « الميزانية العامة » (bilan général) 164 132 887 MRO ; « رأس المال الأولي » (capital initial) 165 500 000 MRO ; la formule affichée « خزينة جميع الصناديق + نتيجة الأطراف - الحوالات غير المسلمة » (trésorerie de toutes les caisses + résultat tiers − transferts non livrés) ; « النتيجة الصافية » (résultat net) −1 367 113 MRO, −0,83 %, en rouge. Vérifié : 164 132 887 − 165 500 000 = −1 367 113.
@@ -386,8 +391,6 @@ Valider les maquettes des écrans de transfert (création en 3 étapes, livraiso
 
 - **Transferts (phase 3)** : format de référence de l'app actuelle retenu (`TR-RS18-HG01-2026-TGNC-20261019-000043`) : que signifient RS18, HG01, 2026 et TGNC, et comment se génèrent-ils ?
 
-- Bilan (phase 5) : « الأرباح المحفوظة » (bénéfices enregistrés, 430 074 MRO sur la capture) apparaît parmi les composants du bilan mais pas dans sa formule : qu'est-ce exactement, et entre-t-il dans le calcul ?
-- Bilan (phase 5) : le capital initial varie d'un bilan enregistré à l'autre : saisi à la main à chaque bilan, ou calculé (capital de départ + apports du patron − retraits du patron) ?
 
 - Migration (phase 8) : dans l'app actuelle, les deux agences sont aussi des tiers (« فرع دكار », « فرع انواكشوط »), avec un solde (ex. −148 116 001 MRO). La nouvelle app n'a pas de compte de dette entre agences : ces tiers ne sont pas repris tels quels ; comment traiter leur solde à la bascule ?
 - Liste des tiers : rôle du bouton « Calcul général » (« حساب عام »).

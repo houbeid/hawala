@@ -17,6 +17,7 @@ using Transfers.Application.Features.Transfers.EditTransferAmounts;
 using Transfers.Application.Features.Transfers.EditTransferTexts;
 using Transfers.Application.Features.Transfers.GetTransfer;
 using Transfers.Application.Features.Transfers.GetTransferHistory;
+using Transfers.Application.Features.Transfers.GetTransferDashboard;
 using Transfers.Application.Features.Transfers.GetTransferSummary;
 using Transfers.Application.Features.Transfers.ListTransfers;
 using Transfers.Infrastructure.Messaging;
@@ -63,6 +64,7 @@ public static class DependencyInjection
         services.AddScoped<IQueryHandler<ListTransfersQuery, TransferList>, ListTransfersQueryHandler>();
         services.AddScoped<IQueryHandler<GetTransferQuery, TransferView>, GetTransferQueryHandler>();
         services.AddScoped<IQueryHandler<GetTransferSummaryQuery, TransferSummary>, GetTransferSummaryQueryHandler>();
+        services.AddScoped<IQueryHandler<GetTransferDashboardQuery, TransferDashboard>, GetTransferDashboardQueryHandler>();
         services.AddScoped<IQueryHandler<GetTransferHistoryQuery, IReadOnlyList<TransferEventView>>, GetTransferHistoryQueryHandler>();
 
         // Écrit dans deux schémas (transfers + ledger) : une seule transaction commune, puis notifications temps réel.

@@ -64,7 +64,7 @@ Douze modules, chacun avec son schéma SQL et son API. Ils ne se parlent que par
 | Transferts | Création, répartition des paiements, crédit, livraison (en espèces, wallet ou banque, éventuellement répartie), annulation, reçu, code de retrait | Tiers, Trésorerie, Grand livre, Taux |
 | Caisse | Encaissements / décaissements manuels, virements internes, clôture journalière (compté vs théorique) | Trésorerie, Grand livre |
 | Bénéfice | Calcul de la marge par transfert et par jour, enregistrement du bénéfice du jour | Transferts, Taux |
-| Bilan | Trésorerie + résultat tiers − transferts non livrés vs capital initial ; snapshots datés | Grand livre, Transferts |
+| Bilan | Par caisse, dans sa devise : budget de la caisse − (capital initial + apports nets du patron) ; snapshots datés par caisse | Caisse, Grand livre, Bénéfice |
 | Notifications | Notifications temps réel entre agences (WhatsApp / SMS : plus tard) | Transferts |
 | Audit & conformité | Journal de toutes les actions (avant / après), alertes AML (seuils, fractionnement), point d'intégration HarisAI | Tous (abonné aux événements) |
 
@@ -106,7 +106,7 @@ Si le test de référence (536 893 MRO) montre un écart, on ajuste le point 4, 
 | CashClosing | compte, date, théorique, compté, écart, validé par | Clôture journalière |
 | CashBudgetSnapshot | agence, date, espèces, banques, soldes débiteurs, soldes créditeurs, non livrés, budget, enregistré par | Budget de la caisse, enregistré chaque jour par l'agence |
 | ProfitSnapshot | agence, date, taux du jour, bénéfice MRO, détail | Onglet Bénéfice |
-| BalanceSnapshot | date, taux, trésorerie, résultat tiers, non livrés, capital, résultat net | Historique du bilan |
+| BalanceSnapshot | agence, date, devise, budget, capital initial, apports du patron, capital pris en compte, résultat net et % | Historique du bilan, une photo par caisse et par jour |
 | AuditLog | qui, quoi, entité, avant / après (JSONB), IP, appareil | Inséré seulement, jamais modifié |
 | ComplianceAlert | règle, tiers, transfert(s), score, statut | Seuils, fractionnement, listes |
 
@@ -162,13 +162,13 @@ La livraison se répartit comme le paiement : le bénéficiaire peut être payé
 
 Le bénéfice du jour est la somme sur les transferts du jour. Cette formule redonne exactement les 536 893 MRO de l'app actuelle.
 
-**Bilan général** (tout converti en MRO au taux du bilan) :
+**Bilan par caisse** (décision du 21 octobre 2026 : deux caisses, deux capitaux, pas de total converti ; chaque caisse dans sa devise) :
 
 ```latex
-R\acute{e}sultat\ net = Tr\acute{e}sorerie + R\acute{e}sultat\ tiers - Transferts\ non\ livr\acute{e}s - Capital\ initial
+R\acute{e}sultat\ net = Budget\ de\ la\ caisse - (Capital\ initial + Apports\ nets\ du\ patron)
 ```
 
-Sur l'exemple vu, on retrouve −261 005 MRO, soit −0,16 % d'un capital de 165 500 000.
+Le taux du jour n'intervient pas : un total converti en MRO varierait avec le taux sans aucune opération. L'ancienne formule (tout en MRO au taux du bilan, −261 005 MRO, −0,16 % d'un capital de 165 500 000) est abandonnée.
 
 Garanties techniques :
 
@@ -192,7 +192,7 @@ Un seul patron possède deux caisses : Nouakchott en MRO, Dakar en FCFA. Il n'y 
 | Création d'un transfert | Toujours par l'agence d'envoi (source = agence de l'agent, verrouillée) ; l'autre agence le voit en « reçu ». Le Superviseur peut créer dans les deux sens |
 | Expéditeur, bénéficiaire, crédit | Expéditeur et bénéficiaire en texte libre ; crédit activé : la dette va sur un tiers choisi dans la liste (créé s'il n'existe pas), en rouge dans l'agence d'envoi ; crédit partiel ou total ; plafond bloquant pour tous, Superviseur compris (solde après transfert ≤ plafond) ; crédit sans part à crédit refusé |
 | Périmètre d'un agent | Une seule agence. Il voit les transferts envoyés et reçus par son agence, sa caisse et ses tiers ; jamais ceux de l'autre agence. Mêmes règles à Nouakchott et à Dakar |
-| Périmètre du Superviseur | Les deux agences : comptes, taux, bilan total |
+| Périmètre du Superviseur | Les deux agences : comptes, taux, bilan des deux caisses |
 | Taux | Seul le Superviseur fixe les deux taux du jour : le prix d'achat (taux du marché, T) et le prix de vente (taux client, appliqué automatiquement aux nouveaux transferts, modifiable par lui pour un transfert précis) ; le serveur refuse tout autre compte |
 | Taux du jour | Prix d'achat et prix de vente, « 5 000 FCFA = ? MRO », enregistrés jour par jour. Commission d'un transfert = écart entre les deux × montant (ex. 5 000 000 FCFA vendus à 3 650, achetés à 3 600 : 50 000 MRO) |
 | Modification et historique (21 octobre 2026) | Textes : agence d'envoi ou Superviseur, motif facultatif ; argent (montant, prix de vente, répartition, crédit, date) : Superviseur, motif obligatoire, contre-passation et nouvelle écriture au jour de la modification ; version obligatoire (409 si périmée) ; historique de toutes les actions, codes faux compris, filtré selon les droits du lecteur |
@@ -369,7 +369,7 @@ Le cœur comptable vient en premier : tout le reste écrit dedans. Chaque phase 
 2. **Grand livre + Trésorerie + Tiers** : comptes, écritures, soldes, fiche et relevé de tiers. Tests sur les équilibres et les contre-passations. **Fait (19 octobre 2026)** : grand livre (partie double par devise, contre-passation, relevé, déclencheurs d'immuabilité et d'équilibre en base), trésorerie (caisses, banques, wallets), tiers (fiche commune, solde et plafond par agence, solde initial, archivage, liste avec totaux, relevé) ; 456 tests sur PostgreSQL.
 3. **Transferts** : taux du jour, formulaire en 3 étapes, répartition des paiements, crédit, livraison, annulation avec motif, historique, temps réel entre agences.
 4. **Caisse** : encaissements, décaissements, virements internes, approvisionnement et retrait du patron, budget de caisse enregistré chaque jour, contrôle de cohérence.
-5. **Bénéfice + Bilan** : calculs, snapshots, tableaux de bord. Validation avec les chiffres de l'app actuelle (536 893 et −261 005).
+5. **Bénéfice + Bilan** : calculs, snapshots, tableaux de bord. Validation avec les chiffres de l'app actuelle (536 893 et −261 005). **Fait (21 octobre 2026)** : écran « Bénéfice » et bénéfice du jour enregistré ; bilan par caisse (deux caisses, deux capitaux, sans total converti) ; tableau de bord (par caisse : envoyé, non livrés, livré, taux de livraison en nombre) ; 699 tests sur PostgreSQL.
 6. **Sécurité avancée** : modèles de rôles, périmètre par tiers, plafonds, audit lisible.
 7. **Hors ligne + reçu** : file d'attente, synchronisation, reçu PDF.
 8. **Migration + mise en service** : import des tiers et de leurs soldes à la date de démarrage, sans les anciens transferts, période en parallèle, bascule.

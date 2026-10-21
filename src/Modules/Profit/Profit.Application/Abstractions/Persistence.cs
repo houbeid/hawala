@@ -19,6 +19,6 @@ public interface IProfitSnapshotRepository
     /// <summary>Photos d'une période pour une agence (null : les deux), du plus récent au plus ancien.</summary>
     Task<IReadOnlyList<ProfitSnapshot>> ListAsync(Guid? agencyId, DateOnly from, DateOnly to, CancellationToken cancellationToken);
 
-    /// <summary>Somme des bénéfices de toutes les photos générales (les deux agences).</summary>
-    Task<decimal> SumGeneralProfitsAsync(CancellationToken cancellationToken);
+    /// <summary>Somme des bénéfices de toutes les photos d'une agence.</summary>
+    Task<decimal> SumProfitsAsync(Guid agencyId, CancellationToken cancellationToken);
 }

@@ -28,38 +28,38 @@ namespace Balance.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("AgencyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Budget")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
                     b.Property<decimal?>("CapitalUsed")
-                        .HasPrecision(28, 10)
-                        .HasColumnType("numeric(28,10)");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
 
                     b.Property<DateOnly>("Date")
                         .HasColumnType("date");
-
-                    b.Property<decimal>("GeneralBalance")
-                        .HasPrecision(28, 10)
-                        .HasColumnType("numeric(28,10)");
 
                     b.Property<decimal?>("InitialCapital")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
-                    b.Property<decimal>("MroBudget")
+                    b.Property<decimal?>("NetResult")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
-
-                    b.Property<decimal?>("NetResult")
-                        .HasPrecision(28, 10)
-                        .HasColumnType("numeric(28,10)");
 
                     b.Property<decimal?>("NetResultPercent")
                         .HasPrecision(28, 10)
                         .HasColumnType("numeric(28,10)");
 
-                    b.Property<decimal>("OwnerContributionsMro")
-                        .HasPrecision(28, 10)
-                        .HasColumnType("numeric(28,10)");
-
-                    b.Property<decimal>("Rate")
+                    b.Property<decimal>("OwnerContributions")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
@@ -69,17 +69,13 @@ namespace Balance.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("SavedBy")
                         .HasColumnType("uuid");
 
-                    b.Property<decimal>("SavedProfits")
+                    b.Property<decimal>("SavedProfitsMro")
                         .HasPrecision(28, 10)
                         .HasColumnType("numeric(28,10)");
 
-                    b.Property<decimal>("XofBudget")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("Date")
+                    b.HasIndex("AgencyId", "Date")
                         .IsUnique();
 
                     b.ToTable("balance_snapshots", "balance");
@@ -90,9 +86,17 @@ namespace Balance.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("AgencyId")
+                        .HasColumnType("uuid");
+
                     b.Property<decimal>("Amount")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
 
                     b.Property<string>("Reason")
                         .HasMaxLength(500)
@@ -106,7 +110,7 @@ namespace Balance.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SetAt");
+                    b.HasIndex("AgencyId", "SetAt");
 
                     b.ToTable("capital_changes", "balance", t =>
                         {

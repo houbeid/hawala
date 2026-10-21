@@ -8,74 +8,72 @@ using Hawala.SharedKernel.Time;
 using Ledger.Contracts;
 using Organization.Contracts;
 using Profit.Contracts;
-using Rates.Contracts;
 
 namespace Balance.Application.Features;
 
-/// <summary>Le bilan général tel qu'on le montre (écran « الميزانية العامة »), en pleine précision ; l'affichage arrondit.</summary>
-/// <param name="SavedProfits">« الأرباح المحفوظة » : cumul des bénéfices du jour enregistrés, à titre d'information.</param>
+/// <summary>Le bilan d'une caisse, dans sa devise, en pleine précision (l'affichage arrondit).</summary>
+/// <param name="SavedProfitsMro">« الأرباح المحفوظة » de la caisse : cumul des bénéfices du jour enregistrés (en MRO), information.</param>
 public sealed record BalanceView(
+    Guid AgencyId,
+    Currency Currency,
     DateOnly Date,
-    decimal Rate,
-    Guid MroAgencyId,
-    decimal MroBudget,
-    Guid XofAgencyId,
-    decimal XofBudget,
-    decimal XofBudgetInMro,
-    decimal GeneralBalance,
+    decimal Budget,
     decimal? InitialCapital,
-    decimal OwnerContributionsMro,
+    decimal OwnerContributions,
     decimal? CapitalUsed,
     decimal? NetResult,
     decimal? NetResultPercent,
-    decimal SavedProfits);
+    decimal SavedProfitsMro);
+
+/// <summary>Les deux caisses côte à côte, sans total converti (décision du 21 octobre 2026).</summary>
+public sealed record BalanceOverview(DateOnly Date, IReadOnlyList<BalanceView> Caisses);
 
 public sealed record BalanceSnapshotView(
     Guid Id,
+    Guid AgencyId,
+    Currency Currency,
     DateOnly Date,
-    decimal Rate,
-    decimal MroBudget,
-    decimal XofBudget,
-    decimal GeneralBalance,
+    decimal Budget,
     decimal? InitialCapital,
-    decimal OwnerContributionsMro,
+    decimal OwnerContributions,
     decimal? CapitalUsed,
     decimal? NetResult,
     decimal? NetResultPercent,
-    decimal SavedProfits,
+    decimal SavedProfitsMro,
     Guid SavedBy,
     DateTimeOffset SavedAt)
 {
     public static BalanceSnapshotView From(BalanceSnapshot s) =>
-        new(s.Id, s.Date, s.Rate, s.MroBudget, s.XofBudget, s.GeneralBalance, s.InitialCapital, s.OwnerContributionsMro,
-            s.CapitalUsed, s.NetResult, s.NetResultPercent, s.SavedProfits, s.SavedBy, s.SavedAt);
+        new(s.Id, s.AgencyId, s.Currency, s.Date, s.Budget, s.InitialCapital, s.OwnerContributions, s.CapitalUsed,
+            s.NetResult, s.NetResultPercent, s.SavedProfitsMro, s.SavedBy, s.SavedAt);
 }
 
-public sealed record CapitalChangeView(Guid Id, decimal Amount, string? Reason, Guid SetBy, DateTimeOffset SetAt);
+public sealed record CapitalChangeView(Guid Id, decimal Amount, Currency Currency, string? Reason, Guid SetBy, DateTimeOffset SetAt);
 
-/// <summary>Capital initial actuel et toutes ses saisies.</summary>
-public sealed record CapitalView(decimal? Current, IReadOnlyList<CapitalChangeView> History);
+/// <summary>Capital initial actuel d'une caisse et ses saisies.</summary>
+public sealed record CaisseCapitalView(Guid AgencyId, Currency Currency, decimal? Current, IReadOnlyList<CapitalChangeView> History);
 
-/// <summary>Bilan en direct (balance.view). <paramref name="Rate"/> : taux du bilan ; prix d'achat du jour par défaut.</summary>
-public sealed record GetBalanceQuery(Guid ActorId, decimal? Rate) : IQuery<BalanceView>;
+/// <summary>Bilan en direct des deux caisses (balance.view).</summary>
+public sealed record GetBalanceQuery(Guid ActorId) : IQuery<BalanceOverview>;
 
-/// <summary>« Enregistrer le bilan » du jour (balance.manage).</summary>
-public sealed record SaveBalanceCommand(Guid ActorId, decimal? Rate) : ICommand<BalanceSnapshotView>;
+/// <summary>« Enregistrer le bilan » du jour d'une caisse (balance.manage).</summary>
+public sealed record SaveBalanceCommand(Guid ActorId, Guid? AgencyId) : ICommand<BalanceSnapshotView>;
 
-/// <summary>Historique des bilans enregistrés (balance.view), 30 derniers jours par défaut.</summary>
-public sealed record ListBalanceSnapshotsQuery(Guid ActorId, DateOnly? From, DateOnly? To) : IQuery<IReadOnlyList<BalanceSnapshotView>>;
+/// <summary>Historique des bilans enregistrés (balance.view), d'une caisse ou des deux ; 30 derniers jours par défaut.</summary>
+public sealed record ListBalanceSnapshotsQuery(Guid ActorId, Guid? AgencyId, DateOnly? From, DateOnly? To)
+    : IQuery<IReadOnlyList<BalanceSnapshotView>>;
 
-/// <summary>Saisir le capital initial (balance.manage) ; motif facultatif.</summary>
-public sealed record SetInitialCapitalCommand(Guid ActorId, decimal? Amount, string? Reason) : ICommand;
+/// <summary>Saisir le capital initial d'une caisse (balance.manage), dans sa devise ; motif facultatif.</summary>
+public sealed record SetInitialCapitalCommand(Guid ActorId, Guid? AgencyId, decimal? Amount, string? Reason) : ICommand;
 
-/// <summary>Capital initial actuel et historique de ses saisies (balance.view).</summary>
-public sealed record GetCapitalQuery(Guid ActorId) : IQuery<CapitalView>;
+/// <summary>Capital initial des deux caisses et historique de leurs saisies (balance.view).</summary>
+public sealed record GetCapitalQuery(Guid ActorId) : IQuery<IReadOnlyList<CaisseCapitalView>>;
 
 /// <summary>
-/// Bilan général (règles validées, décisions du 21 octobre 2026) : budget de l'agence en MRO + budget de l'agence en FCFA
-/// converti au taux du bilan (prix d'achat du jour par défaut, modifiable) ; capital pris en compte = capital initial
-/// + approvisionnements − retraits du patron (comptes « Apports du patron » des deux agences) ; résultat net et pourcentage ;
-/// « الأرباح المحفوظة » en information. Photo du jour courant, remplacée le même jour. Superviseur seulement.
+/// Bilan par caisse (décision du 21 octobre 2026 : « deux caisses, deux capitaux », pas de total converti) : pour chaque agence,
+/// budget de la caisse (Caisse) − capital pris en compte (capital initial de la caisse + approvisionnements − retraits du patron
+/// de cette caisse), dans sa devise ; le taux du jour n'intervient pas. « الأرباح المحفوظة » de la caisse en information.
+/// Photo du jour courant par caisse, remplacée le même jour. Superviseur seulement.
 /// POINT OUVERT : les jours sont lus en UTC ; Nouakchott et Dakar sont tous deux en UTC+0.
 /// POINT OUVERT : l'audit des saisies de capital arrivera avec le module Audit ; chaque saisie garde déjà son auteur.
 /// </summary>
@@ -83,42 +81,60 @@ public sealed class BalanceHandlers(
     IAgencyDirectory agencies,
     ICashBudgets budgets,
     ILedger ledger,
-    IDailyRates dailyRates,
     IProfitHistory profits,
     ICapitalRepository capital,
     IBalanceSnapshotRepository snapshots,
     IUnitOfWork unitOfWork,
     IClock clock)
-    : IQueryHandler<GetBalanceQuery, BalanceView>,
+    : IQueryHandler<GetBalanceQuery, BalanceOverview>,
       ICommandHandler<SaveBalanceCommand, BalanceSnapshotView>,
       IQueryHandler<ListBalanceSnapshotsQuery, IReadOnlyList<BalanceSnapshotView>>,
       ICommandHandler<SetInitialCapitalCommand>,
-      IQueryHandler<GetCapitalQuery, CapitalView>
+      IQueryHandler<GetCapitalQuery, IReadOnlyList<CaisseCapitalView>>
 {
     public const int DefaultHistoryDays = 30;
 
-    public async Task<Result<BalanceView>> Handle(GetBalanceQuery query, CancellationToken cancellationToken) =>
-        await ComputeAsync(query.Rate, cancellationToken);
+    public async Task<Result<BalanceOverview>> Handle(GetBalanceQuery query, CancellationToken cancellationToken)
+    {
+        var caisses = new List<BalanceView>();
+        foreach (var agency in (await agencies.GetAllAsync(cancellationToken)).OrderBy(a => a.Code, StringComparer.Ordinal))
+        {
+            var view = await ComputeAsync(agency, cancellationToken);
+            if (view is not null)
+            {
+                caisses.Add(view);
+            }
+        }
+
+        return new BalanceOverview(Today(), caisses);
+    }
 
     public async Task<Result<BalanceSnapshotView>> Handle(SaveBalanceCommand command, CancellationToken cancellationToken)
     {
-        var view = await ComputeAsync(command.Rate, cancellationToken);
-        if (view.IsFailure)
+        var agency = await ResolveAgencyAsync(command.AgencyId, cancellationToken);
+        if (agency.IsFailure)
         {
-            return view.Error;
+            return agency.Error;
         }
 
-        var figures = Figures(view.Value);
+        var view = await ComputeAsync(agency.Value, cancellationToken);
+        if (view is null)
+        {
+            return BalanceErrors.Agency.NotFound;
+        }
+
+        var figures = new BalanceFigures(
+            view.Currency, view.Budget, view.InitialCapital, view.OwnerContributions, view.CapitalUsed, view.NetResult, view.NetResultPercent);
         var now = clock.UtcNow;
-        var snapshot = await snapshots.GetAsync(view.Value.Date, cancellationToken);
+        var snapshot = await snapshots.GetAsync(agency.Value.Id, view.Date, cancellationToken);
         if (snapshot is null)
         {
-            snapshot = BalanceSnapshot.Create(view.Value.Date, figures, view.Value.SavedProfits, command.ActorId, now);
+            snapshot = BalanceSnapshot.Create(agency.Value.Id, view.Date, figures, view.SavedProfitsMro, command.ActorId, now);
             snapshots.Add(snapshot);
         }
         else
         {
-            snapshot.Replace(figures, view.Value.SavedProfits, command.ActorId, now);
+            snapshot.Replace(figures, view.SavedProfitsMro, command.ActorId, now);
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -135,13 +151,19 @@ public sealed class BalanceHandlers(
             return BalanceErrors.Filter.PeriodInvalid;
         }
 
-        var found = await snapshots.ListAsync(from, to, cancellationToken);
+        var found = await snapshots.ListAsync(query.AgencyId, from, to, cancellationToken);
         return found.Select(BalanceSnapshotView.From).ToList();
     }
 
     public async Task<Result> Handle(SetInitialCapitalCommand command, CancellationToken cancellationToken)
     {
-        var change = CapitalChange.Create(command.Amount, command.Reason, command.ActorId, clock.UtcNow);
+        var agency = await ResolveAgencyAsync(command.AgencyId, cancellationToken);
+        if (agency.IsFailure)
+        {
+            return agency.Error;
+        }
+
+        var change = CapitalChange.Create(agency.Value.Id, agency.Value.Currency, command.Amount, command.Reason, command.ActorId, clock.UtcNow);
         if (change.IsFailure)
         {
             return change.Error;
@@ -152,75 +174,53 @@ public sealed class BalanceHandlers(
         return Result.Success();
     }
 
-    public async Task<Result<CapitalView>> Handle(GetCapitalQuery query, CancellationToken cancellationToken)
+    public async Task<Result<IReadOnlyList<CaisseCapitalView>>> Handle(GetCapitalQuery query, CancellationToken cancellationToken)
     {
         var history = await capital.ListAsync(cancellationToken);
-        return new CapitalView(
-            history.FirstOrDefault()?.Amount,
-            [.. history.Select(c => new CapitalChangeView(c.Id, c.Amount, c.Reason, c.SetBy, c.SetAt))]);
+        return (await agencies.GetAllAsync(cancellationToken))
+            .OrderBy(a => a.Code, StringComparer.Ordinal)
+            .Select(a =>
+            {
+                var changes = history.Where(c => c.AgencyId == a.Id).ToList();
+                return new CaisseCapitalView(
+                    a.Id, a.Currency, changes.FirstOrDefault()?.Amount,
+                    [.. changes.Select(c => new CapitalChangeView(c.Id, c.Amount, c.Currency, c.Reason, c.SetBy, c.SetAt))]);
+            })
+            .ToList();
     }
 
-    private static BalanceFigures Figures(BalanceView v) =>
-        new(v.MroBudget, v.XofBudget, v.XofBudgetInMro, v.GeneralBalance, v.InitialCapital, v.OwnerContributionsMro,
-            v.CapitalUsed, v.NetResult, v.NetResultPercent, v.Rate);
-
-    private async Task<Result<BalanceView>> ComputeAsync(decimal? requestedRate, CancellationToken cancellationToken)
+    private async Task<Result<AgencySummary>> ResolveAgencyAsync(Guid? agencyId, CancellationToken cancellationToken)
     {
-        var today = Today();
-
-        ExchangeRate rate;
-        if (requestedRate is { } value)
+        if (agencyId is not { } id)
         {
-            var parsed = ExchangeRate.Create(value);
-            if (parsed.IsFailure)
-            {
-                return parsed.Error;
-            }
-
-            rate = parsed.Value;
-        }
-        else if (await dailyRates.GetAsync(today, cancellationToken) is { } daily)
-        {
-            rate = daily.PurchaseRate;
-        }
-        else
-        {
-            return BalanceErrors.Rate.Required;
+            return BalanceErrors.Agency.Required;
         }
 
-        var all = await agencies.GetAllAsync(cancellationToken);
-        var mroAgency = all.SingleOrDefault(a => a.Currency == Currency.MRO);
-        var xofAgency = all.SingleOrDefault(a => a.Currency == Currency.XOF);
-        if (mroAgency is null || xofAgency is null)
+        var agency = await agencies.GetByIdAsync(id, cancellationToken);
+        return agency is null ? BalanceErrors.Agency.NotFound : agency;
+    }
+
+    /// <summary>Bilan d'une caisse ; null si son budget ne peut pas être lu.</summary>
+    private async Task<BalanceView?> ComputeAsync(AgencySummary agency, CancellationToken cancellationToken)
+    {
+        var budget = await budgets.GetBudgetAsync(agency.Id, cancellationToken);
+        if (budget is null)
         {
-            return BalanceErrors.Agencies.Missing;
+            return null;
         }
 
-        var mroBudget = await budgets.GetBudgetAsync(mroAgency.Id, cancellationToken);
-        var xofBudget = await budgets.GetBudgetAsync(xofAgency.Id, cancellationToken);
-        if (mroBudget is null || xofBudget is null)
-        {
-            return BalanceErrors.Agencies.Missing;
-        }
-
-        var current = await capital.GetCurrentAsync(cancellationToken);
+        var current = await capital.GetCurrentAsync(agency.Id, cancellationToken);
         var figures = BalanceFigures.Compute(new BalanceInputs(
-            mroBudget.Budget,
-            xofBudget.Budget,
-            rate,
-            current?.Amount,
-            await OwnerContributionsAsync(mroAgency.Id, cancellationToken),
-            await OwnerContributionsAsync(xofAgency.Id, cancellationToken)));
+            agency.Currency, budget.Budget, current?.Amount, await OwnerContributionsAsync(agency.Id, cancellationToken)));
+        var savedProfits = await profits.SumSavedProfitsAsync(agency.Id, cancellationToken);
 
-        var savedProfits = await profits.SumSavedProfitsAsync(cancellationToken);
         return new BalanceView(
-            today, figures.Rate, mroAgency.Id, figures.MroBudget, xofAgency.Id, figures.XofBudget, figures.XofBudgetInMro,
-            figures.GeneralBalance, figures.InitialCapital, figures.OwnerContributionsMro, figures.CapitalUsed,
-            figures.NetResult, figures.NetResultPercent, savedProfits);
+            agency.Id, agency.Currency, Today(), figures.Budget, figures.InitialCapital, figures.OwnerContributions,
+            figures.CapitalUsed, figures.NetResult, figures.NetResultPercent, savedProfits);
     }
 
     /// <summary>
-    /// Approvisionnements − retraits du patron dans une agence : « Apports du patron » est crédité à chaque approvisionnement,
+    /// Approvisionnements − retraits du patron dans une caisse : « Apports du patron » est crédité à chaque approvisionnement,
     /// son solde (débit − crédit) est donc négatif quand le patron a apporté plus qu'il n'a retiré.
     /// </summary>
     private async Task<decimal> OwnerContributionsAsync(Guid agencyId, CancellationToken cancellationToken)

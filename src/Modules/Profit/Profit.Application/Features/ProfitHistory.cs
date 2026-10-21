@@ -6,6 +6,6 @@ namespace Profit.Application.Features;
 /// <summary>Implémentation de la porte publique du Bénéfice pour le Bilan.</summary>
 public sealed class ProfitHistory(IProfitSnapshotRepository snapshots) : IProfitHistory
 {
-    public Task<decimal> SumSavedProfitsAsync(CancellationToken cancellationToken) =>
-        snapshots.SumGeneralProfitsAsync(cancellationToken);
+    public Task<decimal> SumSavedProfitsAsync(Guid agencyId, CancellationToken cancellationToken) =>
+        snapshots.SumProfitsAsync(agencyId, cancellationToken);
 }
