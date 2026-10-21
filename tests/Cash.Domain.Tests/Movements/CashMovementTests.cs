@@ -100,4 +100,80 @@ public class CashMovementTests
         Assert.Equal(entry, movement.EntryId);
         Assert.Throws<InvalidOperationException>(() => movement.AttachEntry(entry));
     }
+
+    // --- Virement interne --------------------------------------------------
+
+    private static readonly Guid Bankily = Guid.Parse("0199f0a0-0000-7000-8000-00000000c002");
+
+    private static NewCashMovement InternalTransfer() =>
+        new(Nkc, CashMovementType.InternalTransfer, Cash, null, Mro(50_000m), null, Now, Bankily);
+
+    [Fact]
+    public void Internal_transfer_goes_from_one_account_to_another_and_is_neither_in_nor_out()
+    {
+        var movement = Create(InternalTransfer()).Value;
+
+        Assert.True(movement.IsInternal);
+        Assert.False(movement.IsIncoming);
+        Assert.Equal(Cash, movement.TreasuryAccountId);
+        Assert.Equal(Bankily, movement.DestinationTreasuryAccountId);
+        Assert.Null(movement.PartyId);
+    }
+
+    [Fact]
+    public void Internal_transfer_needs_another_destination_and_no_party()
+    {
+        Assert.Equal(CashErrors.Movement.DestinationRequired,
+            Create(InternalTransfer() with { DestinationTreasuryAccountId = null }).Error);
+        Assert.Equal(CashErrors.Movement.SameAccount,
+            Create(InternalTransfer() with { DestinationTreasuryAccountId = Cash }).Error);
+        Assert.Equal(CashErrors.Movement.PartyNotAllowed,
+            Create(InternalTransfer() with { PartyId = Party }).Error);
+    }
+
+    [Fact]
+    public void Only_an_internal_transfer_has_a_destination()
+    {
+        Assert.Equal(CashErrors.Movement.DestinationNotAllowed,
+            Create(Receipt() with { DestinationTreasuryAccountId = Bankily }).Error);
+    }
+
+    // --- Annulation --------------------------------------------------------
+
+    private static readonly Guid Supervisor = Guid.Parse("0199f0a0-0000-7000-8000-00000000b002");
+
+    [Fact]
+    public void Cancelling_keeps_the_reason_and_locks_the_movement()
+    {
+        var movement = Create(Receipt()).Value;
+
+        Assert.True(movement.Cancel("  Saisie en double  ", Supervisor, Now).IsSuccess);
+
+        Assert.Equal(CashMovementStatus.Cancelled, movement.Status);
+        Assert.Equal("Saisie en double", movement.CancellationReason);
+        Assert.Equal(Supervisor, movement.CancelledBy);
+        Assert.Equal(CashErrors.Movement.AlreadyCancelled, movement.Cancel("Encore", Supervisor, Now).Error);
+    }
+
+    [Fact]
+    public void Cancelling_needs_a_reason()
+    {
+        var movement = Create(Receipt()).Value;
+
+        Assert.Equal(CashErrors.Movement.ReasonRequired, movement.Cancel(" ", Supervisor, Now).Error);
+        Assert.Equal(CashErrors.Movement.ReasonTooLong, movement.Cancel(new string('m', 501), Supervisor, Now).Error);
+        Assert.Equal(CashMovementStatus.Active, movement.Status);
+    }
+
+    [Fact]
+    public void Cancellation_entry_is_attached_only_after_cancelling()
+    {
+        var movement = Create(Receipt()).Value;
+        var entry = Guid.Parse("0199f0a0-0000-7000-8000-00000000e009");
+
+        Assert.Throws<InvalidOperationException>(() => movement.AttachCancellationEntry(entry));
+        movement.Cancel("Motif", Supervisor, Now);
+        movement.AttachCancellationEntry(entry);
+        Assert.Equal(entry, movement.CancellationEntryId);
+    }
 }

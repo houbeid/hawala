@@ -37,6 +37,12 @@ internal sealed class TransferRepository(TransfersDbContext db) : ITransferRepos
     public async Task<IReadOnlyList<Transfer>> ListAllAsync(TransferFilter filter, CancellationToken cancellationToken) =>
         await Filtered(filter).ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<Transfer>> ListChangedSinceAsync(
+        Guid agencyId, DateTimeOffset since, CancellationToken cancellationToken) =>
+        await db.Transfers.AsNoTracking()
+            .Where(t => (t.SourceAgencyId == agencyId || t.DestinationAgencyId == agencyId) && t.Events.Any(e => e.At >= since))
+            .ToListAsync(cancellationToken);
+
     public Task<int> CountVisibleAsync(CancellationToken cancellationToken) =>
         db.Transfers.CountAsync(cancellationToken);
 

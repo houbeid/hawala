@@ -8,6 +8,9 @@ public interface IPartyDirectory
 
     /// <summary>Le compte du tiers dans une agence (sans verrou), ou null si le tiers n'existe pas.</summary>
     Task<PartyAccountRef?> GetAgencyAccountAsync(Guid partyId, Guid agencyId, CancellationToken cancellationToken);
+
+    /// <summary>Comptes, dans une agence, des tiers marqués « dans le bilan » (archivés compris : leur solde est nul).</summary>
+    Task<IReadOnlyList<PartyAccountRef>> ListBalanceSheetAccountsAsync(Guid agencyId, CancellationToken cancellationToken);
 }
 
 /// <param name="LedgerAccountId">Compte au grand livre du tiers dans cette agence.</param>

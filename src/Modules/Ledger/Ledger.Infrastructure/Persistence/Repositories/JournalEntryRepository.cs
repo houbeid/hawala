@@ -12,6 +12,16 @@ internal sealed class JournalEntryRepository(LedgerDbContext db) : IJournalEntry
             .Include(e => e.Lines)
             .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
 
+    public async Task<IReadOnlyList<JournalEntry>> ListRecordedAsync(
+        string entryType, Guid agencyId, DateTimeOffset recordedSince, CancellationToken cancellationToken) =>
+        await db.JournalEntries
+            .AsNoTracking()
+            .Include(e => e.Lines)
+            .Where(e => e.EntryType == entryType && e.RecordedAt >= recordedSince)
+            .Where(e => e.Lines.Any(l => db.Accounts.Any(a => a.Id == l.AccountId && a.AgencyId == agencyId)))
+            .OrderBy(e => e.RecordedAt)
+            .ToListAsync(cancellationToken);
+
     public Task<bool> IsReversedAsync(Guid entryId, CancellationToken cancellationToken) =>
         db.JournalEntries.AnyAsync(e => e.ReversesEntryId == entryId, cancellationToken);
 

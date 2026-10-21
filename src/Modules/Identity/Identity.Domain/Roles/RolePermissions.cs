@@ -21,7 +21,8 @@ public static class RolePermissions
         [Permissions.TransfersCreate, Permissions.TransfersCredit, Permissions.TransfersDeliver, Permissions.CashCreate, Permissions.PartiesCreate, Permissions.PartiesViewBalance, Permissions.CashBudgetRead];
 
     // Le caissier : tient la caisse et livre les transferts ; ne voit pas les soldes des tiers.
-    private static readonly HashSet<string> Cashier = [Permissions.TransfersDeliver, Permissions.CashCreate, Permissions.CashBudgetRead];
+    private static readonly HashSet<string> Cashier =
+        [Permissions.TransfersDeliver, Permissions.CashCreate, Permissions.CashBudgetRead, Permissions.CashBudgetSave];
 
     // La consultation : lit seulement.
     private static readonly HashSet<string> ReadOnly = [Permissions.PartiesViewBalance, Permissions.CashBudgetRead];

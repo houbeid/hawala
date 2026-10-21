@@ -42,6 +42,7 @@
   </Folder>
   <Folder Name="/src/Modules/Transfers/">
     <Project Path="src/Modules/Transfers/Transfers.Application/Transfers.Application.csproj" />
+    <Project Path="src/Modules/Transfers/Transfers.Contracts/Transfers.Contracts.csproj" />
     <Project Path="src/Modules/Transfers/Transfers.Domain/Transfers.Domain.csproj" />
     <Project Path="src/Modules/Transfers/Transfers.Infrastructure/Transfers.Infrastructure.csproj" />
   </Folder>

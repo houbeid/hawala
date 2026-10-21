@@ -20,7 +20,9 @@ namespace Cash.Application.Features.Movements.CreateCashMovement;
 /// - encaissement : débit du compte de trésorerie / crédit du tiers (il nous doit moins, ou on lui doit plus) ;
 /// - décaissement : débit du tiers / crédit du compte de trésorerie ;
 /// - approvisionnement de caisse : débit du compte de trésorerie / crédit « Apports du patron » ;
-/// - retrait du patron : débit « Apports du patron » / crédit du compte de trésorerie.
+/// - retrait du patron : débit « Apports du patron » / crédit du compte de trésorerie ;
+/// - virement interne : débit du compte de destination / crédit du compte d'origine (même agence, même devise).
+/// POINT OUVERT : le virement interne utilise la permission cash.create (choix à confirmer avec Hamade).
 /// Un agent travaille sur son agence seulement ; le Superviseur choisit l'agence. Saisie en MRU convertie (× 10).
 /// Même clé d'idempotence pour le même compte : le mouvement déjà enregistré est renvoyé.
 /// POINT OUVERT : plafond de crédit d'un tiers sur un décaissement (il passe plus en rouge) : non appliqué pour l'instant.
@@ -69,18 +71,35 @@ public sealed class CreateCashMovementCommandHandler(
             return amount.Error;
         }
 
-        var account = command.TreasuryAccountId is { } accountId
-            ? (await treasury.GetByIdsAsync([accountId], cancellationToken)).SingleOrDefault()
-            : null;
-        if (account is null || !account.IsActive || account.AgencyId != agency.Value.Id || account.Currency != agency.Value.Currency)
+        var requested = new[] { command.TreasuryAccountId, command.DestinationTreasuryAccountId }
+            .Where(id => id is not null).Select(id => id!.Value).Distinct().ToList();
+        var accounts = requested.Count == 0 ? [] : await treasury.GetByIdsAsync(requested, cancellationToken);
+
+        bool Usable(TreasuryAccountRef? a) =>
+            a is not null && a.IsActive && a.AgencyId == agency.Value.Id && a.Currency == agency.Value.Currency;
+
+        var account = accounts.FirstOrDefault(a => a.Id == command.TreasuryAccountId);
+        if (!Usable(account))
         {
             return CashErrors.Movement.AccountNotAllowed;
+        }
+
+        // Même compte en destination : refusé plus loin par le Domain (SameAccount).
+        TreasuryAccountRef? destination = null;
+        if (command.DestinationTreasuryAccountId is { } destinationId && destinationId != account!.Id)
+        {
+            destination = accounts.FirstOrDefault(a => a.Id == destinationId);
+            if (!Usable(destination))
+            {
+                return CashErrors.Movement.AccountNotAllowed;
+            }
         }
 
         var now = clock.UtcNow;
         var created = CashMovement.Create(
             new NewCashMovement(
-                agency.Value.Id, type, account.Id, command.PartyId, amount.Value, command.Note, command.OperationAt ?? now),
+                agency.Value.Id, type, account!.Id, command.PartyId, amount.Value, command.Note, command.OperationAt ?? now,
+                command.DestinationTreasuryAccountId),
             key,
             command.ActorId,
             now);
@@ -89,13 +108,16 @@ public sealed class CreateCashMovementCommandHandler(
             return created.Error;
         }
 
-        var counterpart = await ResolveCounterpartAsync(created.Value, cancellationToken);
+        var counterpart = created.Value.IsInternal
+            ? destination!.LedgerAccountId
+            : await ResolveCounterpartAsync(created.Value, cancellationToken);
         if (counterpart.IsFailure)
         {
             return counterpart.Error;
         }
 
         var movement = created.Value;
+        // Virement interne : l'argent entre dans le compte de destination (la contrepartie) et sort du compte d'origine.
         var incoming = movement.IsIncoming;
         var entry = await ledger.PostAsync(
             new PostEntryRequest(
@@ -129,6 +151,7 @@ public sealed class CreateCashMovementCommandHandler(
         CashMovementType.Receipt => "Encaissement",
         CashMovementType.Payment => "Décaissement",
         CashMovementType.OwnerContribution => "Approvisionnement de caisse",
+        CashMovementType.InternalTransfer => "Virement interne",
         _ => "Retrait du patron",
     };
 

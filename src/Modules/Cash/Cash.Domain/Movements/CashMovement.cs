@@ -18,6 +18,16 @@ public enum CashMovementType
 
     /// <summary>« Retrait du patron » : montant seul, contre « Apports du patron ».</summary>
     OwnerWithdrawal,
+
+    /// <summary>Virement interne : d'un compte de trésorerie à un autre de la même agence (ni entrée ni sortie pour l'agence).</summary>
+    InternalTransfer,
+}
+
+/// <summary>Un mouvement annulé (Superviseur, motif obligatoire) est contre-passé et ne compte plus dans les totaux.</summary>
+public enum CashMovementStatus
+{
+    Active,
+    Cancelled,
 }
 
 /// <summary>Ce que l'agent a saisi, déjà lu par l'Application (agence, devise, compte, tiers).</summary>
@@ -28,13 +38,15 @@ public sealed record NewCashMovement(
     Guid? PartyId,
     Money Amount,
     string? Note,
-    DateTimeOffset OperationAt);
+    DateTimeOffset OperationAt,
+    Guid? DestinationTreasuryAccountId = null);
 
 /// <summary>
 /// Un mouvement manuel de caisse (règles validées le 21 octobre 2026, écran « Caisse - Ajout » de l'app actuelle) :
 /// méthode de paiement (compte de trésorerie), encaissement ou décaissement avec un tiers obligatoire,
 /// ou approvisionnement / retrait du patron en montant seul ; montant dans la devise de l'agence ; note facultative ;
 /// date d'opération (avec l'heure) jamais future. Montants MRO hors transferts : décimales permises.
+/// Virement interne (règle validée : deux lignes) : d'un compte de trésorerie vers un autre de la même agence, sans tiers.
 /// </summary>
 public sealed class CashMovement
 {
@@ -54,6 +66,7 @@ public sealed class CashMovement
         Type = request.Type;
         TreasuryAccountId = request.TreasuryAccountId;
         PartyId = request.PartyId;
+        DestinationTreasuryAccountId = request.DestinationTreasuryAccountId;
         Amount = request.Amount.Amount;
         Currency = request.Amount.Currency;
         Note = string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim();
@@ -71,8 +84,11 @@ public sealed class CashMovement
 
     public Guid TreasuryAccountId { get; private set; }
 
-    /// <summary>Tiers de l'encaissement ou du décaissement ; null pour l'approvisionnement et le retrait du patron.</summary>
+    /// <summary>Tiers de l'encaissement ou du décaissement ; null pour les autres types.</summary>
     public Guid? PartyId { get; private set; }
+
+    /// <summary>Compte qui reçoit un virement interne ; null pour les autres types (le compte d'origine est TreasuryAccountId).</summary>
+    public Guid? DestinationTreasuryAccountId { get; private set; }
 
     /// <summary>Toujours positif ; le sens vient du type.</summary>
     public decimal Amount { get; private set; }
@@ -92,8 +108,23 @@ public sealed class CashMovement
 
     public DateTimeOffset CreatedAt { get; private set; }
 
-    /// <summary>Vrai si l'argent entre dans le compte de trésorerie (encaissement, approvisionnement).</summary>
+    public CashMovementStatus Status { get; private set; }
+
+    /// <summary>Motif obligatoire de l'annulation ; null tant que le mouvement est actif.</summary>
+    public string? CancellationReason { get; private set; }
+
+    public DateTimeOffset? CancelledAt { get; private set; }
+
+    public Guid? CancelledBy { get; private set; }
+
+    /// <summary>Contre-passation de l'écriture du mouvement.</summary>
+    public Guid? CancellationEntryId { get; private set; }
+
+    /// <summary>Vrai si l'argent entre dans l'agence (encaissement, approvisionnement).</summary>
     public bool IsIncoming => IsIncomingType(Type);
+
+    /// <summary>Vrai pour un virement interne : ni entrée ni sortie pour l'agence.</summary>
+    public bool IsInternal => Type == CashMovementType.InternalTransfer;
 
     public Money Money => Money.Create(Amount, Currency).Value;
 
@@ -128,6 +159,23 @@ public sealed class CashMovement
             return CashErrors.Movement.PartyNotAllowed;
         }
 
+        if (request.Type == CashMovementType.InternalTransfer)
+        {
+            if (request.DestinationTreasuryAccountId is not { } destination)
+            {
+                return CashErrors.Movement.DestinationRequired;
+            }
+
+            if (destination == request.TreasuryAccountId)
+            {
+                return CashErrors.Movement.SameAccount;
+            }
+        }
+        else if (request.DestinationTreasuryAccountId is not null)
+        {
+            return CashErrors.Movement.DestinationNotAllowed;
+        }
+
         if (request.Amount.Amount <= 0m)
         {
             return CashErrors.Movement.AmountInvalid;
@@ -144,6 +192,50 @@ public sealed class CashMovement
         }
 
         return new CashMovement(request, idempotencyKey.Trim(), createdBy, now);
+    }
+
+    /// <summary>
+    /// Annule le mouvement (Superviseur seulement, règle validée) : motif obligatoire ; l'Application contre-passe son écriture
+    /// au jour de l'annulation. Annulé = verrouillé.
+    /// </summary>
+    public Result Cancel(string? reason, Guid cancelledBy, DateTimeOffset now)
+    {
+        if (Status == CashMovementStatus.Cancelled)
+        {
+            return CashErrors.Movement.AlreadyCancelled;
+        }
+
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            return CashErrors.Movement.ReasonRequired;
+        }
+
+        if (reason.Trim().Length > NoteMaxLength)
+        {
+            return CashErrors.Movement.ReasonTooLong;
+        }
+
+        Status = CashMovementStatus.Cancelled;
+        CancellationReason = reason.Trim();
+        CancelledAt = now;
+        CancelledBy = cancelledBy;
+        return Result.Success();
+    }
+
+    /// <summary>Rattache la contre-passation, une seule fois et seulement après l'annulation.</summary>
+    public void AttachCancellationEntry(Guid entryId)
+    {
+        if (entryId == Guid.Empty)
+        {
+            throw new ArgumentException("Id d'écriture vide.", nameof(entryId));
+        }
+
+        if (Status != CashMovementStatus.Cancelled || CancellationEntryId is not null)
+        {
+            throw new InvalidOperationException("Contre-passation sans annulation, ou déjà rattachée.");
+        }
+
+        CancellationEntryId = entryId;
     }
 
     /// <summary>Rattache l'écriture du grand livre, une seule fois.</summary>

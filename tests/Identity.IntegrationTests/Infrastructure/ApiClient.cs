@@ -215,6 +215,17 @@ public static class ApiClient
         return await client.SendAsync(request);
     }
 
+    public static Task<HttpResponseMessage> CancelCashMovementAsync(this HttpClient client, string? accessToken, Guid id, string? reason) =>
+        client.SendAsync(HttpMethod.Post, $"/api/v1/cash-movements/{id}/cancel", body: new { reason }, accessToken: accessToken);
+
+    /// <param name="body">Objet anonyme : agencyId, target (TreasuryAccount / Party), targetId, amount (signé), reason, operationAt.</param>
+    public static Task<HttpResponseMessage> CreateBalanceAdjustmentAsync(this HttpClient client, string? accessToken, object body) =>
+        client.SendAsync(HttpMethod.Post, "/api/v1/balance-adjustments", body: body, accessToken: accessToken);
+
+    /// <summary>POST authentifié d'un corps JSON sur une URL, pour les routes sans helper dédié.</summary>
+    public static Task<HttpResponseMessage> PostJsonAsync(this HttpClient client, string? accessToken, string url, object body) =>
+        client.SendAsync(HttpMethod.Post, url, body: body, accessToken: accessToken);
+
     /// <summary>GET authentifié sur une URL complète (chemin et filtres), pour les routes sans helper dédié.</summary>
     public static Task<HttpResponseMessage> SendGetAsync(this HttpClient client, string? accessToken, string url) =>
         client.SendAsync(HttpMethod.Get, url, accessToken: accessToken);

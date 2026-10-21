@@ -75,6 +75,18 @@ public sealed class LedgerService(
         return account.Value.Id;
     }
 
+    public async Task<IReadOnlyList<RecordedEntry>> ListRecordedEntriesAsync(
+        string entryType, Guid agencyId, DateTimeOffset recordedSince, CancellationToken cancellationToken)
+    {
+        var found = await entries.ListRecordedAsync(entryType, agencyId, recordedSince, cancellationToken);
+        return [.. found.Select(e => new RecordedEntry(
+            e.Id, e.EntryType, e.OperationDate, e.RecordedAt, e.SourceId, e.AuthorId, e.Label,
+            e.Lines.Where(l => l.Side == EntrySide.Debit).Sum(l => l.Amount)))];
+    }
+
+    public async Task<Guid?> FindSystemAccountAsync(SystemAccountRole role, Guid agencyId, CancellationToken cancellationToken) =>
+        (await accounts.GetSystemAccountAsync(role, agencyId, cancellationToken))?.Id;
+
     public async Task<Result<Guid>> PostAsync(PostEntryRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);

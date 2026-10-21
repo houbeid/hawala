@@ -18,6 +18,21 @@ internal sealed class CashMovementRepository(CashDbContext db) : ICashMovementRe
     public Task<CashMovement?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
         db.Movements.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
 
+    public async Task<CashMovement?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken)
+    {
+        // Verrou d'abord (sans filtre), puis lecture suivie AVEC le filtre de périmètre.
+        await db.Database
+            .SqlQuery<Guid>($"""
+                SELECT "Id" AS "Value"
+                FROM cash.cash_movements
+                WHERE "Id" = {id}
+                FOR UPDATE
+                """)
+            .ToListAsync(cancellationToken);
+
+        return await db.Movements.FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
+    }
+
     public async Task<(IReadOnlyList<CashMovement> Items, int TotalCount)> ListAsync(
         CashMovementFilter filter, int skip, int take, CancellationToken cancellationToken)
     {
@@ -35,8 +50,16 @@ internal sealed class CashMovementRepository(CashDbContext db) : ICashMovementRe
 
     public async Task<IReadOnlyList<CashMovementTypeTotal>> TotalsAsync(CashMovementFilter filter, CancellationToken cancellationToken) =>
         await Filtered(filter)
+            .Where(m => m.Status == CashMovementStatus.Active)
             .GroupBy(m => m.Type)
             .Select(g => new CashMovementTypeTotal(g.Key, g.Sum(m => m.Amount), g.Count()))
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<CashMovement>> ListCancelledSinceAsync(
+        Guid agencyId, DateTimeOffset since, CancellationToken cancellationToken) =>
+        await db.Movements.AsNoTracking()
+            .Where(m => m.AgencyId == agencyId && m.Status == CashMovementStatus.Cancelled && m.CancelledAt >= since)
+            .OrderBy(m => m.CancelledAt)
             .ToListAsync(cancellationToken);
 
     public Task<int> CountVisibleAsync(CancellationToken cancellationToken) => db.Movements.CountAsync(cancellationToken);
@@ -60,7 +83,7 @@ internal sealed class CashMovementRepository(CashDbContext db) : ICashMovementRe
 
         if (filter.TreasuryAccountId is { } accountId)
         {
-            query = query.Where(m => m.TreasuryAccountId == accountId);
+            query = query.Where(m => m.TreasuryAccountId == accountId || m.DestinationTreasuryAccountId == accountId);
         }
 
         if (filter.Search is { } search)

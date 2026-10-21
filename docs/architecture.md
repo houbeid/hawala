@@ -127,7 +127,7 @@ Le passage MRO ↔ FCFA se fait par un compte système « Position de change »,
 | Décaissement manuel | Tiers (obligatoire) | Trésorerie | locale |
 | Approvisionnement de caisse | Trésorerie | Apports du patron | locale |
 | Retrait du patron | Apports du patron | Trésorerie | locale |
-| Virement interne | Trésorerie destination | Trésorerie source | locale |
+| Virement interne | Trésorerie destination | Trésorerie source (même agence) | locale |
 
 Décisions validées pour le grand livre :
 

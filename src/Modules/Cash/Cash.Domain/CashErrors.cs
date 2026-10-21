@@ -13,7 +13,7 @@ public static class CashErrors
         public static readonly Error TypeInvalid =
             Error.Validation(
                 "Cash.Movement.TypeInvalid",
-                "Type inconnu : Receipt (encaissement), Payment (décaissement), OwnerContribution (approvisionnement) ou OwnerWithdrawal (retrait du patron).");
+                "Type inconnu : Receipt (encaissement), Payment (décaissement), OwnerContribution (approvisionnement), OwnerWithdrawal (retrait du patron) ou InternalTransfer (virement interne).");
 
         public static readonly Error AmountInvalid =
             Error.Validation("Cash.Movement.AmountInvalid", "Le montant est obligatoire et strictement positif.");
@@ -27,13 +27,22 @@ public static class CashErrors
         public static readonly Error PartyNotAllowed =
             Error.Validation(
                 "Cash.Movement.PartyNotAllowed",
-                "Approvisionnement de caisse et retrait du patron : montant seul, sans tiers.");
+                "Approvisionnement de caisse, retrait du patron et virement interne : sans tiers.");
 
         public static readonly Error PartyNotFound =
             Error.Validation("Cash.Movement.PartyNotFound", "Tiers introuvable.");
 
         public static readonly Error PartyArchived =
             Error.Validation("Cash.Movement.PartyArchived", "Ce tiers est archivé : plus aucune opération possible.");
+
+        public static readonly Error DestinationRequired =
+            Error.Validation("Cash.Movement.DestinationRequired", "Virement interne : choisir le compte de destination.");
+
+        public static readonly Error DestinationNotAllowed =
+            Error.Validation("Cash.Movement.DestinationNotAllowed", "Seul un virement interne a un compte de destination.");
+
+        public static readonly Error SameAccount =
+            Error.Validation("Cash.Movement.SameAccount", "Virement interne : le compte de destination doit être différent du compte d'origine.");
 
         public static readonly Error AccountNotAllowed =
             Error.Validation("Cash.Movement.AccountNotAllowed", "Méthode de paiement inconnue, désactivée ou d'une autre agence.");
@@ -50,10 +59,40 @@ public static class CashErrors
         public static readonly Error NoteTooLong =
             Error.Validation("Cash.Movement.NoteTooLong", "Note : 500 caractères au plus.");
 
+        public static readonly Error AlreadyCancelled =
+            Error.Conflict("Cash.Movement.AlreadyCancelled", "Ce mouvement est déjà annulé.");
+
+        public static readonly Error ReasonRequired =
+            Error.Validation("Cash.Movement.ReasonRequired", "Le motif de l'annulation est obligatoire.");
+
+        public static readonly Error ReasonTooLong =
+            Error.Validation("Cash.Movement.ReasonTooLong", "Motif : 500 caractères au plus.");
+
         public static readonly Error IdempotencyKeyRequired =
             Error.Validation(
                 "Cash.Movement.IdempotencyKeyRequired",
                 "En-tête Idempotency-Key obligatoire (100 caractères au plus) : il évite d'enregistrer deux fois le même mouvement.");
+    }
+
+    public static class Adjustment
+    {
+        public static readonly Error TargetInvalid =
+            Error.Validation("Cash.Adjustment.TargetInvalid", "Cible inconnue : TreasuryAccount ou Party.");
+
+        public static readonly Error TargetNotFound =
+            Error.Validation(
+                "Cash.Adjustment.TargetNotFound", "Compte de trésorerie ou tiers introuvable, désactivé, archivé ou d'une autre agence.");
+
+        public static readonly Error AmountInvalid =
+            Error.Validation(
+                "Cash.Adjustment.AmountInvalid",
+                "Montant de l'ajustement : non nul, positif pour augmenter le solde, négatif pour le baisser (FCFA entier, MRO à 2 décimales).");
+
+        public static readonly Error ReasonRequired =
+            Error.Validation("Cash.Adjustment.ReasonRequired", "Le motif de l'ajustement est obligatoire.");
+
+        public static readonly Error ReasonTooLong =
+            Error.Validation("Cash.Adjustment.ReasonTooLong", "Motif : 500 caractères au plus.");
     }
 
     public static class Filter

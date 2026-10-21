@@ -67,9 +67,11 @@ public sealed class ListCashMovementsQueryHandler(
         var all = await movements.CountVisibleAsync(cancellationToken);
         var built = await views.BuildAsync(items, cancellationToken);
 
+        var internals = Sum(totals.Where(t => t.Type == CashMovementType.InternalTransfer));
         var incoming = Sum(totals.Where(t => CashMovement.IsIncomingType(t.Type)));
-        var outgoing = Sum(totals.Where(t => !CashMovement.IsIncomingType(t.Type)));
-        return new CashMovementList(built, page, PageSize, total, all, incoming, outgoing, incoming.Amount - outgoing.Amount);
+        var outgoing = Sum(totals.Where(t => !CashMovement.IsIncomingType(t.Type) && t.Type != CashMovementType.InternalTransfer));
+        return new CashMovementList(
+            built, page, PageSize, total, all, incoming, outgoing, incoming.Amount - outgoing.Amount, internals);
     }
 
     private static CashAmount Sum(IEnumerable<CashMovementTypeTotal> totals)

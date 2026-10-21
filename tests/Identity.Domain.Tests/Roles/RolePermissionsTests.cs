@@ -28,6 +28,7 @@ public class RolePermissionsTests
         Assert.DoesNotContain(Permissions.TransfersCancel, granted);
         Assert.DoesNotContain(Permissions.TransfersManageCode, granted);
         Assert.DoesNotContain(Permissions.TransfersEditRate, granted);
+        Assert.DoesNotContain(Permissions.CashManage, granted);
     }
 
     // Droits par défaut validés le 20 octobre 2026 (tableau du skill du projet).
@@ -41,6 +42,7 @@ public class RolePermissionsTests
         Assert.Contains(Permissions.TransfersCredit, granted);
         Assert.Contains(Permissions.TransfersDeliver, granted);
         Assert.Contains(Permissions.CashCreate, granted);
+        Assert.DoesNotContain(Permissions.CashBudgetSave, granted);
         Assert.Contains(Permissions.PartiesCreate, granted);
         Assert.Contains(Permissions.PartiesViewBalance, granted);
         Assert.Contains(Permissions.CashBudgetRead, granted);
@@ -56,6 +58,7 @@ public class RolePermissionsTests
         Assert.Contains(Permissions.CashBudgetRead, granted);
         Assert.Contains(Permissions.TransfersDeliver, granted);
         Assert.Contains(Permissions.CashCreate, granted);
+        Assert.Contains(Permissions.CashBudgetSave, granted);
         Assert.DoesNotContain(Permissions.TransfersCreate, granted);
         Assert.DoesNotContain(Permissions.TransfersCredit, granted);
         Assert.DoesNotContain(Permissions.PartiesViewBalance, granted);
@@ -73,6 +76,7 @@ public class RolePermissionsTests
         Assert.DoesNotContain(Permissions.TransfersCreate, granted);
         Assert.DoesNotContain(Permissions.TransfersDeliver, granted);
         Assert.DoesNotContain(Permissions.CashCreate, granted);
+        Assert.DoesNotContain(Permissions.CashBudgetSave, granted);
         Assert.DoesNotContain(Permissions.PartiesCreate, granted);
         Assert.DoesNotContain(Permissions.PartiesManage, granted);
         Assert.DoesNotContain(Permissions.TreasuryManage, granted);

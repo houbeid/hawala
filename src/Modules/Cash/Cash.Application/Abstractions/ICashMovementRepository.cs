@@ -12,12 +12,18 @@ public interface ICashMovementRepository
 
     Task<CashMovement?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
+    /// <summary>Un mouvement visible, suivi et VERROUILLÉ (FOR UPDATE) jusqu'à la fin de la transaction en cours.</summary>
+    Task<CashMovement?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken);
+
     /// <summary>Une page, du plus récent au plus ancien (date d'opération), et le nombre total.</summary>
     Task<(IReadOnlyList<CashMovement> Items, int TotalCount)> ListAsync(
         CashMovementFilter filter, int skip, int take, CancellationToken cancellationToken);
 
-    /// <summary>Total et nombre par type, sur les mêmes filtres que la liste.</summary>
+    /// <summary>Total et nombre par type des mouvements ACTIFS (annulés exclus), sur les mêmes filtres que la liste.</summary>
     Task<IReadOnlyList<CashMovementTypeTotal>> TotalsAsync(CashMovementFilter filter, CancellationToken cancellationToken);
+
+    /// <summary>Mouvements de l'agence annulés depuis l'instant donné (contrôle de cohérence).</summary>
+    Task<IReadOnlyList<CashMovement>> ListCancelledSinceAsync(Guid agencyId, DateTimeOffset since, CancellationToken cancellationToken);
 
     /// <summary>Nombre de mouvements visibles, sans filtre (le « 392 » de « 24 / 392 »).</summary>
     Task<int> CountVisibleAsync(CancellationToken cancellationToken);

@@ -37,5 +37,9 @@ public interface IJournalEntryRepository
         DateOnly to,
         CancellationToken cancellationToken);
 
+    /// <summary>Écritures d'un type, enregistrées depuis un instant, touchant un compte de l'agence, avec leurs lignes.</summary>
+    Task<IReadOnlyList<JournalEntry>> ListRecordedAsync(
+        string entryType, Guid agencyId, DateTimeOffset recordedSince, CancellationToken cancellationToken);
+
     void Add(JournalEntry entry);
 }

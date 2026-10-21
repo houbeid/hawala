@@ -23,7 +23,7 @@ namespace Cash.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Cash.Domain.Movements.CashMovement", b =>
+            modelBuilder.Entity("Cash.Domain.Adjustments.BalanceAdjustment", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
@@ -49,6 +49,130 @@ namespace Cash.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("EntryId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTimeOffset>("OperationAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Target")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid>("TargetId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TargetId");
+
+                    b.HasIndex("AgencyId", "OperationAt");
+
+                    b.ToTable("balance_adjustments", "cash", t =>
+                        {
+                            t.HasCheckConstraint("ck_balance_adjustments_amount_not_zero", "\"Amount\" <> 0");
+                        });
+                });
+
+            modelBuilder.Entity("Cash.Domain.Budgets.CashBudgetSnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AgencyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Banks")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("Budget")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("Cash")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("Creditors")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<decimal>("Debtors")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTimeOffset>("SavedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("SavedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Undelivered")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgencyId", "Date")
+                        .IsUnique();
+
+                    b.ToTable("budget_snapshots", "cash");
+                });
+
+            modelBuilder.Entity("Cash.Domain.Movements.CashMovement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AgencyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<Guid?>("CancellationEntryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CancellationReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTimeOffset?>("CancelledAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CancelledBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
+
+                    b.Property<Guid?>("DestinationTreasuryAccountId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("EntryId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("IdempotencyKey")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -64,15 +188,24 @@ namespace Cash.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("PartyId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValueSql("'Active'");
+
                     b.Property<Guid>("TreasuryAccountId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Type")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DestinationTreasuryAccountId");
 
                     b.HasIndex("PartyId");
 
@@ -86,6 +219,10 @@ namespace Cash.Infrastructure.Persistence.Migrations
                     b.ToTable("cash_movements", "cash", t =>
                         {
                             t.HasCheckConstraint("ck_cash_movements_amount_positive", "\"Amount\" > 0");
+
+                            t.HasCheckConstraint("ck_cash_movements_cancellation", "(\"Status\" = 'Cancelled') = (\"CancelledAt\" IS NOT NULL AND \"CancellationReason\" IS NOT NULL AND \"CancellationEntryId\" IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_cash_movements_destination", "(\"Type\" = 'InternalTransfer') = (\"DestinationTreasuryAccountId\" IS NOT NULL) AND (\"DestinationTreasuryAccountId\" IS NULL OR \"DestinationTreasuryAccountId\" <> \"TreasuryAccountId\")");
 
                             t.HasCheckConstraint("ck_cash_movements_party", "(\"Type\" IN ('Receipt', 'Payment')) = (\"PartyId\" IS NOT NULL)");
                         });

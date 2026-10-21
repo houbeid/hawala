@@ -118,7 +118,7 @@ Chaque rôle ne voit que son agence (sauf le Superviseur). Ajustables compte par
 | Exporter | ✔ | ✘ | ✘ | ✔ |
 | Gérer comptes, agences, caisses | ✔ | ✘ | ✘ | ✘ |
 
-Dans le code aujourd'hui (20 octobre 2026) : `parties.create`, `parties.view_balance`, `cash.budget.read`, `transfers.create`, `transfers.credit`, `transfers.deliver`, `transfers.cancel`, `transfers.manage_code`, `transfers.edit_rate` et `cash.create` appliqués selon ce tableau ; les autres permissions des transferts, de la caisse et de l'export seront ajoutées avec leurs endpoints, et données aux rôles selon ce tableau.
+Dans le code aujourd'hui (20 octobre 2026) : `parties.create`, `parties.view_balance`, `cash.budget.read`, `transfers.create`, `transfers.credit`, `transfers.deliver`, `transfers.cancel`, `transfers.manage_code`, `transfers.edit_rate`, `cash.create`, `cash.manage` et `cash.budget.save` appliqués selon ce tableau ; les autres permissions des transferts, de la caisse et de l'export seront ajoutées avec leurs endpoints, et données aux rôles selon ce tableau.
 
 ## Authentification (validé, implémenté)
 
@@ -144,7 +144,10 @@ Dans le code aujourd'hui (20 octobre 2026) : `parties.create`, `parties.view_bal
   5. budget : **un par agence et par jour** ; le réenregistrer le même jour remplace le précédent (auteur et heure gardés) ; les jours passés ne changent jamais ;
   6. **pas de comptage physique de la caisse en V1** (un écart constaté se corrige par un ajustement) ;
   7. alertes du contrôle de cohérence (sans blocage, gardées avec le budget) : taux d'un transfert à plus de 5 % du taux du jour, ajustements de solde, solde initial d'un tiers changé, mouvements et transferts annulés, livraisons sans code, caisses en négatif ;
-  8. **le budget soustrait les transferts non livrés** (tranché le 21 octobre 2026).
+  8. **le budget soustrait les transferts non livrés** (tranché le 21 octobre 2026) ;
+  11. **budget (fait le 21 octobre 2026)** : espèces = comptes « Cash », banques = « Bank » et « Wallet », débiteurs / créditeurs = tiers « dans le bilan » (créditeurs en positif), non livrés = solde créditeur de « Transferts à livrer » de l'agence ; photo du jour calculée par le serveur (`cash.budget.save` : Superviseur, Caissier), remplacée le même jour ; historique 30 derniers jours par défaut.
+  10. **corrections (faites le 21 octobre 2026)** : permission `cash.manage` (Superviseur seulement) ; un mouvement annulé reste dans la liste avec son motif mais ne compte plus dans les totaux ; ajustement = **différence signée** (positive : le solde monte — caisse plus pleine, tiers plus en rouge ; négative : il baisse), même convention que le solde initial.
+  9. **virement interne** : d'un compte de trésorerie vers un autre **de la même agence**, sans tiers, deux lignes (débit destination / crédit origine) ; ni entrée ni sortie pour l'agence ; permission `cash.create` (choix provisoire, à confirmer).
   Écran « Caisse » : agence, recherche, « 0 / 0 result(s) », badges (entrées, sorties), total, période (aujourd'hui), export, « + Ajouter », pagination. Permission `cash.create` (Superviseur, Agent, Caissier) ; lecture avec `cash.budget.read`.
 
 ### Budget de la caisse (validé)

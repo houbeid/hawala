@@ -36,6 +36,16 @@ public interface ILedger
         Currency currency,
         CancellationToken cancellationToken);
 
+    /// <summary>Compte système d'une agence s'il existe déjà, sans le créer (lecture seule) ; null sinon.</summary>
+    Task<Guid?> FindSystemAccountAsync(SystemAccountRole role, Guid agencyId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Écritures d'un type, ENREGISTRÉES depuis un instant (et non datées : une opération antidatée saisie après compte),
+    /// qui touchent un compte d'une agence. Sert au contrôle de cohérence (ex. « Parties.OpeningBalance »).
+    /// </summary>
+    Task<IReadOnlyList<RecordedEntry>> ListRecordedEntriesAsync(
+        string entryType, Guid agencyId, DateTimeOffset recordedSince, CancellationToken cancellationToken);
+
     /// <summary>Enregistre une écriture équilibrée par devise. Renvoie son id.</summary>
     Task<Result<Guid>> PostAsync(PostEntryRequest request, CancellationToken cancellationToken);
 

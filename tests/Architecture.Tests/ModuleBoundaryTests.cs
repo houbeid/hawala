@@ -36,6 +36,7 @@ public class ModuleBoundaryTests
     private static readonly Assembly RatesInfrastructure = typeof(Rates.Infrastructure.DependencyInjection).Assembly;
 
     private static readonly Assembly TreasuryContracts = typeof(Treasury.Contracts.ITreasuryDirectory).Assembly;
+    private static readonly Assembly TransfersContracts = typeof(Transfers.Contracts.ITransferMonitor).Assembly;
     private static readonly Assembly PartiesContracts = typeof(Parties.Contracts.IPartyCreditAccounts).Assembly;
     private static readonly Assembly RatesContracts = typeof(Rates.Contracts.IDailyRates).Assembly;
 
@@ -185,7 +186,7 @@ public class ModuleBoundaryTests
                 || (name.StartsWith("Ledger.", StringComparison.Ordinal) && name != "Ledger.Contracts")
                 || (name.StartsWith("Treasury.", StringComparison.Ordinal) && name != "Treasury.Contracts")
                 || (name.StartsWith("Parties.", StringComparison.Ordinal) && name != "Parties.Contracts")
-                || name.StartsWith("Transfers.", StringComparison.Ordinal)
+                || (name.StartsWith("Transfers.", StringComparison.Ordinal) && name != "Transfers.Contracts")
                 || name.StartsWith("Rates.", StringComparison.Ordinal));
         }
     }
@@ -266,6 +267,8 @@ public class ModuleBoundaryTests
             name is "Ledger.Domain" or "Ledger.Application" or "Ledger.Infrastructure");
         AssertNoReference(TreasuryContracts, name =>
             name is "Treasury.Domain" or "Treasury.Application" or "Treasury.Infrastructure");
+        AssertNoReference(TransfersContracts, name =>
+            name is "Transfers.Domain" or "Transfers.Application" or "Transfers.Infrastructure");
         AssertNoReference(PartiesContracts, name =>
             name is "Parties.Domain" or "Parties.Application" or "Parties.Infrastructure");
         AssertNoReference(RatesContracts, name =>

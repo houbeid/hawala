@@ -19,6 +19,9 @@ public interface ITransferRepository
     /// </summary>
     Task<Transfer?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken);
 
+    /// <summary>Transferts envoyés ou reçus par l'agence qui ont une ligne d'historique depuis l'instant donné (contrôle de cohérence).</summary>
+    Task<IReadOnlyList<Transfer>> ListChangedSinceAsync(Guid agencyId, DateTimeOffset since, CancellationToken cancellationToken);
+
     /// <summary>Tous les transferts visibles qui répondent aux filtres, sans pagination (calcul des cartes).</summary>
     Task<IReadOnlyList<Transfer>> ListAllAsync(TransferFilter filter, CancellationToken cancellationToken);
 

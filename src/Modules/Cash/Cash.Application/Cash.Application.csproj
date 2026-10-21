@@ -8,6 +8,7 @@
     <ProjectReference Include="..\..\Identity\Identity.Contracts\Identity.Contracts.csproj" />
     <ProjectReference Include="..\..\Treasury\Treasury.Contracts\Treasury.Contracts.csproj" />
     <ProjectReference Include="..\..\Parties\Parties.Contracts\Parties.Contracts.csproj" />
+    <ProjectReference Include="..\..\Transfers\Transfers.Contracts\Transfers.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

@@ -57,9 +57,15 @@ public static class Permissions
     /// <summary>Encaissement, décaissement, approvisionnement de caisse, retrait du patron (Superviseur, Agent, Caissier ; règle validée).</summary>
     public const string CashCreate = "cash.create";
 
+    /// <summary>Annuler un mouvement de caisse, ajuster un solde (Superviseur seulement, règle validée).</summary>
+    public const string CashManage = "cash.manage";
+
+    /// <summary>Enregistrer le budget de la caisse du jour (Superviseur, Caissier ; règle validée).</summary>
+    public const string CashBudgetSave = "cash.budget.save";
+
     public static readonly IReadOnlyList<string> All =
     [
         UsersManage, AgenciesManage, TreasuryManage, CashBudgetRead, PartiesCreate, PartiesManage, PartiesViewBalance,
-        RatesSetDaily, ProfitView, TransfersCreate, TransfersCredit, TransfersDeliver, TransfersCancel, TransfersManageCode, TransfersEditRate, CashCreate,
+        RatesSetDaily, ProfitView, TransfersCreate, TransfersCredit, TransfersDeliver, TransfersCancel, TransfersManageCode, TransfersEditRate, CashCreate, CashManage, CashBudgetSave,
     ];
 }

@@ -359,3 +359,63 @@ Idempotency-Key: caisse-0002
 ### Mouvements du jour (totaux entrées / sorties / net)
 GET {{host}}/api/v1/cash-movements
 Authorization: Bearer {{token}}
+
+@walletId = COLLER_L_ID_DU_COMPTE_DE_DESTINATION_ICI
+
+### Virement interne (même agence, sans tiers)
+POST {{host}}/api/v1/cash-movements
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: caisse-0003
+
+{
+  "type": "InternalTransfer",
+  "treasuryAccountId": "{{treasuryId}}",
+  "destinationTreasuryAccountId": "{{walletId}}",
+  "amount": 50000
+}
+
+@cashMovementId = COLLER_L_ID_DU_MOUVEMENT_ICI
+
+### Annuler un mouvement de caisse (Superviseur ; motif obligatoire)
+POST {{host}}/api/v1/cash-movements/{{cashMovementId}}/cancel
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reason": "Saisie en double (fictif)"
+}
+
+### Ajuster un solde (Superviseur) : amount positif = le solde monte, négatif = il baisse ; target TreasuryAccount ou Party
+POST {{host}}/api/v1/balance-adjustments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "agencyId": "{{agencyId}}",
+  "target": "TreasuryAccount",
+  "targetId": "{{treasuryId}}",
+  "amount": -500,
+  "reason": "Écart constaté (fictif)"
+}
+
+### Ajustements du jour
+GET {{host}}/api/v1/balance-adjustments?agencyId={{agencyId}}
+Authorization: Bearer {{token}}
+
+### Budget de la caisse en direct (agent : son agence ; Superviseur : agencyId obligatoire)
+GET {{host}}/api/v1/cash-budget?agencyId={{agencyId}}
+Authorization: Bearer {{token}}
+
+### Enregistrer le budget du jour (Superviseur, Caissier ; remplacé si déjà enregistré aujourd'hui)
+POST {{host}}/api/v1/cash-budget/snapshots
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "agencyId": "{{agencyId}}"
+}
+
+### Historique des budgets (30 derniers jours par défaut)
+GET {{host}}/api/v1/cash-budget/snapshots?agencyId={{agencyId}}
+Authorization: Bearer {{token}}

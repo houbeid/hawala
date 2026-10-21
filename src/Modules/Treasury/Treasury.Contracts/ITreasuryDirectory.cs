@@ -10,7 +10,20 @@ public interface ITreasuryDirectory
 {
     /// <summary>Les comptes demandés et visibles ; un id inconnu ou hors périmètre est simplement absent.</summary>
     Task<IReadOnlyList<TreasuryAccountRef>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
+
+    /// <summary>Tous les comptes visibles d'une agence, désactivés compris (leur solde est nul), avec leur nature.</summary>
+    Task<IReadOnlyList<TreasuryAccountItem>> ListByAgencyAsync(Guid agencyId, CancellationToken cancellationToken);
 }
+
+/// <summary>Nature d'un compte de trésorerie : espèces (« Espèces » du budget) ou banque / wallet (« Banques »).</summary>
+public enum TreasuryAccountKind
+{
+    Cash,
+    Bank,
+    Wallet,
+}
+
+public sealed record TreasuryAccountItem(Guid Id, string Name, TreasuryAccountKind Kind, Guid LedgerAccountId, bool IsActive);
 
 /// <param name="LedgerAccountId">Compte au grand livre qui porte l'argent de ce compte de trésorerie.</param>
 public sealed record TreasuryAccountRef(
