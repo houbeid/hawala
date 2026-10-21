@@ -44,6 +44,7 @@ public sealed class ArchivePartyTests(ApiFixture fixture)
     {
         var (factory, client, token, partyId, tag, _, dakar) = await ArrangeAsync();
         using var opening = await client.SetOpeningBalanceAsync(token, partyId, dakar, new { amount = -1_000m });
+        Assert.Equal(HttpStatusCode.NoContent, opening.StatusCode);
 
         using var response = await client.ArchivePartyAsync(token, partyId);
 

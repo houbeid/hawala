@@ -12,7 +12,12 @@ namespace Transfers.Infrastructure.Persistence;
 /// Périmètre par agence (règle validée) : un agent voit les transferts envoyés ET reçus par son agence ;
 /// le Superviseur voit tout. Sans session validée, aucun transfert n'est visible.
 /// </summary>
-public sealed class TransfersDbContext(DbContextOptions<TransfersDbContext> options, IAgencyScope agencyScope)
+/// <remarks>
+/// Temps réel : à chaque enregistrement, les transferts qui ont une nouvelle ligne d'historique sont gardés dans le
+/// <see cref="TransferChangeBuffer"/> ; ils ne seront notifiés qu'après la validation de la transaction.
+/// </remarks>
+public sealed class TransfersDbContext(
+    DbContextOptions<TransfersDbContext> options, IAgencyScope agencyScope, TransferChangeBuffer changes)
     : DbContext(options), IUnitOfWork, ISharedTransactionParticipant
 {
     public const string Schema = "transfers";
@@ -28,6 +33,23 @@ public sealed class TransfersDbContext(DbContextOptions<TransfersDbContext> opti
 
     async Task IUnitOfWork.SaveChangesAsync(CancellationToken cancellationToken) =>
         await SaveChangesAsync(cancellationToken);
+
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        // Lu AVANT l'enregistrement : ensuite, les lignes ajoutées ne sont plus « Added ».
+        ChangeTracker.DetectChanges();
+        var changed = ChangeTracker.Entries<Transfer>()
+            .Select(entry => (Transfer: entry.Entity, Last: entry.Entity.Events.LastOrDefault(e => Entry(e).State == EntityState.Added)))
+            .Where(x => x.Last is not null)
+            .Select(x => new TransferChanged(
+                x.Transfer.Id, x.Transfer.Reference, x.Last!.Type, x.Transfer.Version, x.Transfer.Status,
+                x.Transfer.SourceAgencyId, x.Transfer.DestinationAgencyId))
+            .ToList();
+
+        var saved = await base.SaveChangesAsync(cancellationToken);
+        changed.ForEach(changes.Add);
+        return saved;
+    }
 
     void ISharedTransactionParticipant.UseSharedTransaction(DbTransaction? transaction) =>
         Database.UseTransaction(transaction);

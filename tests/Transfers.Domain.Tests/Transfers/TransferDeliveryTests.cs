@@ -103,21 +103,21 @@ public class TransferDeliveryTests
     {
         var transfer = NewTransfer();
 
-        Assert.Equal(TransfersErrors.Delivery.WrongCode, transfer.RegisterWrongCode());
+        Assert.Equal(TransfersErrors.Delivery.WrongCode, transfer.RegisterWrongCode(Agent, Now));
         Assert.Equal(4, transfer.RemainingCodeAttempts);
 
         for (var i = 0; i < 3; i++)
         {
-            Assert.Equal(TransfersErrors.Delivery.WrongCode, transfer.RegisterWrongCode());
+            Assert.Equal(TransfersErrors.Delivery.WrongCode, transfer.RegisterWrongCode(Agent, Now));
         }
 
         Assert.Equal(1, transfer.RemainingCodeAttempts);
-        var fifth = transfer.RegisterWrongCode();
+        var fifth = transfer.RegisterWrongCode(Agent, Now);
 
         Assert.Equal(TransfersErrors.Delivery.CodeLocked, fifth);
         Assert.True(transfer.IsCodeLocked);
         Assert.Equal(0, transfer.RemainingCodeAttempts);
-        Assert.Equal(TransfersErrors.Delivery.CodeLocked, transfer.RegisterWrongCode());
+        Assert.Equal(TransfersErrors.Delivery.CodeLocked, transfer.RegisterWrongCode(Agent, Now));
         Assert.Equal(Transfer.MaxCodeAttempts, transfer.FailedCodeAttempts);
         Assert.Equal(TransfersErrors.Delivery.CodeLocked, transfer.EnsureDeliverable().Error);
         Assert.Equal(TransfersErrors.Delivery.CodeLocked,

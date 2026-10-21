@@ -41,7 +41,11 @@ public static class AuthenticationSetup
 
                 // Option B : après la signature, on vérifie que le compte est actif et que sa SecurityVersion
                 // n'a pas changé depuis l'émission du jeton.
-                bearer.Events = new JwtBearerEvents { OnTokenValidated = ValidateSessionAsync };
+                bearer.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = ValidateSessionAsync,
+                    OnMessageReceived = ReadHubTokenFromQuery,
+                };
             });
 
         // Une requête authentifiée avec un mot de passe temporaire n'a droit qu'au changement de mot de passe.
@@ -69,6 +73,21 @@ public static class AuthenticationSetup
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
         return services;
+    }
+
+    /// <summary>
+    /// Un WebSocket ne peut pas porter d'en-tête Authorization : pour le hub temps réel SEULEMENT,
+    /// le jeton d'accès est lu dans l'URL (« access_token »). Partout ailleurs, seul l'en-tête compte.
+    /// </summary>
+    private static Task ReadHubTokenFromQuery(MessageReceivedContext context)
+    {
+        var token = context.Request.Query["access_token"];
+        if (!string.IsNullOrEmpty(token) && context.HttpContext.Request.Path.StartsWithSegments(Realtime.LiveHub.Path))
+        {
+            context.Token = token;
+        }
+
+        return Task.CompletedTask;
     }
 
     private static async Task ValidateSessionAsync(TokenValidatedContext context)

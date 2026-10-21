@@ -265,3 +265,97 @@ Content-Type: application/json
 {
   "reason": "Motif fictif"
 }
+
+### Débloquer un transfert bloqué par 5 codes faux (Superviseur ; motif facultatif)
+POST {{host}}/api/v1/transfers/{{transferId}}/unlock-code
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reason": "Motif fictif"
+}
+
+### Livrer sans code (Superviseur ; pièce d'identité et motif obligatoires)
+POST {{host}}/api/v1/transfers/{{transferId}}/deliver-without-code
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "idDocument": "CNI 0000000",
+  "reason": "Code perdu (fictif)",
+  "payments": [
+    { "treasuryAccountId": "{{treasuryId}}", "amount": 5000000 }
+  ]
+}
+
+### Nouveau code de retrait (agence d'envoi ou Superviseur ; affiché une seule fois)
+POST {{host}}/api/v1/transfers/{{transferId}}/new-code
+Authorization: Bearer {{token}}
+
+### Historique d'un transfert
+GET {{host}}/api/v1/transfers/{{transferId}}/history
+Authorization: Bearer {{token}}
+
+### Modifier expéditeur, bénéficiaire, note (agence d'envoi ou Superviseur ; version lue dans la fiche)
+PUT {{host}}/api/v1/transfers/{{transferId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "version": 1,
+  "senderInfo": "Expéditeur fictif 22200000",
+  "beneficiaryInfo": "Bénéficiaire fictif 770000000",
+  "note": null,
+  "reason": "Faute de frappe (fictif)"
+}
+
+### Modifier l'argent d'un non livré (Superviseur ; version et motif obligatoires ; montant, prix de vente, date absents = inchangés)
+PUT {{host}}/api/v1/transfers/{{transferId}}/amounts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "version": 1,
+  "amountXof": 4000000,
+  "saleRate": 3640,
+  "payments": [
+    { "treasuryAccountId": "{{treasuryId}}", "amount": 2912000 }
+  ],
+  "reason": "Montant mal saisi (fictif)"
+}
+
+# --- Caisse ---------------------------------------------------------------------
+# Enregistrer : cash.create (Superviseur, Agent, Caissier). Lire : cash.budget.read.
+
+@partyId2 = COLLER_L_ID_DU_TIERS_ICI
+
+### Encaissement d'un tiers (Receipt) ; Payment pour un décaissement
+POST {{host}}/api/v1/cash-movements
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: caisse-0001
+
+{
+  "type": "Receipt",
+  "treasuryAccountId": "{{treasuryId}}",
+  "partyId": "{{partyId2}}",
+  "amount": 12500.50,
+  "note": "Note fictive"
+}
+
+### Approvisionnement de caisse en MRU (converti en MRO × 10) ; OwnerWithdrawal pour un retrait du patron
+POST {{host}}/api/v1/cash-movements
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: caisse-0002
+
+{
+  "type": "OwnerContribution",
+  "treasuryAccountId": "{{treasuryId}}",
+  "amount": 1250.5,
+  "unit": "MRU"
+}
+
+### Mouvements du jour (totaux entrées / sorties / net)
+GET {{host}}/api/v1/cash-movements
+Authorization: Bearer {{token}}

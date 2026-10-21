@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using Hawala.Api.Configuration;
 using Hawala.Api.Errors;
+using Hawala.Api.Realtime;
+using Microsoft.AspNetCore.SignalR;
 using Hawala.SharedKernel.Messaging;
 using Identity.Contracts;
 using Rates.Application.Features;
@@ -36,6 +38,7 @@ public static class RateEndpoints
         SetDailyRateRequest request,
         ClaimsPrincipal user,
         ICommandHandler<SetDailyRateCommand> handler,
+        IHubContext<LiveHub> hub,
         CancellationToken cancellationToken)
     {
         if (!user.TryGetAccountId(out var actorId))
@@ -45,7 +48,15 @@ public static class RateEndpoints
 
         var result = await handler.Handle(
             new SetDailyRateCommand(actorId, date, request.PurchaseRate, request.SaleRate), cancellationToken);
-        return result.IsSuccess ? TypedResults.NoContent() : result.Error.ToProblem();
+        if (result.IsFailure)
+        {
+            return result.Error.ToProblem();
+        }
+
+        // Temps réel (règle validée) : tout le monde relit le taux, pour que le prix de vente affiché soit à jour.
+        // Message léger : la date seulement (le prix d'achat reste lu par l'API avec profit.view).
+        await hub.Clients.All.SendAsync(LiveHub.RatesChangedMessage, new { date }, cancellationToken);
+        return TypedResults.NoContent();
     }
 
     private static Task<IResult> GetTodayRate(

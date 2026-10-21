@@ -177,6 +177,44 @@ public static class ApiClient
         this HttpClient client, string? accessToken, Guid id, string? reason, DateTimeOffset? operationAt = null) =>
         client.SendAsync(HttpMethod.Post, $"/api/v1/transfers/{id}/cancel", body: new { reason, operationAt }, accessToken: accessToken);
 
+    public static Task<HttpResponseMessage> UnlockTransferCodeAsync(this HttpClient client, string? accessToken, Guid id, string? reason = null) =>
+        client.SendAsync(HttpMethod.Post, $"/api/v1/transfers/{id}/unlock-code", body: new { reason }, accessToken: accessToken);
+
+    /// <param name="body">Objet anonyme : idDocument, reason, operationAt, payments [{ treasuryAccountId, amount }], note.</param>
+    public static Task<HttpResponseMessage> DeliverWithoutCodeAsync(this HttpClient client, string? accessToken, Guid id, object body) =>
+        client.SendAsync(HttpMethod.Post, $"/api/v1/transfers/{id}/deliver-without-code", body: body, accessToken: accessToken);
+
+    public static Task<HttpResponseMessage> NewTransferCodeAsync(this HttpClient client, string? accessToken, Guid id) =>
+        client.SendAsync(HttpMethod.Post, $"/api/v1/transfers/{id}/new-code", accessToken: accessToken);
+
+    /// <param name="body">Objet anonyme : version, senderInfo, beneficiaryInfo, note, reason.</param>
+    public static Task<HttpResponseMessage> EditTransferTextsAsync(this HttpClient client, string? accessToken, Guid id, object body) =>
+        client.SendAsync(HttpMethod.Put, $"/api/v1/transfers/{id}", body: body, accessToken: accessToken);
+
+    /// <param name="body">Objet anonyme : version, amountXof, saleRate, operationAt, payments, creditPartyId, reason.</param>
+    public static Task<HttpResponseMessage> EditTransferAmountsAsync(this HttpClient client, string? accessToken, Guid id, object body) =>
+        client.SendAsync(HttpMethod.Put, $"/api/v1/transfers/{id}/amounts", body: body, accessToken: accessToken);
+
+    /// <param name="idempotencyKey">En-tête Idempotency-Key ; null pour ne pas l'envoyer.</param>
+    public static async Task<HttpResponseMessage> CreateCashMovementAsync(
+        this HttpClient client, string? accessToken, object body, string? idempotencyKey)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/cash-movements") { Content = JsonContent.Create(body) };
+        if (accessToken is not null)
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        }
+
+        if (idempotencyKey is not null)
+        {
+            request.Headers.Add("Idempotency-Key", idempotencyKey);
+        }
+
+        return await client.SendAsync(request);
+    }
+
     /// <summary>GET authentifié sur une URL complète (chemin et filtres), pour les routes sans helper dédié.</summary>
     public static Task<HttpResponseMessage> SendGetAsync(this HttpClient client, string? accessToken, string url) =>
         client.SendAsync(HttpMethod.Get, url, accessToken: accessToken);

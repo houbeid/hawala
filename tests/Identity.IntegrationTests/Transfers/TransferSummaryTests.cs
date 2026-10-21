@@ -71,17 +71,42 @@ public sealed class TransferSummaryTests(ApiFixture fixture)
     }
 
     [Fact]
-    public async Task Cards_are_for_the_supervisor_only_and_need_an_agency()
+    public async Task Agent_sees_only_what_its_agency_bought_and_sold_the_not_delivered_and_the_sale_rate()
     {
         var ctx = await ArrangeAsync();
 
-        using var byAgent = await ctx.Client.SendGetAsync(ctx.NkcAgentToken, $"/api/v1/transfers/summary?agencyId={ctx.Nkc}");
+        // Sans agencyId : la sienne, imposée.
+        using var response = await ctx.Client.SendGetAsync(
+            ctx.NkcAgentToken, $"/api/v1/transfers/summary?from={ctx.DayText}&to={ctx.DayText}&search={ctx.Tag}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var cards = await response.ReadJsonAsync();
+        Assert.Equal(ctx.Nkc, cards.GetProperty("agencyId").GetGuid());
+        AssertAmount(cards, "incoming", 43_800m, 2);
+        AssertAmount(cards, "outgoing", 14_600m, 1);
+        AssertAmount(cards, "notDelivered", 3_650m, 1);
+        Assert.Equal(3650m, cards.GetProperty("saleRate").GetDecimal());
+        Assert.Equal(JsonValueKind.Null, cards.GetProperty("sentByOther").ValueKind);
+        Assert.Equal(JsonValueKind.Null, cards.GetProperty("deliveredByOther").ValueKind);
+        Assert.Equal(JsonValueKind.Null, cards.GetProperty("profitMro").ValueKind);
+        Assert.Equal(JsonValueKind.Null, cards.GetProperty("purchaseRate").ValueKind);
+    }
+
+    [Fact]
+    public async Task Agent_cannot_ask_for_the_other_agency_and_the_supervisor_must_choose_one()
+    {
+        var ctx = await ArrangeAsync();
+
+        using var otherAgency = await ctx.Client.SendGetAsync(ctx.NkcAgentToken, $"/api/v1/transfers/summary?agencyId={ctx.Dkr}");
         using var withoutAgency = await ctx.Client.SendGetAsync(ctx.SupervisorToken, "/api/v1/transfers/summary");
         using var unknownAgency = await ctx.Client.SendGetAsync(ctx.SupervisorToken, $"/api/v1/transfers/summary?agencyId={Guid.NewGuid()}");
+        using var anonymous = await ctx.Client.SendGetAsync(accessToken: null, "/api/v1/transfers/summary");
 
-        Assert.Equal(HttpStatusCode.Forbidden, byAgent.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, otherAgency.StatusCode);
+        Assert.Equal("Transfers.Filter.AgencyNotAllowed", await otherAgency.ReadErrorCodeAsync());
         Assert.Equal("Transfers.Filter.AgencyRequired", await withoutAgency.ReadErrorCodeAsync());
         Assert.Equal("Transfers.Filter.AgencyNotFound", await unknownAgency.ReadErrorCodeAsync());
+        Assert.Equal(HttpStatusCode.Unauthorized, anonymous.StatusCode);
     }
 
     [Fact]

@@ -2,6 +2,7 @@ using Hawala.SharedKernel.Messaging;
 using Hawala.SharedKernel.Money;
 using Hawala.SharedKernel.Results;
 using Hawala.SharedKernel.Time;
+using Identity.Contracts;
 using Organization.Contracts;
 using Rates.Contracts;
 using Transfers.Application.Abstractions;
@@ -14,6 +15,7 @@ namespace Transfers.Application.Features.Transfers.GetTransferSummary;
 /// Calcule les cartes (règles validées le 21 octobre 2026) : envoyés et entrées sur tous les transferts non annulés ;
 /// sorties et livrés sur les transferts livrés seulement ; non livrés = ce que l'agence doit encore payer ;
 /// bénéfice = somme sur la période, dans les deux sens ; taux = celui du dernier jour de la période.
+/// Sans profit.view : agence du compte imposée ; seuls entrées, sorties, non livrés et prix de vente sont renvoyés.
 /// POINT OUVERT : calcul en mémoire sur les transferts de la période (quelques dizaines par jour) ;
 /// à passer en SQL si de longues périodes deviennent lentes.
 /// POINT OUVERT : les jours sont lus en UTC ; Nouakchott et Dakar sont tous deux en UTC+0.
@@ -22,12 +24,28 @@ public sealed class GetTransferSummaryQueryHandler(
     ITransferRepository transfers,
     IAgencyDirectory agencies,
     IDailyRates dailyRates,
+    IAgencyScope scope,
+    IPermissionChecker permissions,
     IClock clock)
     : IQueryHandler<GetTransferSummaryQuery, TransferSummary>
 {
     public async Task<Result<TransferSummary>> Handle(GetTransferSummaryQuery query, CancellationToken cancellationToken)
     {
-        if (query.AgencyId is not { } agencyId)
+        var full = await permissions.HasPermissionAsync(query.ActorId, Permissions.ProfitView, cancellationToken);
+
+        // Sans profit.view : son agence seulement (un agent ne peut pas en demander une autre).
+        Guid? requested = query.AgencyId;
+        if (!full)
+        {
+            if (scope.AgencyId is not { } own || (requested is { } asked && asked != own))
+            {
+                return TransfersErrors.Filter.AgencyNotAllowed;
+            }
+
+            requested = own;
+        }
+
+        if (requested is not { } agencyId)
         {
             return TransfersErrors.Filter.AgencyRequired;
         }
@@ -71,12 +89,12 @@ public sealed class GetTransferSummaryQueryHandler(
             to,
             Incoming: Sum(sentByAgency, agency.Currency),
             Outgoing: Sum(sentByOther.Where(t => t.Status == TransferStatus.Delivered), agency.Currency),
-            SentByOther: Sum(sentByOther, other[0].Currency),
-            DeliveredByOther: Sum(sentByAgency.Where(t => t.Status == TransferStatus.Delivered), other[0].Currency),
+            SentByOther: full ? Sum(sentByOther, other[0].Currency) : null,
+            DeliveredByOther: full ? Sum(sentByAgency.Where(t => t.Status == TransferStatus.Delivered), other[0].Currency) : null,
             NotDelivered: Sum(sentByOther.Where(t => t.Status == TransferStatus.NotDelivered), agency.Currency),
-            ProfitMro: active.Sum(t => t.ProfitMro),
+            ProfitMro: full ? active.Sum(t => t.ProfitMro) : null,
             SaleRate: rate?.SaleRate.MroPer5000Xof,
-            PurchaseRate: rate?.PurchaseRate.MroPer5000Xof);
+            PurchaseRate: full ? rate?.PurchaseRate.MroPer5000Xof : null);
     }
 
     private static SummaryAmount Sum(IEnumerable<Transfer> transfers, Currency currency)

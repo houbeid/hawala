@@ -1,4 +1,6 @@
+using System.Text.Json;
 using Hawala.SharedKernel.Money;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Transfers.Domain.Transfers;
@@ -10,6 +12,8 @@ internal sealed class TransferConfiguration : IEntityTypeConfiguration<Transfer>
     private const int CurrencyMaxLength = 3;
     private const int CodeHashMaxLength = 200;
     private const int EnumMaxLength = 20;
+
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     public void Configure(EntityTypeBuilder<Transfer> builder)
     {
@@ -29,6 +33,9 @@ internal sealed class TransferConfiguration : IEntityTypeConfiguration<Transfer>
             table.HasCheckConstraint(
                 "ck_transfers_cancellation",
                 "(\"Status\" = 'Cancelled') = (\"CancelledAt\" IS NOT NULL AND \"CancellationReason\" IS NOT NULL AND \"CancellationEntryId\" IS NOT NULL)");
+            table.HasCheckConstraint(
+                "ck_transfers_without_code",
+                "NOT \"DeliveredWithoutCode\" OR (\"Status\" = 'Delivered' AND \"BeneficiaryIdDocument\" IS NOT NULL AND \"DeliveryWithoutCodeReason\" IS NOT NULL)");
             table.HasCheckConstraint(
                 "ck_transfers_corridor",
                 "\"SourceAgencyId\" <> \"DestinationAgencyId\" AND \"SourceCurrency\" <> \"DestinationCurrency\"");
@@ -69,12 +76,23 @@ internal sealed class TransferConfiguration : IEntityTypeConfiguration<Transfer>
         builder.Property(t => t.DeliveredBy);
         builder.Property(t => t.DeliveryNote).HasMaxLength(Transfer.NoteMaxLength);
         builder.Property(t => t.DeliveryEntryId);
+        builder.Property(t => t.DeliveredWithoutCode);
+        builder.Property(t => t.BeneficiaryIdDocument).HasMaxLength(Transfer.PartyInfoMaxLength);
+        builder.Property(t => t.DeliveryWithoutCodeReason).HasMaxLength(Transfer.NoteMaxLength);
+        builder.Property(t => t.CodeUnlockedAt);
+        builder.Property(t => t.CodeUnlockedBy);
+        builder.Property(t => t.CodeUnlockReason).HasMaxLength(Transfer.NoteMaxLength);
+        builder.Property(t => t.CodeReplacedAt);
+        builder.Property(t => t.CodeReplacedBy);
         builder.Property(t => t.CancellationOperationAt);
         builder.Property(t => t.CancelledAt);
         builder.Property(t => t.CancelledBy);
         builder.Property(t => t.CancellationReason).HasMaxLength(Transfer.NoteMaxLength);
         builder.Property(t => t.CancellationEntryId);
         builder.Property(t => t.CreatedBy);
+
+        // Contrôle des modifications concurrentes, en plus du verrou de ligne.
+        builder.Property(t => t.Version).IsConcurrencyToken();
         builder.Property(t => t.CreatedAt);
 
         // Calculés depuis les montants enregistrés, jamais stockés.
@@ -112,5 +130,34 @@ internal sealed class TransferConfiguration : IEntityTypeConfiguration<Transfer>
         });
 
         builder.Navigation(t => t.Payments).UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        // Historique : ajouté seulement. Avant / après en JSONB.
+        // POINT OUVERT : l'historique est chargé avec chaque transfert (collection possédée) ; à séparer si la liste ralentit.
+        builder.OwnsMany(t => t.Events, history =>
+        {
+            history.ToTable("transfer_events");
+            history.WithOwner().HasForeignKey("TransferId");
+            history.HasKey(e => e.Id);
+            history.Property(e => e.Id).ValueGeneratedNever();
+            history.Property(e => e.Type).HasConversion<string>().HasMaxLength(EnumMaxLength + 10);
+            history.Property(e => e.AuthorId);
+            history.Property(e => e.At);
+            history.Property(e => e.Reason).HasMaxLength(TransferEvent.ReasonMaxLength);
+            history.Ignore(e => e.Changes);
+            history.Property<List<TransferFieldChange>>("_changes")
+                .HasColumnName("Changes")
+                .HasColumnType("jsonb")
+                .HasConversion(
+                    changes => JsonSerializer.Serialize(changes, JsonOptions),
+                    json => JsonSerializer.Deserialize<List<TransferFieldChange>>(json, JsonOptions) ?? new List<TransferFieldChange>(),
+                    new ValueComparer<List<TransferFieldChange>>(
+                        (a, b) => (a ?? new List<TransferFieldChange>()).SequenceEqual(b ?? new List<TransferFieldChange>()),
+                        list => list.Aggregate(0, (hash, change) => HashCode.Combine(hash, change.GetHashCode())),
+                        list => list.ToList()));
+
+            history.HasIndex(e => e.At);
+        });
+
+        builder.Navigation(t => t.Events).UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

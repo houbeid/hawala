@@ -45,6 +45,12 @@ public class ModuleBoundaryTests
 
     private static readonly Assembly[] TransfersModule = [TransfersDomain, TransfersApplication, TransfersInfrastructure];
 
+    private static readonly Assembly CashDomain = typeof(Cash.Domain.CashErrors).Assembly;
+    private static readonly Assembly CashApplication = typeof(Cash.Application.Abstractions.IUnitOfWork).Assembly;
+    private static readonly Assembly CashInfrastructure = typeof(Cash.Infrastructure.DependencyInjection).Assembly;
+
+    private static readonly Assembly[] CashModule = [CashDomain, CashApplication, CashInfrastructure];
+
     private static readonly Assembly[] IdentityModule = [IdentityDomain, IdentityApplication, IdentityInfrastructure];
 
     private static readonly Assembly[] OrganizationModule =
@@ -60,10 +66,10 @@ public class ModuleBoundaryTests
     private static readonly Assembly[] RatesModule = [RatesDomain, RatesApplication, RatesInfrastructure];
 
     private static readonly Assembly[] DomainLayers =
-        [IdentityDomain, OrganizationDomain, LedgerDomain, TreasuryDomain, PartiesDomain, RatesDomain, TransfersDomain];
+        [IdentityDomain, OrganizationDomain, LedgerDomain, TreasuryDomain, PartiesDomain, RatesDomain, TransfersDomain, CashDomain];
 
     private static readonly Assembly[] ApplicationLayers =
-        [IdentityApplication, OrganizationApplication, LedgerApplication, TreasuryApplication, PartiesApplication, RatesApplication, TransfersApplication];
+        [IdentityApplication, OrganizationApplication, LedgerApplication, TreasuryApplication, PartiesApplication, RatesApplication, TransfersApplication, CashApplication];
 
     [Fact]
     public void Identity_sees_Organization_only_through_its_contracts()
@@ -165,6 +171,32 @@ public class ModuleBoundaryTests
                 || (name.StartsWith("Treasury.", StringComparison.Ordinal) && name != "Treasury.Contracts")
                 || (name.StartsWith("Rates.", StringComparison.Ordinal) && name != "Rates.Contracts")
                 || (name.StartsWith("Parties.", StringComparison.Ordinal) && name != "Parties.Contracts"));
+        }
+    }
+
+    [Fact]
+    public void Cash_sees_other_modules_only_through_their_contracts()
+    {
+        foreach (var assembly in CashModule)
+        {
+            AssertNoReference(assembly, name =>
+                (name.StartsWith("Identity.", StringComparison.Ordinal) && name != "Identity.Contracts")
+                || (name.StartsWith("Organization.", StringComparison.Ordinal) && name != "Organization.Contracts")
+                || (name.StartsWith("Ledger.", StringComparison.Ordinal) && name != "Ledger.Contracts")
+                || (name.StartsWith("Treasury.", StringComparison.Ordinal) && name != "Treasury.Contracts")
+                || (name.StartsWith("Parties.", StringComparison.Ordinal) && name != "Parties.Contracts")
+                || name.StartsWith("Transfers.", StringComparison.Ordinal)
+                || name.StartsWith("Rates.", StringComparison.Ordinal));
+        }
+    }
+
+    [Fact]
+    public void Nobody_depends_on_Cash_yet()
+    {
+        foreach (var assembly in IdentityModule.Concat(OrganizationModule).Concat(LedgerModule)
+                     .Concat(TreasuryModule).Concat(PartiesModule).Concat(RatesModule).Concat(TransfersModule))
+        {
+            AssertNoReference(assembly, name => name.StartsWith("Cash.", StringComparison.Ordinal));
         }
     }
 

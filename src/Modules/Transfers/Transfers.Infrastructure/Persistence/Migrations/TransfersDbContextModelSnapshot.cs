@@ -36,6 +36,10 @@ namespace Transfers.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
+                    b.Property<string>("BeneficiaryIdDocument")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<string>("BeneficiaryInfo")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -55,6 +59,22 @@ namespace Transfers.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("CancelledBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("CodeReplacedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CodeReplacedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CodeUnlockReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTimeOffset?>("CodeUnlockedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CodeUnlockedBy")
                         .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("CreatedAt")
@@ -79,6 +99,9 @@ namespace Transfers.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("DeliveredBy")
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("DeliveredWithoutCode")
+                        .HasColumnType("boolean");
+
                     b.Property<Guid?>("DeliveryEntryId")
                         .HasColumnType("uuid");
 
@@ -88,6 +111,10 @@ namespace Transfers.Infrastructure.Persistence.Migrations
 
                     b.Property<DateTimeOffset?>("DeliveryOperationAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeliveryWithoutCodeReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<Guid>("DestinationAgencyId")
                         .HasColumnType("uuid");
@@ -143,6 +170,10 @@ namespace Transfers.Infrastructure.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
                     b.Property<string>("WithdrawalCodeHash")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -175,6 +206,8 @@ namespace Transfers.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_transfers_credit", "(\"CreditPartyId\" IS NULL AND \"CreditAmount\" = 0) OR (\"CreditPartyId\" IS NOT NULL AND \"CreditAmount\" > 0)");
 
                             t.HasCheckConstraint("ck_transfers_delivery", "(\"Status\" = 'Delivered') = (\"DeliveredAt\" IS NOT NULL AND \"DeliveryEntryId\" IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_transfers_without_code", "NOT \"DeliveredWithoutCode\" OR (\"Status\" = 'Delivered' AND \"BeneficiaryIdDocument\" IS NOT NULL AND \"DeliveryWithoutCodeReason\" IS NOT NULL)");
                         });
                 });
 
@@ -196,6 +229,46 @@ namespace Transfers.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Transfers.Domain.Transfers.Transfer", b =>
                 {
+                    b.OwnsMany("Transfers.Domain.Transfers.TransferEvent", "Events", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("uuid");
+
+                            b1.Property<DateTimeOffset>("At")
+                                .HasColumnType("timestamp with time zone");
+
+                            b1.Property<Guid>("AuthorId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Reason")
+                                .HasMaxLength(500)
+                                .HasColumnType("character varying(500)");
+
+                            b1.Property<Guid>("TransferId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Type")
+                                .IsRequired()
+                                .HasMaxLength(30)
+                                .HasColumnType("character varying(30)");
+
+                            b1.Property<string>("_changes")
+                                .IsRequired()
+                                .HasColumnType("jsonb")
+                                .HasColumnName("Changes");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("At");
+
+                            b1.HasIndex("TransferId");
+
+                            b1.ToTable("transfer_events", "transfers");
+
+                            b1.WithOwner()
+                                .HasForeignKey("TransferId");
+                        });
+
                     b.OwnsMany("Transfers.Domain.Transfers.TransferPayment", "Payments", b1 =>
                         {
                             b1.Property<Guid>("Id")
@@ -235,6 +308,8 @@ namespace Transfers.Infrastructure.Persistence.Migrations
                             b1.WithOwner()
                                 .HasForeignKey("TransferId");
                         });
+
+                    b.Navigation("Events");
 
                     b.Navigation("Payments");
                 });

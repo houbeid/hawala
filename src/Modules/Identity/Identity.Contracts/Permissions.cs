@@ -46,9 +46,20 @@ public static class Permissions
     /// <summary>Annuler un transfert non livré, avec un motif (Superviseur seulement, règle validée).</summary>
     public const string TransfersCancel = "transfers.cancel";
 
+    /// <summary>Débloquer un transfert bloqué par les codes faux, livrer sans code (Superviseur seulement, règle validée).</summary>
+    public const string TransfersManageCode = "transfers.manage_code";
+
+    /// <summary>
+    /// Modifier l'argent d'un transfert non livré : montant, prix de vente, répartition, crédit, date (Superviseur seulement, règle validée).
+    /// </summary>
+    public const string TransfersEditRate = "transfers.edit_rate";
+
+    /// <summary>Encaissement, décaissement, approvisionnement de caisse, retrait du patron (Superviseur, Agent, Caissier ; règle validée).</summary>
+    public const string CashCreate = "cash.create";
+
     public static readonly IReadOnlyList<string> All =
     [
         UsersManage, AgenciesManage, TreasuryManage, CashBudgetRead, PartiesCreate, PartiesManage, PartiesViewBalance,
-        RatesSetDaily, ProfitView, TransfersCreate, TransfersCredit, TransfersDeliver, TransfersCancel,
+        RatesSetDaily, ProfitView, TransfersCreate, TransfersCredit, TransfersDeliver, TransfersCancel, TransfersManageCode, TransfersEditRate, CashCreate,
     ];
 }

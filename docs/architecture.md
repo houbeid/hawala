@@ -123,8 +123,10 @@ Le passage MRO ↔ FCFA se fait par un compte système « Position de change »,
 | Création avec crédit activé | Tiers client (rouge : il nous doit) | Position de change | MRO |
 | Livraison à Dakar | Transferts à livrer | Trésorerie Dakar (une ligne par mode : espèces, Wave, Orange Money, banque…) | XOF |
 | Annulation | Contre-passation de l'écriture de création |  |  |
-| Encaissement manuel | Trésorerie | Tiers ou produit | locale |
-| Décaissement manuel | Tiers ou charge | Trésorerie | locale |
+| Encaissement manuel | Trésorerie | Tiers (obligatoire, décision du 21 octobre 2026) | locale |
+| Décaissement manuel | Tiers (obligatoire) | Trésorerie | locale |
+| Approvisionnement de caisse | Trésorerie | Apports du patron | locale |
+| Retrait du patron | Apports du patron | Trésorerie | locale |
 | Virement interne | Trésorerie destination | Trésorerie source | locale |
 
 Décisions validées pour le grand livre :
@@ -193,6 +195,9 @@ Un seul patron possède deux caisses : Nouakchott en MRO, Dakar en FCFA. Il n'y 
 | Périmètre du Superviseur | Les deux agences : comptes, taux, bilan total |
 | Taux | Seul le Superviseur fixe les deux taux du jour : le prix d'achat (taux du marché, T) et le prix de vente (taux client, appliqué automatiquement aux nouveaux transferts, modifiable par lui pour un transfert précis) ; le serveur refuse tout autre compte |
 | Taux du jour | Prix d'achat et prix de vente, « 5 000 FCFA = ? MRO », enregistrés jour par jour. Commission d'un transfert = écart entre les deux × montant (ex. 5 000 000 FCFA vendus à 3 650, achetés à 3 600 : 50 000 MRO) |
+| Modification et historique (21 octobre 2026) | Textes : agence d'envoi ou Superviseur, motif facultatif ; argent (montant, prix de vente, répartition, crédit, date) : Superviseur, motif obligatoire, contre-passation et nouvelle écriture au jour de la modification ; version obligatoire (409 si périmée) ; historique de toutes les actions, codes faux compris, filtré selon les droits du lecteur |
+| Code de retrait (21 octobre 2026) | Superviseur : débloquer (compteur à zéro), livrer sans code (pièce d'identité + motif) ; agence d'envoi ou Superviseur : nouveau code (ne débloque pas, l'ancien ne marche plus) |
+| Cartes pour un agent (21 octobre 2026) | Son agence seulement : total acheté (entrées), total vendu (sorties), non livrés, prix de vente |
 | Annulation (21 octobre 2026) | Superviseur seulement, non livré seulement, motif obligatoire visible des deux agences ; contre-passation de l'écriture de création à la date de l'annulation (remboursement en caisse, dette du crédit effacée) |
 | Cartes de l'écran des transferts (21 octobre 2026) | Pour l'agence choisie A : entrées A et livré par l'autre agence (transferts envoyés par A), envoyé par l'autre agence et sorties A (transferts reçus par A), non livrés, bénéfice de la période, taux ; livrés seulement pour sorties / livré ; annulés exclus ; Superviseur seulement |
 | Ce que voit une agence | Ses montants (acheté, donné au client) et le prix de vente ; pour un transfert reçu, ni la répartition du paiement ni le crédit (réservés à l'agence d'envoi et au Superviseur). Prix d'achat, commission et les quatre cartes de l'écran des transferts (entrées, sorties, envoyé, livré) : Superviseur seulement |
@@ -296,7 +301,7 @@ Le réseau tombe ; l'agent doit pouvoir continuer à saisir. La PWA garde les do
 - **Écriture hors ligne** : seules les créations (transfert, encaissement, décaissement) sont mises en file, avec une clé d'idempotence générée sur le téléphone. Elles s'affichent « En attente de synchronisation ».
 - **Interdit hors ligne** : livrer, annuler, modifier un taux, clôturer la caisse. Ces actions exigent l'état serveur à jour.
 - **Synchronisation** : au retour du réseau, envoi dans l'ordre ; un refus (plafond, tiers bloqué) remonte à l'agent avec le motif.
-- **Temps réel** : hub SignalR par agence ; un transfert créé à Nouakchott apparaît « Non livré » à Dakar sans rafraîchir.
+- **Temps réel** : hub SignalR (`/hubs/live`), un groupe par agence et un groupe des Superviseurs ; un transfert créé à Nouakchott apparaît « Non livré » à Dakar sans rafraîchir. Message léger sans montant ni nom (l'application relit la fiche par l'API), envoyé après la validation de la transaction ; « RatesChanged » à tous quand un taux change (décisions du 21 octobre 2026).
 - **Notifications client** : reportées à une phase ultérieure (WhatsApp / SMS). En V1, le reçu PDF s'imprime ou se télécharge depuis l'app.
 
 ## Structure de la solution

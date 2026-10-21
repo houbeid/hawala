@@ -22,8 +22,10 @@ public enum TransferDirection
 /// <param name="Credit">Part à crédit et son tiers ; null sans crédit ou si non visible.</param>
 /// <param name="DeliveryOperationAt">Date et heure de la livraison ; null tant que non livré.</param>
 /// <param name="IsCodeLocked">Bloqué après 5 codes faux (déblocage par le Superviseur).</param>
+/// <param name="DeliveredWithoutCode">Livré par le Superviseur sans le code (pièce d'identité et motif gardés, non renvoyés).</param>
 /// <param name="CancellationOperationAt">Date et heure de l'annulation ; null sinon.</param>
 /// <param name="CancellationReason">Motif de l'annulation, visible des deux agences ; null sinon.</param>
+/// <param name="Version">Version actuelle, à renvoyer avec une modification (contrôle des modifications concurrentes).</param>
 public sealed record TransferView(
     Guid Id,
     string Reference,
@@ -47,8 +49,10 @@ public sealed record TransferView(
     TransferCreditView? Credit,
     DateTimeOffset? DeliveryOperationAt,
     bool IsCodeLocked,
+    bool DeliveredWithoutCode,
     DateTimeOffset? CancellationOperationAt,
-    string? CancellationReason);
+    string? CancellationReason,
+    int Version);
 
 /// <param name="TreasuryAccountName">Nom de la méthode de paiement (caisse, Bankily…).</param>
 public sealed record TransferPaymentView(Guid TreasuryAccountId, string? TreasuryAccountName, decimal Amount, Currency Currency);

@@ -1,16 +1,20 @@
 using System.Text.Json.Serialization;
 using Hawala.Api.Configuration;
+using Cash.Infrastructure;
+using Hawala.Api.Endpoints.Cash;
 using Hawala.Api.Endpoints.Identity;
 using Hawala.Api.Endpoints.Organization;
 using Hawala.Api.Endpoints.Parties;
 using Hawala.Api.Endpoints.Rates;
 using Hawala.Api.Endpoints.Transfers;
 using Hawala.Api.Endpoints.Treasury;
+using Hawala.Api.Realtime;
 using Identity.Infrastructure;
 using Ledger.Infrastructure;
 using Organization.Infrastructure;
 using Parties.Infrastructure;
 using Rates.Infrastructure;
+using Transfers.Application.Abstractions;
 using Transfers.Infrastructure;
 using Treasury.Infrastructure;
 
@@ -30,7 +34,13 @@ builder.Services.AddTreasuryModule(builder.Configuration);
 builder.Services.AddPartiesModule(builder.Configuration);
 builder.Services.AddRatesModule(builder.Configuration);
 builder.Services.AddTransfersModule(builder.Configuration);
+builder.Services.AddCashModule(builder.Configuration);
 builder.Services.AddHawalaAuthentication();
+
+// Temps réel : un hub, des groupes par agence et pour les Superviseurs ; les Transferts publient après validation.
+builder.Services.AddSignalR()
+    .AddJsonProtocol(options => options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+builder.Services.AddScoped<ITransferChangePublisher, SignalRTransferChangePublisher>();
 
 var app = builder.Build();
 
@@ -55,6 +65,9 @@ await app.Services.InitializeRatesModuleAsync();
 // Transferts : en dernier, ils écrivent au grand livre et lisent la trésorerie et les taux.
 await app.Services.InitializeTransfersModuleAsync();
 
+// Caisse : mouvements manuels, écrits au grand livre.
+await app.Services.InitializeCashModuleAsync();
+
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
@@ -74,5 +87,7 @@ app.MapTreasuryEndpoints();
 app.MapPartyEndpoints();
 app.MapRateEndpoints();
 app.MapTransferEndpoints();
+app.MapCashEndpoints();
+app.MapHub<LiveHub>(LiveHub.Path);
 
 await app.RunAsync();

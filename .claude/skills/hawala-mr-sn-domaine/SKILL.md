@@ -118,7 +118,7 @@ Chaque rôle ne voit que son agence (sauf le Superviseur). Ajustables compte par
 | Exporter | ✔ | ✘ | ✘ | ✔ |
 | Gérer comptes, agences, caisses | ✔ | ✘ | ✘ | ✘ |
 
-Dans le code aujourd'hui (20 octobre 2026) : `parties.create`, `parties.view_balance`, `cash.budget.read`, `transfers.create`, `transfers.credit`, `transfers.deliver` et `transfers.cancel` appliqués selon ce tableau ; les autres permissions des transferts, de la caisse et de l'export seront ajoutées avec leurs endpoints, et données aux rôles selon ce tableau.
+Dans le code aujourd'hui (20 octobre 2026) : `parties.create`, `parties.view_balance`, `cash.budget.read`, `transfers.create`, `transfers.credit`, `transfers.deliver`, `transfers.cancel`, `transfers.manage_code`, `transfers.edit_rate` et `cash.create` appliqués selon ce tableau ; les autres permissions des transferts, de la caisse et de l'export seront ajoutées avec leurs endpoints, et données aux rôles selon ce tableau.
 
 ## Authentification (validé, implémenté)
 
@@ -135,6 +135,17 @@ Dans le code aujourd'hui (20 octobre 2026) : `parties.create`, `parties.view_bal
 - Un hawala reçu du Sénégal est vu par l'utilisateur comme un encaissement même s'il est payé ici : en partie double, le compte tiers/Sénégal monte et la caisse physique baisse.
 - Le type d'opération fixe le signe : l'agent ne choisit jamais + ou −.
 - Virement interne entre comptes = deux lignes.
+
+- **Phase 4, décisions du 21 octobre 2026** (écrans « Caisse » et « Caisse - Ajout » de l'app actuelle) :
+  1. formulaire : méthode de paiement (compte de trésorerie), interrupteur « Encaissement » (sinon décaissement), **« Source » = un tiers, obligatoire** (pas de catégorie « charges / produits » : une dépense comme le loyer passe par un tiers de type « Autre »), montant avec l'unité (bouton « MRO » : saisie en MRU convertie × 10), note facultative, date d'opération avec l'heure, caisse = l'agence ;
+  2. « Approvisionnement de caisse » et « Retrait du patron » : montant seul, sans tiers, contre « Apports du patron » ;
+  3. annulation d'un mouvement : Superviseur seulement, motif obligatoire, contre-passation au jour de l'annulation ;
+  4. ajustement de solde : sur un tiers **et** sur un compte de trésorerie, Superviseur seulement, motif obligatoire, contre « Écarts et ajustements » ;
+  5. budget : **un par agence et par jour** ; le réenregistrer le même jour remplace le précédent (auteur et heure gardés) ; les jours passés ne changent jamais ;
+  6. **pas de comptage physique de la caisse en V1** (un écart constaté se corrige par un ajustement) ;
+  7. alertes du contrôle de cohérence (sans blocage, gardées avec le budget) : taux d'un transfert à plus de 5 % du taux du jour, ajustements de solde, solde initial d'un tiers changé, mouvements et transferts annulés, livraisons sans code, caisses en négatif ;
+  8. **le budget soustrait les transferts non livrés** (tranché le 21 octobre 2026).
+  Écran « Caisse » : agence, recherche, « 0 / 0 result(s) », badges (entrées, sorties), total, période (aujourd'hui), export, « + Ajouter », pagination. Permission `cash.create` (Superviseur, Agent, Caissier) ; lecture avec `cash.budget.read`.
 
 ### Budget de la caisse (validé)
 
@@ -200,13 +211,30 @@ Dans le code aujourd'hui (20 octobre 2026) : `parties.create`, `parties.view_bal
 - **Crédit activé : la dette va sur un tiers choisi dans la liste des tiers** (pas forcément l'expéditeur) ; s'il n'existe pas, l'agent le crée comme nouveau tiers (validé le 20 octobre 2026). Le tiers passe en rouge dans l'agence d'envoi.
 - « Répartition des paiements » : un paiement peut être réparti sur plusieurs comptes ; le total affecté doit égaler le montant, sauf si le crédit est activé.
 - **Crédit partiel possible** : une partie payée (répartie sur des comptes de trésorerie), le reste à crédit ; part à crédit = montant − total payé (validé le 20 octobre 2026).
+- **Temps réel (validé le 21 octobre 2026)** : message léger « TransferChanged » (identifiant, référence, événement, version, statut, agences ; **aucun montant, aucun nom**), l'application relit la fiche par l'API ; destinataires : agence d'envoi, agence de destination et Superviseurs ; « RatesChanged » à tous quand un taux du jour change ; envoyé **après** la validation de la transaction (jamais pour une opération refusée). Déconnexion en direct d'un compte bloqué : reportée à la phase 6 (appareils connectés).
+- **Modification d'un transfert et historique (validés le 21 octobre 2026)** :
+  1. le Superviseur change côté argent : montant FCFA, prix de vente de ce transfert (`transfers.edit_rate`), répartition, crédit (tiers et part), date d'opération ; **ni le prix d'achat** (taux du marché du jour) **ni les agences** (annuler et recréer) ;
+  2. montant MRO recalculé au nouveau prix de vente et arrondi une fois, à la modification ;
+  3. contre-passation **et** nouvelle écriture datées du **jour de la modification** ;
+  4. plafond de crédit appliqué à une modification (nouvelle part, sans l'ancienne contre-passée) ;
+  5. motif **obligatoire** pour une modification d'argent, **facultatif** pour les textes ; le Superviseur peut aussi modifier les textes ; un transfert bloqué par les codes faux reste modifiable ;
+  6. **version** renvoyée dans la fiche, obligatoire pour modifier ; périmée = 409 ;
+  7. historique : ajouté, modifié, livré, livré sans code, annulé, code débloqué, nouveau code, **chaque code faux** ; auteur, instant, motif, avant / après des champs changés (jamais la pièce d'identité) ;
+  8. historique visible de ceux qui voient le transfert, sans les champs qu'ils n'ont pas le droit de voir (répartition et crédit pour l'agence de destination ; prix d'achat et bénéfice sans `profit.view`).
+  Fait le 21 octobre 2026 : historique, version, textes (partie a) et modification d'argent (partie b, permission `transfers.edit_rate`, Superviseur seulement).
+- **Actions sur le code de retrait (validées le 21 octobre 2026)** :
+  1. **débloquer** (Superviseur) : le compteur repart à zéro (5 essais), motif facultatif ;
+  2. **livrer sans code** (Superviseur) : pièce d'identité du bénéficiaire (texte libre : type et numéro) et motif obligatoires ; possible même si le transfert est bloqué ; mêmes règles de livraison ; pièce d'identité en clair jusqu'à la phase 6 ;
+  3. **nouveau code** : agence d'envoi (`transfers.create`) ou Superviseur ; affiché une seule fois ; l'ancien ne marche plus ; **ne débloque pas** un transfert bloqué et ne remet pas le compteur à zéro ; non livré et non annulé seulement ;
+  4. permission `transfers.manage_code` (Superviseur seulement) pour débloquer et livrer sans code.
+- **Cartes pour un agent (validé le 21 octobre 2026)** : les cartes complètes sont réservées au Superviseur ; un agent voit seulement, pour son agence, le **total acheté** (= entrées « دخل », payé par les clients), le **total vendu** (= sorties « صرف », remis aux bénéficiaires), les **non livrés** et le **prix de vente** ; ni l'autre agence, ni le bénéfice, ni le prix d'achat.
 - **Annulation, application (21 octobre 2026)** : Superviseur seulement (`transfers.cancel`) ; non livré seulement (un transfert bloqué par les codes faux peut être annulé) ; motif obligatoire (500 caractères au plus), visible des deux agences ; date de l'annulation maintenant par défaut, jamais future ni avant le transfert ; contre-passation de l'écriture de création **à la date de l'annulation** (les budgets déjà enregistrés ne changent pas) : remboursement depuis les caisses de l'agence d'envoi, dette du crédit effacée, « Transferts à livrer » soldé. Annulé = verrouillé (plus de livraison) ; exclu des cartes.
 - **Cartes de l'écran des transferts (lues sur l'app actuelle et validées le 21 octobre 2026)** : pour l'agence choisie A (l'autre : B), deux groupes de transferts, chacun dans les deux devises :
   « دخل · A » (entrées, devise de A) = payé à A pour les transferts envoyés par A ; « المبلغ المسلم · B » (livré, devise de B) = remis par B sur ces transferts ;
   « المبلغ المرسل · B » (envoyé, devise de B) = payé à B pour les transferts envoyés par B ; « صرف · A » (sorties, devise de A) = remis par A sur ces transferts ;
   « غير مسلمة » = ce que A doit encore payer ; « الربح » = somme des bénéfices de la période, dans les deux sens ; « 5,000 FCFA = ? » = taux du dernier jour de la période.
   Sorties et livré : transferts livrés seulement ; entrées et envoyé : tous les non annulés ; annulés exclus partout. Mêmes filtres que la liste (période sur la date d'opération, aujourd'hui par défaut ; recherche). Superviseur seulement (`profit.view`). Vérifié sur une capture : entrées NKC 371 868 637 MRO ≈ livré Dakar 514 058 901 FCFA × 3 616,98 / 5 000. La liste affiche aussi « 24 / 392 » (filtrés / tous).
-- **Budget de la caisse, écart à trancher en phase 4** : l'app actuelle (« Bilan par caisse ») calcule espèces + banques + soldes débiteurs − soldes créditeurs, **sans** soustraire les transferts non livrés (capture du 21 octobre 2026 : 35 492 511 + 52 232 424 + 242 899 766 − 235 035 941 = 95 588 760 FCFA). La règle validée les soustrait : à confirmer avec Hamade avant la phase 4.
+- **Budget de la caisse, écart à trancher en phase 4** : l'app actuelle (« Bilan par caisse ») calcule espèces + banques + soldes débiteurs − soldes créditeurs, **sans** soustraire les transferts non livrés (capture du 21 octobre 2026 : 35 492 511 + 52 232 424 + 242 899 766 − 235 035 941 = 95 588 760 FCFA). **Tranché le 21 octobre 2026 : on soustrait les transferts non livrés** (règle validée maintenue, différence voulue avec l'app actuelle).
 - **Livraison, règles d'application (validées le 20 octobre 2026)** :
   1. seule l'**agence de destination** livre ; le Superviseur peut livrer tout transfert ;
   2. un transfert **à crédit non remboursé se livre quand même** (la dette reste sur le tiers, dans l'agence d'envoi) ;

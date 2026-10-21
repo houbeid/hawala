@@ -23,6 +23,7 @@
     <ProjectReference Include="..\Modules\Parties\Parties.Infrastructure\Parties.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Rates\Rates.Infrastructure\Rates.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Transfers\Transfers.Infrastructure\Transfers.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Cash\Cash.Infrastructure\Cash.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Organization\Organization.Infrastructure\Organization.Infrastructure.csproj" />
   </ItemGroup>
 

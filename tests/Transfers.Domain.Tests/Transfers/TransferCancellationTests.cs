@@ -84,7 +84,7 @@ public class TransferCancellationTests
         var transfer = NewTransfer();
         for (var i = 0; i < Transfer.MaxCodeAttempts; i++)
         {
-            transfer.RegisterWrongCode();
+            transfer.RegisterWrongCode(Agent, Now);
         }
 
         Assert.True(transfer.Cancel("Code perdu, client remboursé", Now, Supervisor, Now).IsSuccess);

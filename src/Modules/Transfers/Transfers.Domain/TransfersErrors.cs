@@ -42,6 +42,27 @@ public static class TransfersErrors
         public static readonly Error TextTooLong =
             Error.Validation("Transfers.Transfer.TextTooLong", "Expéditeur ou bénéficiaire : 200 caractères au plus ; note : 500.");
 
+        public static readonly Error VersionRequired =
+            Error.Validation("Transfers.Transfer.VersionRequired", "Renvoyer la version du transfert lue avec sa fiche.");
+
+        public static readonly Error VersionConflict =
+            Error.Conflict(
+                "Transfers.Transfer.VersionConflict",
+                "Le transfert a été modifié entre-temps : recharger la fiche avant de recommencer.");
+
+        public static readonly Error NotEditable =
+            Error.Conflict("Transfers.Transfer.NotEditable", "Seul un transfert non livré se modifie.");
+
+        public static readonly Error ReasonTooLong =
+            Error.Validation("Transfers.Transfer.ReasonTooLong", "Motif de la modification : 500 caractères au plus.");
+
+        public static readonly Error ReasonRequired =
+            Error.Validation(
+                "Transfers.Transfer.ReasonRequired", "Le motif est obligatoire pour modifier le montant, le taux ou la répartition.");
+
+        public static readonly Error NotSendingAgency =
+            Error.Forbidden("Transfers.Transfer.NotSendingAgency", "Seule l'agence d'envoi modifie l'expéditeur, le bénéficiaire et la note.");
+
         public static readonly Error IdempotencyKeyRequired =
             Error.Validation(
                 "Transfers.Transfer.IdempotencyKeyRequired",
@@ -102,6 +123,25 @@ public static class TransfersErrors
         /// <summary>Code faux ; l'API ajoute le nombre d'essais restants (« remainingAttempts ») à la réponse.</summary>
         public static readonly Error WrongCode =
             Error.Validation("Transfers.Delivery.WrongCode", "Code de retrait faux.");
+    }
+
+    public static class Code
+    {
+        public static readonly Error NotLocked =
+            Error.Conflict("Transfers.Code.NotLocked", "Ce transfert n'est pas bloqué par les codes faux.");
+
+        public static readonly Error NotSendingAgency =
+            Error.Forbidden("Transfers.Code.NotSendingAgency", "Un nouveau code se demande à l'agence d'envoi.");
+
+        public static readonly Error IdDocumentRequired =
+            Error.Validation(
+                "Transfers.Code.IdDocumentRequired", "Livrer sans code : la pièce d'identité du bénéficiaire est obligatoire.");
+
+        public static readonly Error ReasonRequired =
+            Error.Validation("Transfers.Code.ReasonRequired", "Livrer sans code : le motif est obligatoire.");
+
+        public static readonly Error TextTooLong =
+            Error.Validation("Transfers.Code.TextTooLong", "Pièce d'identité : 200 caractères au plus ; motif : 500.");
     }
 
     public static class Cancellation

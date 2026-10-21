@@ -10,9 +10,16 @@ using Transfers.Application.Features.Transfers;
 using Transfers.Application.Features.Transfers.CancelTransfer;
 using Transfers.Application.Features.Transfers.CreateTransfer;
 using Transfers.Application.Features.Transfers.DeliverTransfer;
+using Transfers.Application.Features.Transfers.DeliverWithoutCode;
+using Transfers.Application.Features.Transfers.NewCode;
+using Transfers.Application.Features.Transfers.UnlockCode;
+using Transfers.Application.Features.Transfers.EditTransferAmounts;
+using Transfers.Application.Features.Transfers.EditTransferTexts;
 using Transfers.Application.Features.Transfers.GetTransfer;
+using Transfers.Application.Features.Transfers.GetTransferHistory;
 using Transfers.Application.Features.Transfers.GetTransferSummary;
 using Transfers.Application.Features.Transfers.ListTransfers;
+using Transfers.Infrastructure.Messaging;
 using Transfers.Infrastructure.Persistence;
 using Transfers.Infrastructure.Persistence.Repositories;
 using Transfers.Infrastructure.Security;
@@ -45,18 +52,32 @@ public static class DependencyInjection
         services.AddSingleton<IWithdrawalCodeHasher, Pbkdf2WithdrawalCodeHasher>();
         services.AddScoped<TransferViews>();
 
+        // Temps réel : notifications gardées pendant la requête, envoyées après validation. Sans hub (tâche de fond) : rien.
+        services.AddScoped<TransferChangeBuffer>();
+        services.TryAddScoped<ITransferChangePublisher, NullTransferChangePublisher>();
+        services.AddScoped<DeliveryPosting>();
+        services.AddScoped<CreationPosting>();
+
         services.AddScoped<IQueryHandler<ListTransfersQuery, TransferList>, ListTransfersQueryHandler>();
         services.AddScoped<IQueryHandler<GetTransferQuery, TransferView>, GetTransferQueryHandler>();
         services.AddScoped<IQueryHandler<GetTransferSummaryQuery, TransferSummary>, GetTransferSummaryQueryHandler>();
+        services.AddScoped<IQueryHandler<GetTransferHistoryQuery, IReadOnlyList<TransferEventView>>, GetTransferHistoryQueryHandler>();
 
-        // Écrit dans deux schémas (transfers + ledger) : une seule transaction commune.
-        services.AddSharedTransactional<CreateTransferCommand, CreatedTransfer, CreateTransferCommandHandler>();
+        // Écrit dans deux schémas (transfers + ledger) : une seule transaction commune, puis notifications temps réel.
+        services.AddPublishingTransactional<CreateTransferCommand, CreatedTransfer, CreateTransferCommandHandler>();
 
         // Livraison : transfert + grand livre ; un code faux est aussi enregistré (succès technique qui porte le refus).
-        services.AddSharedTransactional<DeliverTransferCommand, DeliveryOutcome, DeliverTransferCommandHandler>();
+        services.AddPublishingTransactional<DeliverTransferCommand, DeliveryOutcome, DeliverTransferCommandHandler>();
 
         // Annulation : transfert + contre-passation au grand livre, ensemble.
-        services.AddSharedTransactional<CancelTransferCommand, CancelTransferCommandHandler>();
+        services.AddPublishingTransactional<CancelTransferCommand, CancelTransferCommandHandler>();
+
+        // Actions sur le code : transfert verrouillé pendant la commande (et grand livre pour la livraison sans code).
+        services.AddPublishingTransactional<UnlockCodeCommand, UnlockCodeCommandHandler>();
+        services.AddPublishingTransactional<EditTransferTextsCommand, EditTransferTextsCommandHandler>();
+        services.AddPublishingTransactional<EditTransferAmountsCommand, EditTransferAmountsCommandHandler>();
+        services.AddPublishingTransactional<NewCodeCommand, NewWithdrawalCode, NewCodeCommandHandler>();
+        services.AddPublishingTransactional<DeliverWithoutCodeCommand, DeliveredTransfer, DeliverWithoutCodeCommandHandler>();
 
         return services;
     }
