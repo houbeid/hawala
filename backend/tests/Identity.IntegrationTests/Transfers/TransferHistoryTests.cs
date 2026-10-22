@@ -47,6 +47,19 @@ public sealed class TransferHistoryTests(ApiFixture fixture)
     }
 
     [Fact]
+    public async Task History_gives_the_author_name_even_to_an_agent_who_cannot_read_the_accounts()
+    {
+        var ctx = await ArrangeAsync();
+        var (id, _) = await ctx.CreateAsync();
+
+        // L'agent de Dakar n'a pas users.manage : le nom lui vient de la route de l'historique (22 octobre 2026).
+        var created = (await ctx.HistoryAsync(ctx.DkrAgentToken, id)).Single();
+
+        Assert.Equal(ctx.NkcAgentId, created.GetProperty("authorId").GetGuid());
+        Assert.Equal("Agent Test", created.GetProperty("authorName").GetString());
+    }
+
+    [Fact]
     public async Task Sending_agency_edits_the_texts_and_the_old_values_stay_in_the_history()
     {
         var ctx = await ArrangeAsync();

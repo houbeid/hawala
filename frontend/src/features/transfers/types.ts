@@ -158,3 +158,109 @@ export interface CreatedTransfer {
   /** Vrai : rien n'a été créé, c'est le transfert déjà enregistré avec cette clé. */
   replayed: boolean;
 }
+
+/** Types d'événement de l'historique (Transfers.Domain/Transfers/TransferEvent.cs). */
+export type TransferEventType =
+  | 'Created'
+  | 'Edited'
+  | 'Delivered'
+  | 'DeliveredWithoutCode'
+  | 'Cancelled'
+  | 'CodeUnlocked'
+  | 'CodeReplaced'
+  | 'WrongCode';
+
+/**
+ * Champ changé (TransferFieldChange). Noms en PascalCase (nameof côté serveur) ; valeurs en texte invariant :
+ * nombres « 3650.5 », dates ISO 8601, répartition « compte:montant;compte:montant ».
+ */
+export interface TransferFieldChange {
+  field: string;
+  before: string | null;
+  after: string | null;
+}
+
+/** Ligne d'historique (GET /transfers/{id}/history : TransferEventResponse, TransferEndpoints.cs). */
+export interface TransferEvent {
+  type: TransferEventType;
+  at: string;
+  authorId: string;
+  /** « ? » si le compte n'existe plus. */
+  authorName: string;
+  reason: string | null;
+  /** Sans les champs que le lecteur n'a pas le droit de voir. */
+  changes: TransferFieldChange[];
+}
+
+/** PUT /transfers/{id} (EditTransferTextsRequest) : état complet des textes, version obligatoire, motif facultatif. */
+export interface EditTransferTextsRequest {
+  version: number;
+  senderInfo: string;
+  beneficiaryInfo: string;
+  note: string | null;
+  reason: string | null;
+}
+
+/** POST /transfers/{id}/cancel (CancelTransferRequest) : motif obligatoire ; date null = maintenant. */
+export interface CancelTransferRequest {
+  reason: string;
+  operationAt: string | null;
+}
+
+/** POST /transfers/{id}/new-code (NewWithdrawalCode) : le nouveau code, affiché une seule fois. */
+export interface NewWithdrawalCode {
+  id: string;
+  reference: string;
+  withdrawalCode: string;
+}
+
+/**
+ * PUT /transfers/{id}/amounts (EditTransferAmountsRequest, Superviseur, transfers.edit_rate) : montant, prix de
+ * vente et date null = inchangés ; répartition et crédit = ÉTAT COMPLET (crédit null = comptant) ; motif et
+ * version obligatoires. Contre-passation puis nouvelle écriture au jour de la modification.
+ */
+export interface EditTransferAmountsRequest {
+  version: number;
+  amountXof: number | null;
+  saleRate: number | null;
+  operationAt: string | null;
+  payments: { treasuryAccountId: string; amount: number }[];
+  creditPartyId: string | null;
+  reason: string;
+}
+
+/** POST /transfers/{id}/deliver (DeliverTransferRequest) : code, remise répartie (devise de destination), note. */
+export interface DeliverTransferRequest {
+  code: string;
+  /** Null = maintenant ; jamais future ni avant le transfert. */
+  operationAt: string | null;
+  payments: { treasuryAccountId: string; amount: number }[];
+  note: string | null;
+}
+
+/** POST /transfers/{id}/deliver-without-code (Superviseur) : pièce d'identité (type et numéro) et motif obligatoires. */
+export interface DeliverWithoutCodeRequest {
+  idDocument: string;
+  reason: string;
+  operationAt: string | null;
+  payments: { treasuryAccountId: string; amount: number }[];
+  note: string | null;
+}
+
+/** Caisse passée en négatif par la livraison : avertissement, jamais blocage (règle validée). */
+export interface NegativeBalanceWarning {
+  treasuryAccountId: string;
+  name: string;
+  balance: number;
+  currency: Currency;
+}
+
+/** Réponse d'une livraison (DeliveredTransfer, DeliverTransferCommand.cs). */
+export interface DeliveredTransfer {
+  id: string;
+  reference: string;
+  amountDelivered: number;
+  currency: Currency;
+  deliveryOperationAt: string;
+  negativeBalances: NegativeBalanceWarning[];
+}

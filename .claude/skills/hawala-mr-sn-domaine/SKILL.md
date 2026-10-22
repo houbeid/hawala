@@ -335,6 +335,11 @@ Dans le code aujourd'hui (20 octobre 2026) : `parties.create`, `parties.view_bal
 - Sous la liste des transferts : champ « 5 000 FCFA = ? MRO » (T saisi à la main pour la période), puis pour Nouakchott (MRO) flux caisse sortant (+), flux entrant (−) et leur écart ; pour Dakar (FCFA, « caisse partenaire ») flux sortant (−), flux entrant (+) et leur écart ; « écart partenaire converti (−) » en MRO. Formule affichée : *Bénéfice = (flux de la caisse sortant − flux entrant) − (écart de la caisse partenaire converti)*.
 - Les quatre flux correspondent aux cartes du Superviseur (entrées / sorties de A, envoyé / livré par B). La nouvelle app garde le **bénéfice par transfert** au prix d'achat de son jour (règle validée) ; l'ancienne méthode (un seul T, flux de caisse) peut différer sur plusieurs jours ou avec des non livrés : **à comparer sur les vraies données en phase 8**. Idée non validée : afficher une décomposition semblable sur l'écran Bénéfice (explication seulement).
 
+### Fiche d'un transfert : choix du 22 octobre 2026
+
+- L'historique donne le **nom de l'auteur** de chaque action (`authorName`, lu par la route avec `IAccountDirectory`, comme l'audit), même pour un agent qui ne peut pas lire la liste des comptes ; « Créé par » = auteur de la ligne « Ajouté ».
+- Actions absentes sans droit : textes et nouveau code par l'agence d'envoi ou le Superviseur ; annuler, débloquer, livrer sans code et modifier l'argent par le Superviseur ; livrer par l'agence de destination. Annulation : date = maintenant (pas de choix de date dans l'interface pour l'instant).
+
 ### Création d'un transfert : choix du 22 octobre 2026 (frontend)
 
 - **Saisie du montant (validée le 22 octobre 2026, option A)** : à Nouakchott, saisie **en MRO par défaut** (ce que le client paie) ; à Dakar, **en FCFA** ; une bascule « MRO / FCFA » permet l'autre saisie. **Le FCFA entier reste la référence enregistrée** (règle inchangée, backend inchangé : il reçoit toujours `amountXof`). Saisie en MRO (entier) : FCFA = MRO × 5 000 ÷ taux, arrondi au FCFA le plus proche (0,5 s'éloigne de zéro), puis le serveur recalcule le MRO comme toujours ; comme 1 FCFA vaut moins d'1 MRO (taux < 5 000), le serveur retombe exactement sur le MRO tapé. Conséquence acceptée : le FCFA remis à Dakar n'est alors pas un chiffre rond (912 500 MRO à 3 700 → 1 233 108 FCFA).

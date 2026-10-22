@@ -1,6 +1,7 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { HttpClient } from '@/shared/api/http';
 import { useSessionManager } from '@/shared/auth/hooks';
-import { getTransferDashboard, getTransferSummary, listTransfers } from './api';
+import { getTransfer, getTransferDashboard, getTransferHistory, getTransferSummary, listTransfers } from './api';
 import type { TransferFilters } from './types';
 
 export const transferKeys = {
@@ -35,5 +36,25 @@ export function useTransferDashboard(params: { from?: string; to?: string }) {
     queryKey: ['transfers', 'dashboard', params] as const,
     queryFn: () => getTransferDashboard(session.http, params),
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useTransfer(id: string) {
+  const session = useSessionManager();
+  return useQuery({ queryKey: ['transfers', 'detail', id] as const, queryFn: () => getTransfer(session.http, id) });
+}
+
+export function useTransferHistory(id: string, enabled = true) {
+  const session = useSessionManager();
+  return useQuery({ queryKey: ['transfers', 'history', id] as const, queryFn: () => getTransferHistory(session.http, id), enabled });
+}
+
+/** Après toute action sur un transfert : fiche, historique, listes et cartes sont relues. */
+export function useTransferAction<TArgs, TResult>(action: (http: HttpClient, args: TArgs) => Promise<TResult>) {
+  const session = useSessionManager();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (args: TArgs) => action(session.http, args),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: transferKeys.all }),
   });
 }

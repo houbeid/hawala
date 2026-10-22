@@ -15,7 +15,7 @@ import { getDailyRate } from '../api';
 import { rateKeys, useSetDailyRate } from '../queries';
 import { rateFormSchema, rateValue, type RateForm } from '../schemas';
 import type { DailyRate } from '../types';
-import { RateField } from './RateField';
+import { RateField } from '@/shared/ui/RateField';
 
 // Saisie des taux d'une date par le Superviseur (maquette 07, permission rates.set_daily).
 // Le prix de vente s'applique aux transferts créés APRÈS l'enregistrement ; les autres gardent leur taux.

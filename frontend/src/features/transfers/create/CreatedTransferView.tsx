@@ -3,6 +3,7 @@ import { formatAmount, formatRate } from '@/shared/format/money';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
 import { Notice } from '@/shared/ui/Notice';
+import { WithdrawalCode } from '../components/WithdrawalCode';
 import type { CreatedTransfer } from '../types';
 
 // Succès (maquette 04) : SEUL écran où le code de retrait apparaît, en six grandes cases. Il n'est jamais
@@ -23,7 +24,6 @@ interface Props {
 
 export function CreatedTransferView({ created, deliver, paid, credit, sender, beneficiary, onDone, onNew }: Props) {
   const { t } = useTranslation();
-  const digits = created.withdrawalCode?.split('') ?? [];
 
   return (
     <div className="flex flex-col gap-4">
@@ -39,26 +39,7 @@ export function CreatedTransferView({ created, deliver, paid, credit, sender, be
         </div>
 
         {created.withdrawalCode ? (
-          <div className="flex flex-col items-center gap-2">
-            <span className="text-sm font-semibold text-muted" id="code-label">
-              {t('transfers.create.done.code')}
-            </span>
-            <div className="flex gap-2" dir="ltr" role="group" aria-labelledby="code-label" aria-describedby="code-text">
-              {digits.map((digit, index) => (
-                <span
-                  key={index}
-                  aria-hidden="true"
-                  className="inline-flex h-14 w-11 items-center justify-center rounded-xl border-2 border-ink font-mono text-3xl font-semibold"
-                >
-                  {digit}
-                </span>
-              ))}
-            </div>
-            {/* Le code lu d'un seul tenant par un lecteur d'écran (les cases sont décoratives). */}
-            <span id="code-text" className="sr-only">
-              {created.withdrawalCode}
-            </span>
-          </div>
+          <WithdrawalCode code={created.withdrawalCode} />
         ) : (
           <Notice tone="info">{t('transfers.create.done.noCodeReplayed')}</Notice>
         )}

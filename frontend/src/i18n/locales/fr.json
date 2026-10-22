@@ -183,7 +183,14 @@
         "RateNotSet": "Le taux du jour n'est pas fixé pour cette date : demandez au Superviseur de le saisir.",
         "SourceNotAllowed": "Vous ne pouvez créer un transfert que depuis votre agence.",
         "SourceRequired": "Choisissez l'agence d'envoi.",
-        "TextTooLong": "Texte trop long."
+        "TextTooLong": "Texte trop long.",
+        "NotFound": "Transfert introuvable.",
+        "NotEditable": "Ce transfert est livré ou annulé : il ne se modifie plus.",
+        "NotSendingAgency": "Seule l'agence d'envoi (ou le Superviseur) peut faire cette action.",
+        "VersionConflict": "Ce transfert vient d'être modifié par un autre utilisateur. Rechargez-le avant de continuer : votre modification n'a pas été enregistrée.",
+        "VersionRequired": "Rechargez le transfert puis réessayez.",
+        "ReasonRequired": "Le motif est obligatoire.",
+        "ReasonTooLong": "Motif trop long (500 caractères au plus)."
       },
       "Payment": {
         "AccountDuplicated": "Un compte apparaît deux fois dans la répartition.",
@@ -204,6 +211,31 @@
         "PartyArchived": "Ce tiers est archivé : il ne peut pas recevoir de crédit.",
         "NotNeeded": "Tout est payé : rien à mettre à crédit, désactivez le crédit.",
         "LimitExceeded": "Plafond de crédit du tiers dépassé dans cette agence : le Superviseur doit d'abord relever le plafond."
+      },
+      "Cancellation": {
+        "AlreadyCancelled": "Ce transfert est déjà annulé.",
+        "Delivered": "Un transfert livré ne s'annule pas.",
+        "ReasonRequired": "Le motif est obligatoire.",
+        "ReasonTooLong": "Motif trop long (500 caractères au plus).",
+        "DateBeforeTransfer": "La date d'annulation ne peut pas précéder le transfert."
+      },
+      "Code": {
+        "NotLocked": "Le code n'est pas bloqué.",
+        "NotSendingAgency": "Seule l'agence d'envoi (ou le Superviseur) peut demander un nouveau code.",
+        "IdDocumentRequired": "La pièce d'identité du bénéficiaire est obligatoire.",
+        "ReasonRequired": "Le motif est obligatoire.",
+        "TextTooLong": "Texte trop long."
+      },
+      "Delivery": {
+        "CodeLocked": "Code bloqué après 5 essais faux : le Superviseur doit le débloquer.",
+        "AlreadyDelivered": "Ce transfert est déjà livré.",
+        "Cancelled": "Ce transfert est annulé.",
+        "WrongCode": "Code incorrect.",
+        "CodeRequired": "Saisissez le code de retrait.",
+        "NotDestinationAgency": "Seule l'agence de destination (ou le Superviseur) livre ce transfert.",
+        "DateBeforeTransfer": "La date de livraison ne peut pas précéder le transfert.",
+        "NoteTooLong": "Note trop longue (500 caractères au plus).",
+        "TotalMismatch": "Le total remis doit être égal au montant du transfert."
       }
     },
     "Parties": {
@@ -217,6 +249,18 @@
       },
       "Phone": {
         "Invalid": "Le numéro doit être au format international, ex. +222 22 12 34 56 ou +221 77 123 45 67."
+      }
+    },
+    "Money": {
+      "Rate": {
+        "Invalid": "Le taux (MRO pour 5 000 FCFA) doit être positif, avec 2 décimales au plus."
+      },
+      "Amount": {
+        "XofNotInteger": "Le montant en FCFA doit être un nombre entier.",
+        "TooManyDecimals": "Le montant en MRO a au plus 2 décimales."
+      },
+      "Mru": {
+        "TooManyDecimals": "Le montant en MRU a au plus 3 décimales."
       }
     }
   },
@@ -428,6 +472,145 @@
       "amountMroInput": "Montant payé en MRO ({{city}})",
       "amountXofResult": "Montant en FCFA ({{city}})",
       "formulaFromMro": "{{mro}} × 5 000 ÷ {{rate}}, arrondi au FCFA"
+    },
+    "detail": {
+      "backToList": "Transferts",
+      "tabs": "Fiche du transfert",
+      "tab": {
+        "details": "Détails",
+        "history": "Historique"
+      },
+      "toDeliverIn": "À livrer à {{city}}",
+      "collectedIn": "Encaissé à {{city}}",
+      "profit": "Bénéfice",
+      "note": "Note",
+      "operationAt": "Date de l'opération",
+      "createdBy": "Créé par",
+      "deliveredAt": "Livré le",
+      "cancelledAt": "Annulé le",
+      "payment": "Paiement",
+      "unknownAccount": "Compte",
+      "owesUs": "nous doit",
+      "locked": "Livré : verrouillé. Toute correction passe par une contre-passation.",
+      "deliveredWithoutCode": "Livré sans code par le Superviseur (pièce d'identité et motif gardés). Verrouillé.",
+      "cancelled": "Annulé : {{reason}}",
+      "codeLocked": "Code bloqué après 5 essais faux. Seul le Superviseur peut le débloquer.",
+      "codeHeldBySender": "Le code de retrait est détenu par l'expéditeur. Demandez-le au bénéficiaire : vous ne pouvez pas le lire.",
+      "reload": "Recharger le transfert",
+      "reasonOptional": "Motif (facultatif)",
+      "reasonRequiredLabel": "Motif (obligatoire)",
+      "reasonRequired": "Le motif est obligatoire.",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "keep": "Garder le transfert",
+      "cancelTitle": "Annuler ce transfert ?",
+      "cancelWarning": "Un transfert annulé est verrouillé. Le paiement est rendu en caisse et l'action est enregistrée dans l'historique, visible des deux agences.",
+      "cancelCredit": "La dette de {{name}} née de ce transfert sera effacée.",
+      "unlockHint": "Le compteur des codes faux repart à zéro (5 essais).",
+      "newCodeHint": "Un nouveau code de 6 chiffres remplace l'ancien, qui ne marchera plus.",
+      "newCodeLocked": "Un nouveau code remplace l'ancien, mais ne débloque pas le transfert : le Superviseur doit aussi le débloquer.",
+      "newCodeConfirm": "Créer un nouveau code",
+      "newCodeOnce": "Ce code ne sera plus jamais affiché. Imprimez-le ou transmettez-le à l'expéditeur maintenant.",
+      "actions": {
+        "label": "Actions",
+        "editTexts": "Modifier les textes",
+        "cancel": "Annuler le transfert",
+        "newCode": "Nouveau code",
+        "unlock": "Débloquer le code",
+        "offline": "Annuler, modifier et livrer demandent le réseau. Seules les créations peuvent attendre.",
+        "editAmounts": "Modifier montant ou taux",
+        "deliver": "Livrer",
+        "deliverWithoutCode": "Livrer sans code"
+      }
+    },
+    "history": {
+      "empty": "Aucun événement.",
+      "attempt": "essai {{n}} sur 5",
+      "reason": "Motif : {{reason}}",
+      "field": "Champ",
+      "before": "Avant",
+      "after": "Après",
+      "changed": "modifié",
+      "types": {
+        "Created": "Ajouté",
+        "Edited": "Modifié",
+        "Delivered": "Livré",
+        "DeliveredWithoutCode": "Livré sans code",
+        "Cancelled": "Annulé",
+        "CodeUnlocked": "Code débloqué",
+        "CodeReplaced": "Nouveau code",
+        "WrongCode": "Code faux"
+      },
+      "fields": {
+        "SenderInfo": "Expéditeur",
+        "BeneficiaryInfo": "Bénéficiaire",
+        "Note": "Note",
+        "AmountXof": "Montant FCFA",
+        "AmountMro": "Montant MRO",
+        "SaleRate": "Prix de vente",
+        "OperationAt": "Date de l'opération",
+        "Payments": "Répartition",
+        "CreditPartyId": "Tiers du crédit",
+        "CreditAmount": "Part à crédit",
+        "Status": "Statut",
+        "FailedCodeAttempts": "Codes faux"
+      }
+    },
+    "amounts": {
+      "title": "Modifier montant ou taux",
+      "back": "Fiche du transfert",
+      "amountMro": "Montant payé en MRO",
+      "amountXof": "Montant en FCFA",
+      "saleRate": "Prix de vente de ce transfert",
+      "rateInvalid": "Saisissez un prix de vente positif, avec 2 décimales au plus.",
+      "compare": "Montant à livrer, avant et après",
+      "dateHint": "Laisser vide pour garder la date d'opération actuelle.",
+      "ledgerHint": "L'écriture en vigueur est contre-passée puis remplacée au jour de la modification. Le prix d'achat et les agences ne changent pas.",
+      "save": "Enregistrer la modification"
+    },
+    "deliver": {
+      "title": "Livrer",
+      "withoutCodeTitle": "Livrer sans code",
+      "steps": {
+        "code": "Code",
+        "identity": "Identité",
+        "remise": "Remise"
+      },
+      "code": "Code de retrait (6 chiffres)",
+      "attemptsLeft_one": "{{count}} essai restant sur 5",
+      "attemptsLeft_other": "{{count}} essais restants sur 5",
+      "askBeneficiary": "Demandez le code au bénéficiaire : l'expéditeur le lui a remis. Il est vérifié par le serveur au moment de confirmer la livraison.",
+      "wrongCode_one": "Code incorrect. Il vous reste {{count}} essai avant le blocage du transfert.",
+      "wrongCode_other": "Code incorrect. Il vous reste {{count}} essais avant le blocage du transfert.",
+      "locked": "Transfert bloqué après 5 codes faux. Contactez le Superviseur pour le débloquer ou obtenir un nouveau code.",
+      "withoutCodeWarning": "Le bénéficiaire n'a pas le code. Cette livraison est tracée dans l'historique comme « Livré sans code ».",
+      "idDocument": "Pièce d'identité du bénéficiaire (type et numéro)",
+      "idDocumentPlaceholder": "ex. Carte nationale 0000000000",
+      "amountToHandOver": "Somme à remettre au bénéficiaire",
+      "takenFrom": "Prélevé sur les caisses de {{city}}",
+      "balance": "Solde",
+      "overdraft": "{{name}} passera en négatif : {{amount}}. Vous pouvez continuer.",
+      "addAccount": "Ajouter une caisse",
+      "totalHandedOver": "Total remis",
+      "rest": "Reste à répartir",
+      "confirm": "Confirmer la livraison",
+      "confirmAnyway": "Confirmer quand même",
+      "delivering": "Livraison…",
+      "offline": "La livraison demande le réseau : le code est vérifié par le serveur et la caisse est mise à jour en une seule fois. Ne remettez pas l'argent avant d'avoir confirmé.",
+      "notRecorded": "La livraison n'a pas pu être enregistrée. Aucune caisse n'a été modifiée. Réessayez ; ne remettez pas l'argent avant confirmation.",
+      "validation": {
+        "code": "Saisissez les 6 chiffres du code.",
+        "idDocument": "Saisissez la pièce d'identité du bénéficiaire.",
+        "remiseRequired": "Ajoutez au moins une caisse.",
+        "totalMismatch": "Le total remis doit être égal à la somme à remettre."
+      },
+      "done": {
+        "title": "Transfert livré",
+        "to": "Remis à {{name}}",
+        "negative": "{{name}} est maintenant en négatif : {{amount}}.",
+        "toDetail": "Voir la fiche",
+        "toList": "Retour aux transferts"
+      }
     }
   },
   "dashboard": {

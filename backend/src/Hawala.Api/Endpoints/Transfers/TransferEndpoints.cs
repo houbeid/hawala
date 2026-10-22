@@ -18,6 +18,7 @@ using Transfers.Application.Features.Transfers.GetTransferHistory;
 using Transfers.Application.Features.Transfers.GetTransferDashboard;
 using Transfers.Application.Features.Transfers.GetTransferSummary;
 using Transfers.Application.Features.Transfers.ListTransfers;
+using Transfers.Domain.Transfers;
 
 namespace Hawala.Api.Endpoints.Transfers;
 
@@ -143,10 +144,21 @@ public static class TransferEndpoints
         return result.IsSuccess ? TypedResults.NoContent() : result.Error.ToProblem();
     }
 
+    /// <summary>Une ligne d'historique, avec le nom de son auteur (décision du 22 octobre 2026, comme l'audit).</summary>
+    /// <param name="AuthorName">Nom complet du compte ; « ? » si le compte n'existe plus.</param>
+    public sealed record TransferEventResponse(
+        TransferEventType Type,
+        DateTimeOffset At,
+        Guid AuthorId,
+        string AuthorName,
+        string? Reason,
+        IReadOnlyList<TransferFieldChange> Changes);
+
     private static async Task<IResult> GetTransferHistory(
         Guid id,
         ClaimsPrincipal user,
         IQueryHandler<GetTransferHistoryQuery, IReadOnlyList<TransferEventView>> handler,
+        IAccountDirectory accounts,
         CancellationToken cancellationToken)
     {
         if (!user.TryGetAccountId(out var actorId))
@@ -155,7 +167,25 @@ public static class TransferEndpoints
         }
 
         var result = await handler.Handle(new GetTransferHistoryQuery(actorId, id), cancellationToken);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.Error.ToProblem();
+        if (result.IsFailure)
+        {
+            return result.Error.ToProblem();
+        }
+
+        // Les noms sont lus par les Contracts d'Identité (un agent ne peut pas lire la liste des comptes) :
+        // l'historique doit dire qui a fait l'action, pas seulement un identifiant.
+        var names = new Dictionary<Guid, string>();
+        foreach (var authorId in result.Value.Select(e => e.AuthorId).Distinct())
+        {
+            if (await accounts.FindAsync(authorId, cancellationToken) is { } account)
+            {
+                names[authorId] = account.FullName;
+            }
+        }
+
+        return TypedResults.Ok(result.Value
+            .Select(e => new TransferEventResponse(e.Type, e.At, e.AuthorId, names.GetValueOrDefault(e.AuthorId, "?"), e.Reason, e.Changes))
+            .ToList());
     }
 
     /// <param name="IdDocument">Pièce d'identité du bénéficiaire (type et numéro), obligatoire.</param>

@@ -76,6 +76,38 @@ const createTransferRoute = createRoute({
   component: lazyRouteComponent(() => import('@/features/transfers/create/CreateTransferPage'), 'CreateTransferPage'),
 });
 
+/** Fiche d'un transfert : détails, historique, actions selon les droits (404 hors périmètre). */
+const transferDetailRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/transfers/$transferId',
+  staticData: { titleKey: 'transfers.detailTitle' },
+  component: lazyRouteComponent(() => import('@/features/transfers/detail/TransferDetailPage'), 'TransferDetailPage'),
+});
+
+/** Modifier montant ou taux (Superviseur, transfers.edit_rate) : page à part (répartition et crédit complets). */
+const editAmountsRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/transfers/$transferId/amounts',
+  staticData: { titleKey: 'transfers.amounts.title', permission: 'transfers.edit_rate' },
+  component: lazyRouteComponent(() => import('@/features/transfers/amounts/EditAmountsPage'), 'EditAmountsPage'),
+});
+
+/** Livrer (transfers.deliver) : code donné par le bénéficiaire, puis remise sur les caisses de destination. */
+const deliverRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/transfers/$transferId/deliver',
+  staticData: { titleKey: 'transfers.deliver.title', permission: 'transfers.deliver' },
+  component: lazyRouteComponent(() => import('@/features/transfers/deliver/DeliverPage'), 'DeliverPage'),
+});
+
+/** Livrer sans code (transfers.manage_code, Superviseur) : pièce d'identité et motif, puis remise. */
+const deliverWithoutCodeRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/transfers/$transferId/deliver-without-code',
+  staticData: { titleKey: 'transfers.deliver.withoutCodeTitle', permission: 'transfers.manage_code' },
+  component: lazyRouteComponent(() => import('@/features/transfers/deliver/DeliverPage'), 'DeliverWithoutCodePage'),
+});
+
 /** Tableau de bord (balance.view) : période ?from=&to= (aujourd'hui sans paramètre). */
 const dashboardRoute = createRoute({
   getParentRoute: () => shellRoute,
@@ -103,7 +135,10 @@ const shellChildren = [
   moreRoute,
   transfersRoute,
   createTransferRoute,
-  placeholder('/transfers/$transferId', 'transfers.detailTitle'),
+  transferDetailRoute,
+  editAmountsRoute,
+  deliverRoute,
+  deliverWithoutCodeRoute,
   placeholder('/parties', 'nav.parties'),
   placeholder('/cash', 'nav.cash', 'cash.budget.read'),
   placeholder('/budget', 'nav.budget', 'cash.budget.read'),
