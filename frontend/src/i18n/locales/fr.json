@@ -1,0 +1,49 @@
+{
+  "app": {
+    "name": "Hawala",
+    "corridor": "Nouakchott ↔ Dakar",
+    "skeleton": "Application en construction : la connexion arrive au prochain tour.",
+    "rateOfDay": "Format des taux"
+  },
+  "language": {
+    "label": "Langue",
+    "fr": "Français",
+    "ar": "العربية"
+  },
+  "theme": {
+    "label": "Thème",
+    "light": "Clair",
+    "dark": "Sombre",
+    "system": "Système"
+  },
+  "errors": {
+    "generic": "Une erreur est survenue. Réessayez.",
+    "network": "Pas de connexion au serveur. Vérifiez le réseau et réessayez.",
+    "forbidden": "Vous n'avez pas le droit de faire cette action.",
+    "notFound": "Élément introuvable ou hors de votre agence.",
+    "Api": {
+      "RateLimited": "Trop de tentatives. Patientez un instant.",
+      "RateLimitedWait": "Trop de tentatives. Réessayez dans {{seconds}} s."
+    },
+    "Identity": {
+      "Login": {
+        "Empty": "Saisissez un email ou un numéro de téléphone."
+      },
+      "Auth": {
+        "InvalidCredentials": "Identifiant ou mot de passe incorrect.",
+        "LockedOut": "Trop d'essais : compte verrouillé pendant 15 minutes.",
+        "AccountBlocked": "Ce compte est bloqué. Contactez le Superviseur."
+      },
+      "Password": {
+        "Empty": "Le mot de passe est obligatoire.",
+        "Incorrect": "Le mot de passe actuel est incorrect.",
+        "TooWeak": "8 caractères minimum, dont au moins un chiffre."
+      },
+      "RefreshToken": {
+        "Invalid": "Votre session a pris fin. Reconnectez-vous.",
+        "Expired": "Votre session a expiré. Reconnectez-vous.",
+        "Revoked": "Votre session a été fermée. Reconnectez-vous."
+      }
+    }
+  }
+}

@@ -9,6 +9,12 @@ Développeur : Hamade (Windows, PowerShell, Docker Desktop, VS Code). **Toujours
 - Méthode de travail : skill `layered-backend-builder` (`.claude/skills/layered-backend-builder/SKILL.md`).
 - Architecture complète : @docs/architecture.md
 
+## Structure du dépôt (réorganisée le 22 octobre 2026)
+
+- `backend/` : `Hawala.slnx`, `Directory.Build.props`, `Directory.Packages.props`, `global.json`, `src/`, `tests/`, scripts PowerShell. **Toutes les commandes `dotnet` se lancent depuis `backend/`** ; les chemins `src/…` et `tests/…` de ce fichier sont relatifs à `backend/`.
+- `frontend/` : la PWA React (npm), commandes depuis `frontend/`.
+- À la racine : `docker-compose.yml`, `docs/`, `.claude/`, `CLAUDE.md`, `README.md` ; plus tard `deploy/` (Dockerfiles, Caddyfile).
+
 ## Méthode de travail (imposée par Hamade)
 
 - Avancer **une fonctionnalité complète par tour** (option A, choisie le 19 octobre 2026) : Domain → Application → Infrastructure → Api → tests d'une même fonctionnalité, puis build + tests, et on s'arrête en attendant son retour. Chaque tour se termine au vert. S'arrêter quand même en cours de tour pour : une question métier, une modification risquée d'un fichier déjà testé, une migration à générer (c'est Hamade qui la lance), un problème de conception. Les simples ajouts à des fichiers testés sont signalés dans le compte rendu.
@@ -38,7 +44,7 @@ Développeur : Hamade (Windows, PowerShell, Docker Desktop, VS Code). **Toujours
 - Commande qui touche à la fois les tables ASP.NET Identity et les nôtres, qui pose un verrou (`CountActiveSupervisorsForUpdateAsync`) ou qui écrit une ligne d'audit : l'enregistrer avec `services.AddSharedTransactional<TCommand, TResponse, THandler>()` (ou `<TCommand, THandler>`), transaction commune de `Hawala.SharedInfrastructure` (depuis la phase 6, Identité aussi).
 - L'auteur d'une action (contrôle « soi-même ») est lu dans le JWT par `ClaimsPrincipal.TryGetAccountId` (`Hawala.Api/Configuration`) et passé à la commande en `ActorId`, jamais lu dans le corps de la requête.
 - Valeurs d'énumération reçues en texte (rôle, statut) : `EnumNameParser.TryParse<T>` (insensible à la casse, refuse les nombres).
-- Migrations : `dotnet ef migrations add <Nom> --project src/Modules/X/X.Infrastructure --startup-project src/Hawala.Api --context <XDbContext> --output-dir Persistence\Migrations -- --environment Development` (le suffixe fait lire les user-secrets : les Tiers et les Transferts ont besoin de `Encryption:Key` pour créer leur DbContext). Elles s'appliquent au démarrage (Organisation d'abord, puis Identité).
+- Migrations : depuis `backend/`, `dotnet ef migrations add <Nom> --project src/Modules/X/X.Infrastructure --startup-project src/Hawala.Api --context <XDbContext> --output-dir Persistence\Migrations -- --environment Development` (le suffixe fait lire les user-secrets : les Tiers et les Transferts ont besoin de `Encryption:Key` pour créer leur DbContext). Elles s'appliquent au démarrage (Organisation d'abord, puis Identité).
 - Tests : xUnit, intégration via `WebApplicationFactory` (environnement `Testing`) + Testcontainers `new PostgreSqlBuilder("postgres:17")`, fixture de collection partagée (`ApiCollection`). Helpers : `TestAccounts`, `ApiClient` (lire les corps avec `ReadJsonAsync`, qui relit le texte).
 
 ## État actuel (21 octobre 2026)
@@ -92,6 +98,14 @@ Fait et testé sur PostgreSQL (dernier résultat confirmé : **823 réussis, 0 �
 - **Limitation de débit** (phase 6, tour 8) : `Configuration/RateLimitingSetup` (fenêtres fixes d'une minute en mémoire) : connexion 10 par IP (`RequireRateLimiting(LoginPolicy)`), le reste 300 par compte (par IP sans compte) ; 429 avec `Retry-After` et `code` `Api.RateLimited` ; `UseRateLimiter` après `UseAuthentication`. Valeurs `RateLimits:LoginPerMinute` / `RateLimits:RequestsPerMinute`, relevées dans `HawalaApiFactory` ; `Auth/RateLimitingTests` les éprouve sur une copie de l'API (`WithWebHostBuilder`). POINT OUVERT : IP réelle derrière Caddy / Cloudflare au déploiement.
 - Les migrations `AddLedger` et `AddAudit` contiennent du SQL ajouté à la main (déclencheurs) : si elles sont régénérées, le remettre. `dotnet ef migrations remove` a besoin de la base locale (`docker compose up -d`).
 
+## Frontend (`frontend/`, commencé le 22 octobre 2026)
+
+- Méthode : skill `react-frontend-builder` ; décisions dans le skill métier (« Frontend ») : maquettes reprises pour la mise en page, backend prioritaire en cas d'écart, types écrits à la main d'après le C#, jeton en mémoire seulement.
+- Commandes (dans `frontend/`) : `npm run dev` (port 5173, proxy `/api` et `/hubs` vers `http://localhost:5215`, ou `HAWALA_API_URL`), `npm run lint`, `npm test`, `npm run build`. Node 20.19+ (vitest 4, jsdom 27, jest-dom 6.9.1 choisis pour Node 20).
+- **Tour 1 fait** : squelette Vite 8 + React 19 + TypeScript 6 + Tailwind 4 (couleurs de la maquette, clair / sombre par `data-theme`, couleur d'agence par `data-agency`), polices IBM Plex locales, i18next fr / ar avec `lang` et `dir` sur `<html>`, formatage des montants (`shared/format/money.ts` : espace fine U+202F, virgule, unité toujours écrite, FCFA entier, arrondi halfExpand) ; 19 tests Vitest.
+- **Tour 2 fait** : `shared/api` (`http.ts` : seul appel à `fetch`, jeton, un rafraîchissement puis un rejeu sur 401 ; `errors.ts` : ProblemDetails → `ApiError { status, code, details, retryAfterSeconds }`, codes client `Client.Network` / `Client.Unknown` ; `errorMessage.ts` : traduction `errors.<code>`, jamais le texte du serveur ; `idempotency.ts`) et `shared/auth` (types copiés sur `AuthResponse` / `CurrentAccount`, rôles `Supervisor` / `Agent` / `Cashier` / `ReadOnly` ; `SessionManager` : jeton en mémoire, reprise par `/auth/refresh` au chargement, états `loading` / `anonymous` / `unreachable` / `mustChangePassword` / `authenticated`, rafraîchissement sérialisé (promesse partagée + Web Locks entre onglets), anticipé 60 s avant l'expiration, `/auth/me` relu après un 401, `signOut(reason)` pour SignalR ; `SessionProvider`, `useSession`, `usePermission`, `<Can>`). MSW 2.15 (Node 20). Format des erreurs vérifié sur l'API locale. 48 tests Vitest.
+- Prochain : tour 3, écran de connexion et changement de mot de passe, routeur et gardes.
+
 ## Prochaine étape
 
 1. **Phase 2 terminée** (Money et arrondi, Grand livre, Trésorerie, Tiers). Prochaine : **phase 3, Taux et Transferts** — plan à présenter avant tout code. Droits par défaut des rôles validés le 20 octobre 2026 (tableau dans le skill ; `RolePermissions` à jour pour les permissions existantes). Reste à préciser : le sens des codes de la référence de l'app actuelle (`TR-RS18-HG01-2026-TGNC-…`).
@@ -109,7 +123,7 @@ Ensuite : Money / arrondi / taux, Grand livre, Trésorerie, Tiers, Taux, Transfe
 - Deux rafraîchissements simultanés peuvent réussir tous les deux : le frontend devra sérialiser les refresh.
 - Course sur un index unique (email / téléphone) = 500 au lieu de 409.
 - Couleur d'agence unique vérifiée dans le handler, sans index unique en base (course très improbable entre deux Superviseurs) : POINT OUVERT dans `ChangeAgencyColorCommandHandler`.
-- Grand livre : soldes recalculés à chaque lecture (pas de cache) ; date d'opération future non refusée (question ouverte) ; création simultanée d'un même compte système = 500 (index unique). POINT OUVERT dans le code.
+- Grand livre : soldes recalculés à chaque lecture (pas de cache) ; création simultanée d'un même compte système = 500 (index unique). POINT OUVERT dans le code.
 - Liste des comptes sans pagination, recherche texte faite en mémoire (quelques dizaines de comptes) : POINT OUVERT dans `UserAccountRepository`.
 - Le test de concurrence du blocage croisé appelle le handler directement (pas par HTTP) ; il éprouve le verrou de façon probable, pas certaine.
 - `ArchivePartyTests.Money_left_in_one_agency_blocks_archiving` a échoué une fois (21 octobre 2026) sur une suite complète, sans se reproduire en trois relances ; cause inconnue. Une assertion sur le solde initial a été ajoutée pour savoir quelle étape échoue s'il revient.

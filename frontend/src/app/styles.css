@@ -1,0 +1,121 @@
+@import 'tailwindcss';
+
+/* Mode sombre piloté par l'attribut data-theme posé sur <html> (voir shared/theme). */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/*
+ * Système de design repris des maquettes (canvas « Hawala MR–SN — Maquettes PWA ») :
+ * fond papier, encre, une seule couleur d'accent ambre, couleurs d'agence réservées
+ * au badge et au filet d'en-tête. Les noms courts suivent ceux de la maquette.
+ */
+:root {
+  --nkc: #1e8e3e;
+  --dkr: #1565c0;
+  --agency: var(--nkc);
+
+  --bg: #f5f2eb;
+  --surface: #ffffff;
+  --surface-2: #ece7db;
+  --fg: #161a22;
+  --muted: #566070;
+  --border: #d5cebe;
+  --ink: #161a22;
+  --on-ink: #ffffff;
+  --accent: #8f4b00;
+  --warn-bg: #ffebc2;
+  --warn-fg: #6b3a00;
+  --red: #b0261c;
+  --red-bg: #fce4e1;
+  --green: #17692f;
+  --green-bg: #dff2e4;
+
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --bg: #0e1117;
+  --surface: #181c25;
+  --surface-2: #222733;
+  --fg: #f2efe7;
+  --muted: #a9b2c0;
+  --border: #353c4a;
+  --ink: #f2efe7;
+  --on-ink: #10131a;
+  --accent: #f2b56b;
+  --warn-bg: #3b2a0b;
+  --warn-fg: #f7cb82;
+  --red: #ff958a;
+  --red-bg: #42201d;
+  --green: #82d99f;
+  --green-bg: #173a26;
+
+  color-scheme: dark;
+}
+
+[data-agency='DKR'] {
+  --agency: var(--dkr);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-ink: var(--ink);
+  --color-on-ink: var(--on-ink);
+  --color-accent: var(--accent);
+  --color-warn-bg: var(--warn-bg);
+  --color-warn-fg: var(--warn-fg);
+  --color-red: var(--red);
+  --color-red-bg: var(--red-bg);
+  --color-green: var(--green);
+  --color-green-bg: var(--green-bg);
+  --color-agency: var(--agency);
+  --color-nkc: var(--nkc);
+  --color-dkr: var(--dkr);
+
+  --font-sans: 'IBM Plex Sans', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --font-arabic: 'IBM Plex Sans Arabic', 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+@layer base {
+  html {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.4;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  html[dir='rtl'] {
+    font-family: var(--font-arabic);
+    line-height: 1.5;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--bg);
+  }
+}
+
+@layer components {
+  /* Un montant est toujours un bloc isolé de gauche à droite, lisible dans une page arabe. */
+  .amount {
+    direction: ltr;
+    unicode-bidi: isolate;
+    display: inline-block;
+    white-space: nowrap;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Icône qui indique un sens (retour, chevron) : retournée en RTL. */
+  [dir='rtl'] .flip-rtl {
+    transform: scaleX(-1);
+  }
+}

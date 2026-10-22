@@ -1,6 +1,6 @@
 # Architecture — App Hawala Mauritanie–Sénégal
 
-Mis à jour le 18 octobre 2026 — copie exportée depuis Claude Docs (source : https://claude.ai/artifact/Qzcyjj7dCmFiDsQJqKZVi5)
+Mis à jour le 22 octobre 2026 — copie exportée depuis Claude Docs (source : https://claude.ai/artifact/Qzcyjj7dCmFiDsQJqKZVi5)
 
 Un monolithe modulaire en .NET 10 avec PostgreSQL, et une PWA React bilingue (français / arabe) qui fonctionne hors ligne. Toute opération d'argent passe par un grand livre en partie double, ce qui rend le bénéfice, la caisse et le bilan exacts par construction.
 
@@ -310,39 +310,184 @@ Un dépôt unique : l'API .NET et la PWA côte à côte, chaque module backend d
 
 ```text
 hawala/
-├─ src/
-│  ├─ Hawala.Api/                  # hôte : Program.cs, auth, SignalR, Hangfire, OpenAPI
-│  ├─ Hawala.SharedKernel/         # Money, Currency, Result, événements, horloge
-│  └─ Modules/
-│     ├─ Identity/
-│     │  ├─ Identity.Domain/         # entités, règles
-│     │  ├─ Identity.Application/    # commandes, requêtes, validateurs
-│     │  ├─ Identity.Infrastructure/ # EF Core (schéma identity), services externes
-│     │  └─ Identity.Contracts/      # ce que les autres modules ont le droit d'appeler
-│     ├─ Organization/  ├─ Parties/  ├─ Treasury/  ├─ Ledger/
-│     ├─ Rates/  ├─ Transfers/  ├─ Cash/  ├─ Profit/
-│     └─ Balance/  ├─ Notifications/  └─ Audit/
-├─ tests/
-│  ├─ Ledger.Tests/                # équilibre, contre-passation, soldes
-│  ├─ Transfers.Tests/             # bénéfice 536 893, bilan −261 005
-│  ├─ Architecture.Tests/          # un module ne référence que les Contracts d'un autre
-│  └─ E2E/                         # Playwright
-├─ web/                            # PWA React
+├─ backend/                        # tout le .NET (commandes dotnet lancées ici)
+│  ├─ Hawala.slnx, Directory.Build.props, Directory.Packages.props, global.json
+│  ├─ src/
+│  │  ├─ Hawala.Api/               # hôte : Program.cs, auth, SignalR, OpenAPI
+│  │  ├─ Hawala.SharedKernel/      # Money, Currency, Result, horloge
+│  │  ├─ Hawala.SharedInfrastructure/ # connexion et transaction partagées, chiffrement
+│  │  └─ Modules/
+│  │     ├─ Identity/  (Contracts, Domain, Application, Infrastructure)
+│  │     ├─ Organization/  ├─ Parties/  ├─ Treasury/  ├─ Ledger/
+│  │     ├─ Rates/  ├─ Transfers/  ├─ Cash/  ├─ Profit/
+│  │     └─ Balance/  └─ Audit/
+│  └─ tests/                       # tests de domaine, Architecture.Tests, Identity.IntegrationTests
+├─ frontend/                       # PWA React (npm)
 │  ├─ src/app/                     # routes, layout, thème, RTL
 │  ├─ src/features/                # transfers, cash, parties, profit, balance, security
-│  ├─ src/shared/ui/               # composants shadcn, MoneyInput, RateInput
-│  ├─ src/shared/api/              # client généré depuis OpenAPI
-│  ├─ src/offline/                 # Dexie, file d'attente, synchronisation
+│  ├─ src/shared/                  # ui, api (client et types), format (montants), theme
+│  ├─ src/offline/                 # Dexie, file d'attente, synchronisation (phase 7)
 │  └─ src/i18n/                    # fr.json, ar.json
-└─ deploy/                         # docker-compose, Caddyfile, scripts de sauvegarde
+├─ docker-compose.yml              # PostgreSQL de dev
+└─ deploy/                         # plus tard : Dockerfiles, Caddyfile, scripts de sauvegarde
 ```
+
+Dépôt réorganisé le 22 octobre 2026 en `backend/` et `frontend/` pour séparer les deux builds (un Dockerfile et une CI par dossier).
+
+Frontend (décisions du 22 octobre 2026) : `frontend/` avec npm ; mise en page et système de design repris des maquettes (canvas « Hawala MR–SN — Maquettes PWA »), mais le backend fait foi quand une maquette le contredit ; types des réponses écrits à la main d'après les records C# (l'OpenAPI ne décrit pas les réponses) ; jeton d'accès en mémoire seulement, rafraîchissement par le cookie au rechargement, sérialisé ; proxy Vite vers l'API en dev ; polices locales.
 
 Conventions d'API :
 
 - REST sous `/api/v1`, une route par cas d'usage : `POST /transfers`, `POST /transfers/{id}/deliver`, `POST /transfers/{id}/cancel`.
 - En-tête `Idempotency-Key` obligatoire sur les créations ; `If-Match` (version) sur les modifications.
 - Erreurs au format Problem Details (RFC 9457), messages traduits côté client.
-- Client TypeScript généré depuis le contrat OpenAPI, pour que le front et le back ne divergent pas.
+- Types TypeScript écrits à la main d'après les records C# et vérifiés sur une vraie réponse (décision du 22 octobre 2026 : l'OpenAPI actuel ne décrit pas les réponses). Génération depuis OpenAPI possible plus tard si les routes déclarent leurs réponses.
+
+## Architecture du frontend
+
+Décidée le 22 octobre 2026. La PWA vit dans `frontend/` ; elle se construit avec la méthode `react-frontend-builder` (types, puis client API, puis temps réel, puis état partagé, puis composants UI, puis composants métier, puis pages ; un écran complet et testé par tour). La mise en page vient des maquettes (canvas « Hawala MR–SN — Maquettes PWA ») ; quand une maquette contredit le backend ou le skill métier, le backend fait foi.
+
+### Vue d'ensemble
+
+```text
+Navigateur (PWA)
+ ├─ Pages / routes         TanStack Router, gardes (connecté, mot de passe à changer, permission)
+ ├─ Composants métier      un dossier par fonctionnalité (transferts, tiers, caisse…)
+ ├─ Composants UI          boutons, champs, cartes, feuilles, MoneyInput, RateInput (shadcn/Radix + style des maquettes)
+ ├─ État partagé           session (compte, permissions, agence), langue, thème
+ ├─ Données serveur        TanStack Query : cache, rechargement, invalidation
+ ├─ Temps réel             client SignalR /hubs/live → invalide le cache
+ └─ Client API             un seul fetch typé : jeton, rafraîchissement, erreurs ProblemDetails
+          │  même origine : /api/v1 et /hubs
+          ▼
+     Caddy (prod) ou proxy Vite (dev)  →  Hawala.Api
+```
+
+### Arborescence
+
+```text
+frontend/src/
+├─ main.tsx                    point d'entrée : polices, thème, i18n, providers
+├─ app/
+│  ├─ router.tsx               toutes les routes et leurs gardes
+│  ├─ providers.tsx            QueryClient, session, temps réel
+│  ├─ layout/                  AppShell : en-tête (badge d'agence), barre du bas (mobile), barre latérale (bureau)
+│  └─ styles.css               couleurs et polices des maquettes
+├─ shared/                     ne connaît aucune fonctionnalité métier
+│  ├─ api/                     http.ts (fetch + jeton + rafraîchissement), errors.ts (ProblemDetails → ApiError), idempotency.ts
+│  ├─ auth/                    session : connexion, rafraîchissement sérialisé, déconnexion, usePermission, <Can>
+│  ├─ realtime/                connexion SignalR, reconnexion, abonnements
+│  ├─ format/                  montants, taux, pourcentages, dates
+│  ├─ ui/                      composants génériques sans donnée métier
+│  ├─ theme/                   clair / sombre / système
+│  └─ storage.ts               préférences de l'appareil seulement (langue, thème)
+├─ features/                   un dossier par écran des maquettes
+│  ├─ auth/                    connexion, changement de mot de passe, mes sessions
+│  ├─ rates/                   taux du jour
+│  ├─ transfers/               liste, création, fiche, livraison, cartes, tableau de bord
+│  ├─ parties/                 tiers : liste, fiche, relevé, solde initial, plafond, archivage
+│  ├─ treasury/                comptes de trésorerie
+│  ├─ cash/                    caisse, ajustements
+│  ├─ budget/                  budget, contrôle de cohérence, historique
+│  ├─ profit/                  bénéfice
+│  ├─ balance/                 bilan par caisse, capital
+│  ├─ users/                   comptes, permissions, tiers autorisés, plafonds, sessions
+│  └─ audit/                   journal d'audit lisible
+├─ i18n/                       fr.json, ar.json (textes, codes d'erreur, codes d'audit)
+├─ offline/                    phase 7 : Dexie, file d'attente, synchronisation
+└─ test/                       configuration Vitest, gestionnaires MSW, données fictives
+```
+
+Chaque fonctionnalité suit le même modèle : `types.ts` (types copiés sur les records C#), `api.ts` (fonctions d'appel), `queries.ts` (clés et hooks TanStack Query), `components/`, `pages/`, tests à côté du code.
+
+Règles de dépendance (vérifiées par ESLint) : `shared/` n'importe jamais `features/` ; une fonctionnalité n'importe pas l'intérieur d'une autre (elle passe par un composant exporté, ex. le choix d'un tiers fourni par `features/parties`) ; les pages assemblent, elles n'appellent jamais `fetch` directement.
+
+### Authentification
+
+| Moment | Comportement |
+|---|---|
+| Ouverture de l'app | Pas de jeton en mémoire → `POST /auth/refresh` (cookie `hawala_refresh`) ; succès → `GET /auth/me` ; échec → écran de connexion |
+| Connexion | `POST /auth/login` → jeton (15 min) gardé **en mémoire seulement** ; si `mustChangePassword`, seul le changement de mot de passe est accessible |
+| Requête qui reçoit 401 | Un seul rafraîchissement à la fois (sérialisé : les requêtes en attente partagent la même promesse), puis la requête est rejouée une fois ; nouvel échec → déconnexion |
+| Rafraîchissement anticipé | Environ une minute avant l'expiration du jeton |
+| SignalR `SignedOut` / `SessionClosed` | Jeton effacé, cache vidé, retour à la connexion avec un message |
+| Déconnexion | `POST /auth/logout`, puis tout est effacé |
+
+### Client API et erreurs
+
+- Un seul `http.ts` : en-tête `Authorization`, JSON, lecture des ProblemDetails en `ApiError { status, code, details }` ; `code` est le code stable du backend (`Transfers.Credit.LimitExceeded`), `details` les champs ajoutés (`remaining`, `currency`, `remainingAttempts`…).
+- Messages traduits par `t('errors.' + code)`, avec un message générique pour un code inconnu.
+- 429 `Api.RateLimited` : « trop de tentatives, réessayez dans X s » (lu dans `Retry-After`), sans relance automatique.
+- `Idempotency-Key` : générée à l'ouverture du formulaire et réutilisée si l'agent renvoie (double clic, réseau coupé), jamais à chaque clic.
+- `version` : relue dans la fiche et renvoyée lors d'une modification ; un 409 « version périmée » propose de recharger.
+
+### Données serveur et temps réel
+
+- TanStack Query, clés par fonctionnalité (`['transfers', 'list', filtres]`, `['transfers', id]`) ; après une action réussie, les listes concernées sont invalidées.
+- SignalR : `TransferChanged` invalide la fiche et les listes concernées (le message ne porte aucun montant : l'app relit par l'API) ; `RatesChanged` invalide les taux ; `SignedOut` déconnecte. Jeton passé en `access_token` pour `/hubs/live` seulement.
+
+### Permissions, rôles et agence
+
+- `usePermission('transfers.cancel')` et `<Can permission="…">` lisent les `permissions` de `/auth/me`. Un bouton interdit est **absent**, jamais grisé ; le serveur reste le seul vrai contrôle.
+- Gardes de route : une page sans la permission requise renvoie vers l'accueil ; le menu se construit à partir des mêmes permissions.
+- Agence : un agent a la sienne, verrouillée ; le Superviseur choisit NKC / DKR dans l'en-tête (`agencyId` passé aux requêtes) ; `data-agency` sur `<html>` change la couleur du badge et du filet d'en-tête.
+- Les règles « agence d'envoi ou Superviseur » sont déduites du rôle et de l'agence pour afficher une action ; le serveur tranche.
+
+### Routes
+
+Mêmes routes sur mobile et sur bureau : les écrans « Bureau » des maquettes sont la mise en page large des mêmes pages. Sous 1024 px, barre de navigation en bas (4 entrées + « Plus ») ; au-delà, barre latérale ; zones tactiles d'au moins 44 px.
+
+| Route | Écran | Garde |
+|---|---|---|
+| `/login`, `/change-password` | Connexion | publique / mot de passe à changer |
+| `/transfers`, `/transfers/new`, `/transfers/:id`, `/transfers/:id/deliver` | Transferts, création, fiche, livraison | connecté ; création `transfers.create` ; livraison `transfers.deliver` |
+| `/rates` | Taux du jour | connecté ; saisie `rates.set_daily` |
+| `/parties`, `/parties/:id`, `/parties/:id/statement` | Tiers | connecté ; soldes `parties.view_balance` |
+| `/cash`, `/cash/new` | Caisse | `cash.budget.read` / `cash.create` |
+| `/budget` | Budget de la caisse | `cash.budget.read` |
+| `/profit` | Bénéfice | `profit.view` |
+| `/balance`, `/dashboard` | Bilan, tableau de bord | `balance.view` |
+| `/treasury` | Comptes de trésorerie | connecté ; gestion `treasury.manage` |
+| `/users`, `/users/:id` | Comptes | `users.manage` |
+| `/audit` | Journal d'audit | `audit.view` |
+| `/me/sessions` | Mes appareils | connecté |
+
+### Formulaires et montants
+
+- React Hook Form + Zod pour la saisie seulement (vide, format) ; les règles métier restent au serveur et reviennent par `code`.
+- `MoneyInput` : unité à côté du champ, bascule MRO / MRU à Nouakchott ; conversion MRU → MRO **sur le texte saisi** (« 12,345 » → « 123,45 »), jamais en flottant ; trop de décimales = refus, jamais d'arrondi.
+- `RateInput` : phrase à trou « 5 000 FCFA = [ ] MRO », 2 décimales au plus.
+- Le montant MRO d'un transfert est affiché à titre indicatif pendant la saisie ; celui renvoyé par le serveur fait foi.
+- Affichage : chiffres occidentaux groupés par trois (espace fine), virgule décimale, unité toujours écrite, montant isolé de gauche à droite dans une page arabe.
+
+### Langues
+
+i18next (fr, ar) ; `lang` et `dir` sur `<html>` ; CSS en propriétés logiques. Le texte lisible de l'audit (« X a retiré *Annuler un transfert* à Y ») est construit à partir du code de l'action, dans `i18n/`.
+
+### Tests
+
+| Ce qu'on prouve | Outil |
+|---|---|
+| Formatage, conversion MRU, calculs d'affichage | Vitest, sans rendu |
+| Composants UI | React Testing Library |
+| Composants qui appellent l'API (requêtes, en-têtes, erreurs, rafraîchissement) | MSW (interception réseau) ; jamais de simulation du module `api.ts` |
+| Temps réel | client SignalR injecté par contexte, faux hub |
+| Parcours complets | Playwright contre l'API et PostgreSQL de dev (plus tard) |
+
+### Hors ligne et mise en production
+
+- Phase 7 : `vite-plugin-pwa` (installation, cache des fichiers) et Dexie (file des créations : transfert, encaissement, décaissement, avec leur `Idempotency-Key`). Hors ligne, les actions qui exigent le serveur (livrer, annuler, taux, budget, bénéfice, bilan, comptes) remplacent leur bouton par une explication.
+- Production : `npm run build` → `frontend/dist`, servi par Caddy, qui redirige `/api` et `/hubs` vers l'API : même origine, pas de CORS, cookie `SameSite=Strict` fonctionnel.
+
+### Ordre des tours
+
+1. Squelette (styles, langues, thème, formatage) — fait le 22 octobre 2026.
+2. Client API et session (types d'authentification, `http.ts`, rafraîchissement sérialisé, MSW).
+3. Connexion et changement de mot de passe, gardes de route.
+4. AppShell, navigation par permissions, sélecteur d'agence.
+5. Taux, transferts (liste, création, fiche, livraison), tiers, trésorerie, caisse, budget, bénéfice, bilan, comptes, audit.
+6. Temps réel branché sur le cache, mises en page bureau.
+7. Hors ligne et reçu.
 
 ## Déploiement et exploitation
 

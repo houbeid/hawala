@@ -410,7 +410,17 @@ App actuelle (capture du 20 octobre 2026), écran Superviseur qui réunit bilan 
 
 - Backend : ASP.NET Core .NET 10 (Minimal APIs), monolithe modulaire + Clean Architecture (Domain / Application / Infrastructure / Contracts par module), handlers maison (pas MediatR), FluentValidation, EF Core 10 + Dapper pour les rapports, PostgreSQL 17+ (un schéma par module), Identity + JWT court + refresh token rotatif + TOTP, SignalR, Hangfire, QuestPDF, Serilog + OpenTelemetry.
 - Solution : `Hawala.slnx`, `Directory.Build.props` (nullable, warnings = erreurs), versions NuGet centralisées dans `Directory.Packages.props`, `Result` / `Error` (codes stables `Module.Raison` traduits par le frontend), `IClock` injecté, UUID v7 (`IdGenerator`).
-- Frontend : React 19 + TypeScript + Vite, Tailwind + shadcn/ui, TanStack Query + Router, React Hook Form + Zod, i18next (fr, ar en RTL), vite-plugin-pwa + Dexie (file d'attente hors ligne), Recharts. Client API généré depuis OpenAPI.
+- Frontend : React 19 + TypeScript + Vite, Tailwind + shadcn/ui, TanStack Query + Router, React Hook Form + Zod, i18next (fr, ar en RTL), vite-plugin-pwa + Dexie (file d'attente hors ligne), Recharts.
+
+### Frontend (décisions du 22 octobre 2026)
+
+- Dossier `frontend/` à la racine (le backend est dans `backend/`, réorganisation du 22 octobre 2026), npm. Méthode : skill `react-frontend-builder` (un écran complet par tour, testé).
+- **Maquettes** : canvas « Hawala MR–SN — Maquettes PWA » (https://claude.ai/code/artifact/a0c76994-4ca4-4d55-acd5-8b07a1d498f9). On reprend leur mise en page et leur système de design (fond papier, boutons encre, IBM Plex Sans / Sans Arabic / Mono, mode sombre, couleur d'agence sur le badge et le filet d'en-tête, rien par la couleur seule, bouton interdit absent et non grisé, chiffres occidentaux groupés par trois avec l'unité toujours écrite). **Quand une maquette contredit le backend ou ce skill, le backend gagne** (les maquettes ont été dessinées sur un référentiel plus ancien : MRU affiché pour les banques, « Considéré comme banque », solde initial à la création, bilan général converti, plafonds hypothétiques…) ; chaque écart est signalé dans le compte rendu du tour.
+- **Types des réponses écrits à la main** d'après les records C# réels, puis vérifiés sur une vraie réponse : l'OpenAPI actuel ne décrit pas les réponses (routes en `IResult`).
+- **Jeton d'accès en mémoire seulement** (jamais `localStorage`) ; au rechargement, l'app repasse par `/auth/refresh` (cookie). Les rafraîchissements sont sérialisés côté client.
+- En dev, Vite redirige `/api` et `/hubs` vers l'API (pas de CORS) ; polices servies localement (`@fontsource`), pas de Google Fonts (hors ligne).
+- Code de retrait d'un transfert créé hors ligne : « code disponible après synchronisation » (le serveur le génère) — phase 7.
+- Écran Taux : **avertissement non bloquant** si le prix de vente est inférieur au prix d'achat (interface seulement, Superviseur) ; bouton **« Reprendre le taux de la veille »** qui pré-remplit les champs sans enregistrer.
 - Modules : Identité & accès, Organisation, Tiers, Trésorerie, Grand livre, Taux, Transferts, Caisse, Bénéfice, Bilan, Notifications (temps réel entre agences), Audit (journal interne, aucun service externe). Un module n'appelle que les `Contracts` d'un autre (test d'architecture).
 - API REST `/api/v1`, une route par cas d'usage (`POST /transfers/{id}/deliver`), erreurs en Problem Details (RFC 9457) avec un champ `code`. Tout endpoint est protégé par défaut, sauf ceux marqués anonymes.
 - IDs UUID v7 ; identifiants techniques jamais affichés à l'utilisateur.
