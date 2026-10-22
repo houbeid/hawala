@@ -72,16 +72,26 @@ public static class PartyEndpoints
     }
 
     private static async Task<IResult> ArchiveParty(
-        Guid id, ICommandHandler<ArchivePartyCommand> handler, CancellationToken cancellationToken)
+        Guid id, ClaimsPrincipal user, ICommandHandler<ArchivePartyCommand> handler, CancellationToken cancellationToken)
     {
-        var result = await handler.Handle(new ArchivePartyCommand(id), cancellationToken);
+        if (!user.TryGetAccountId(out var actorId))
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        var result = await handler.Handle(new ArchivePartyCommand(actorId, id), cancellationToken);
         return result.IsSuccess ? TypedResults.NoContent() : result.Error.ToProblem();
     }
 
     private static async Task<IResult> UnarchiveParty(
-        Guid id, ICommandHandler<UnarchivePartyCommand> handler, CancellationToken cancellationToken)
+        Guid id, ClaimsPrincipal user, ICommandHandler<UnarchivePartyCommand> handler, CancellationToken cancellationToken)
     {
-        var result = await handler.Handle(new UnarchivePartyCommand(id), cancellationToken);
+        if (!user.TryGetAccountId(out var actorId))
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        var result = await handler.Handle(new UnarchivePartyCommand(actorId, id), cancellationToken);
         return result.IsSuccess ? TypedResults.NoContent() : result.Error.ToProblem();
     }
 
@@ -89,10 +99,16 @@ public static class PartyEndpoints
         Guid id,
         Guid agencyId,
         SetCreditLimitRequest request,
+        ClaimsPrincipal user,
         ICommandHandler<SetCreditLimitCommand> handler,
         CancellationToken cancellationToken)
     {
-        var result = await handler.Handle(new SetCreditLimitCommand(id, agencyId, request.CreditLimit), cancellationToken);
+        if (!user.TryGetAccountId(out var actorId))
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        var result = await handler.Handle(new SetCreditLimitCommand(actorId, id, agencyId, request.CreditLimit), cancellationToken);
         return result.IsSuccess ? TypedResults.NoContent() : result.Error.ToProblem();
     }
 
@@ -119,11 +135,17 @@ public static class PartyEndpoints
     private static async Task<IResult> UpdateParty(
         Guid id,
         UpdatePartyRequest request,
+        ClaimsPrincipal user,
         ICommandHandler<UpdatePartyCommand> handler,
         CancellationToken cancellationToken)
     {
+        if (!user.TryGetAccountId(out var actorId))
+        {
+            return TypedResults.Unauthorized();
+        }
+
         var command = new UpdatePartyCommand(
-            id, request.Name, request.Type, request.Phone, request.Nni, request.Address, request.Note, request.InBalanceSheet);
+            actorId, id, request.Name, request.Type, request.Phone, request.Nni, request.Address, request.Note, request.InBalanceSheet);
         var result = await handler.Handle(command, cancellationToken);
 
         return result.IsSuccess ? TypedResults.NoContent() : result.Error.ToProblem();

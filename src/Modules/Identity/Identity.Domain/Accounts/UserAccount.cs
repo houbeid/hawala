@@ -1,5 +1,7 @@
 using Hawala.SharedKernel.Ids;
+using Hawala.SharedKernel.Money;
 using Hawala.SharedKernel.Results;
+using Identity.Contracts;
 using Identity.Domain.Roles;
 
 namespace Identity.Domain.Accounts;
@@ -13,6 +15,9 @@ namespace Identity.Domain.Accounts;
 public sealed class UserAccount
 {
     public const int FullNameMaxLength = 100;
+
+    // Ajouts / retraits par rapport au modèle du rôle (phase 6). Rempli par EF Core au chargement.
+    private readonly List<PermissionOverride> _permissionOverrides = [];
 
     // Constructeur réservé à EF Core (les value objects ne peuvent pas être liés par constructeur).
     private UserAccount()
@@ -70,6 +75,26 @@ public sealed class UserAccount
     public int SecurityVersion { get; private set; }
 
     public DateTimeOffset CreatedAt { get; private set; }
+
+    /// <summary>Dernière connexion réussie (phase 6) ; null si le compte ne s'est jamais connecté.</summary>
+    public DateTimeOffset? LastLoginAt { get; private set; }
+
+    /// <summary>Ajustements du compte par rapport au modèle de son rôle ; toujours vide pour un Superviseur.</summary>
+    public IReadOnlyList<PermissionOverride> PermissionOverrides => _permissionOverrides;
+
+    /// <summary>Plafond par transfert, dans la devise de l'agence ; null = pas de limite.</summary>
+    public decimal? LimitPerTransfer { get; private set; }
+
+    /// <summary>Plafond des transferts enregistrés dans la journée ; null = pas de limite.</summary>
+    public decimal? LimitPerDay { get; private set; }
+
+    /// <summary>Plafond des parts à crédit accordées dans la journée ; null = pas de limite.</summary>
+    public decimal? CreditLimitPerDay { get; private set; }
+
+    public AccountLimits Limits => new(LimitPerTransfer, LimitPerDay, CreditLimitPerDay);
+
+    /// <summary>Permissions effectives : modèle du rôle + ajouts − retraits (tout pour un Superviseur).</summary>
+    public IReadOnlySet<string> EffectivePermissions => AccountPermissions.Effective(Role, _permissionOverrides);
 
     /// <summary>
     /// Création par un Superviseur, avec un mot de passe temporaire :
@@ -180,8 +205,54 @@ public sealed class UserAccount
 
         Role = newRole;
         AgencyId = agencyId;
+
+        // Règle validée le 21 octobre 2026 : un nouveau rôle repart de son modèle, sans les anciens ajustements.
+        _permissionOverrides.Clear();
+
+        // Règle validée le 22 octobre 2026 : un nouveau rôle efface aussi les plafonds.
+        ClearLimits();
         SecurityVersion++;
         return Result.Success();
+    }
+
+    /// <summary>
+    /// Le Superviseur fixe la liste complète des permissions du compte (les cases cochées) ;
+    /// on en déduit les ajouts et retraits par rapport au modèle du rôle.
+    /// Refusé pour un Superviseur, qui garde toujours tout. Sans changement : rien ne bouge (sessions gardées).
+    /// L'appelant vérifie que l'auteur est bien un Superviseur.
+    /// </summary>
+    /// <returns>Vrai si les permissions ont changé (sessions à jour à la prochaine requête).</returns>
+    public Result<bool> SetPermissions(IEnumerable<string?> permissions)
+    {
+        ArgumentNullException.ThrowIfNull(permissions);
+
+        if (Role == RoleTemplate.Supervisor)
+        {
+            return IdentityErrors.Permissions.SupervisorHasAll;
+        }
+
+        var desired = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var permission in permissions)
+        {
+            if (permission is null || !Permissions.All.Contains(permission))
+            {
+                return IdentityErrors.Permissions.Unknown;
+            }
+
+            desired.Add(permission);
+        }
+
+        var target = AccountPermissions.OverridesFor(Role, desired);
+        if (target.Count == _permissionOverrides.Count && target.All(_permissionOverrides.Contains))
+        {
+            return false;
+        }
+
+        // On garde les ajustements inchangés (mêmes objets, suivis par EF) et on remplace seulement les autres.
+        _permissionOverrides.RemoveAll(existing => !target.Contains(existing));
+        _permissionOverrides.AddRange(target.Where(wanted => !_permissionOverrides.Contains(wanted)));
+        SecurityVersion++;
+        return true;
     }
 
     /// <summary>
@@ -207,9 +278,61 @@ public sealed class UserAccount
         }
 
         AgencyId = agencyId;
+
+        // Règle validée le 22 octobre 2026 : un plafond en MRO n'a pas de sens en FCFA ; le Superviseur les refixe.
+        ClearLimits();
         SecurityVersion++;
         return Result.Success();
     }
+
+    /// <summary>
+    /// Le Superviseur fixe les plafonds du compte (état complet, null = pas de limite), dans la devise de son agence :
+    /// positifs ou nuls, FCFA entier, MRO à 2 décimales au plus. Jamais de plafond pour un Superviseur.
+    /// Les plafonds sont relus à chaque transfert : pas de SecurityVersion, les sessions continuent.
+    /// L'appelant vérifie que l'auteur est un Superviseur.
+    /// </summary>
+    /// <param name="currency">Devise de l'agence du compte.</param>
+    /// <returns>Vrai si un plafond a changé.</returns>
+    public Result<bool> SetLimits(AccountLimits limits, Currency currency)
+    {
+        ArgumentNullException.ThrowIfNull(limits);
+
+        if (Role == RoleTemplate.Supervisor)
+        {
+            return IdentityErrors.Limits.SupervisorHasNone;
+        }
+
+        foreach (var value in new[] { limits.PerTransfer, limits.PerDay, limits.CreditPerDay })
+        {
+            if (value is not { } amount)
+            {
+                continue;
+            }
+
+            if (amount < 0)
+            {
+                return IdentityErrors.Limits.Negative;
+            }
+
+            if (Money.Create(amount, currency).IsFailure)
+            {
+                return IdentityErrors.Limits.TooPrecise;
+            }
+        }
+
+        if (limits == Limits)
+        {
+            return false;
+        }
+
+        LimitPerTransfer = limits.PerTransfer;
+        LimitPerDay = limits.PerDay;
+        CreditLimitPerDay = limits.CreditPerDay;
+        return true;
+    }
+
+    /// <summary>Connexion réussie : seulement l'heure, sans toucher à la SecurityVersion (les autres sessions continuent).</summary>
+    public void RecordLogin(DateTimeOffset now) => LastLoginAt = now;
 
     /// <summary>L'agent a choisi son propre mot de passe (première connexion ou changement volontaire).</summary>
     public void PasswordChanged()
@@ -223,6 +346,13 @@ public sealed class UserAccount
     {
         MustChangePassword = true;
         SecurityVersion++;
+    }
+
+    private void ClearLimits()
+    {
+        LimitPerTransfer = null;
+        LimitPerDay = null;
+        CreditLimitPerDay = null;
     }
 
     private static Result<string> ValidateFullName(string? fullName)

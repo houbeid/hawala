@@ -3,6 +3,7 @@
   <!-- Les autres modules ne sont vus que par leurs Contracts (vérifié par Architecture.Tests). -->
   <ItemGroup>
     <ProjectReference Include="..\Balance.Domain\Balance.Domain.csproj" />
+    <ProjectReference Include="..\..\Audit\Audit.Contracts\Audit.Contracts.csproj" />
     <ProjectReference Include="..\..\Organization\Organization.Contracts\Organization.Contracts.csproj" />
     <ProjectReference Include="..\..\Identity\Identity.Contracts\Identity.Contracts.csproj" />
     <ProjectReference Include="..\..\Ledger\Ledger.Contracts\Ledger.Contracts.csproj" />

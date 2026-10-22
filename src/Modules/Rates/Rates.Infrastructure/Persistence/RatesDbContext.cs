@@ -1,3 +1,5 @@
+using System.Data.Common;
+using Hawala.SharedInfrastructure.Persistence;
 using Hawala.SharedKernel.Money;
 using Microsoft.EntityFrameworkCore;
 using Rates.Application.Abstractions;
@@ -9,7 +11,8 @@ namespace Rates.Infrastructure.Persistence;
 /// Base des taux, dans le schéma PostgreSQL « rates ». Module sans écriture d'argent : il garde sa propre connexion
 /// (les Transferts ne feront que lire le taux du jour).
 /// </summary>
-public sealed class RatesDbContext(DbContextOptions<RatesDbContext> options) : DbContext(options), IUnitOfWork
+public sealed class RatesDbContext(DbContextOptions<RatesDbContext> options)
+    : DbContext(options), IUnitOfWork, ISharedTransactionParticipant
 {
     public const string Schema = "rates";
 
@@ -17,6 +20,9 @@ public sealed class RatesDbContext(DbContextOptions<RatesDbContext> options) : D
 
     async Task IUnitOfWork.SaveChangesAsync(CancellationToken cancellationToken) =>
         await SaveChangesAsync(cancellationToken);
+
+    void ISharedTransactionParticipant.UseSharedTransaction(DbTransaction? transaction) =>
+        Database.UseTransaction(transaction);
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

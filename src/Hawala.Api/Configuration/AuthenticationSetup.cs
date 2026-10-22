@@ -108,9 +108,10 @@ public static class AuthenticationSetup
         }
 
         var validator = context.HttpContext.RequestServices.GetRequiredService<SessionValidator>();
-        if (!await validator.IsSessionCurrentAsync(accountId, securityVersion, context.HttpContext.RequestAborted))
+        var sessionId = principal!.GetSessionId();
+        if (!await validator.IsSessionCurrentAsync(accountId, securityVersion, sessionId, context.HttpContext.RequestAborted))
         {
-            context.Fail("Session périmée : compte bloqué ou modifié depuis l'émission du jeton.");
+            context.Fail("Session périmée : compte bloqué ou modifié, ou session fermée, depuis l'émission du jeton.");
         }
     }
 }

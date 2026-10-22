@@ -1,3 +1,4 @@
+using Audit.Contracts;
 using Cash.Application.Abstractions;
 using Cash.Domain;
 using Cash.Domain.Adjustments;
@@ -40,7 +41,8 @@ public sealed class CreateBalanceAdjustmentCommandHandler(
     IPartyDirectory parties,
     ILedger ledger,
     IUnitOfWork unitOfWork,
-    IClock clock)
+    IClock clock,
+    IAuditLog audit)
     : ICommandHandler<CreateBalanceAdjustmentCommand, Guid>
 {
     public const string EntryType = "Cash.Adjustment";
@@ -102,6 +104,23 @@ public sealed class CreateBalanceAdjustmentCommandHandler(
         adjustment.AttachEntry(entry.Value);
         adjustments.Add(adjustment);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Correction tracée dans l'audit (phase 6) : l'entité est la cible (caisse ou tiers), la différence signée en « amount ».
+        var audited = await audit.RecordAsync(
+            new AuditRecord(
+                "Cash.Adjustment.Created",
+                target == AdjustmentTarget.Party ? "Party" : "TreasuryAccount",
+                adjustment.TargetId,
+                command.ActorId,
+                agency.Id,
+                adjustment.Reason,
+                [new AuditChange("adjustment", null, adjustment.Amount.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))]),
+            cancellationToken);
+        if (audited.IsFailure)
+        {
+            return audited.Error;
+        }
+
         return adjustment.Id;
     }
 

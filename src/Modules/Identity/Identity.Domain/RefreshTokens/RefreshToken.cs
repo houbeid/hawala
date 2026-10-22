@@ -26,7 +26,9 @@ public sealed class RefreshToken
         Guid familyId,
         string tokenHash,
         DateTimeOffset createdAt,
-        DateTimeOffset expiresAt)
+        DateTimeOffset expiresAt,
+        string? userAgent,
+        string? ipAddress)
     {
         Id = id;
         UserId = userId;
@@ -34,6 +36,8 @@ public sealed class RefreshToken
         TokenHash = tokenHash;
         CreatedAt = createdAt;
         ExpiresAt = expiresAt;
+        UserAgent = userAgent;
+        IpAddress = ipAddress;
     }
 
     public Guid Id { get; }
@@ -50,6 +54,11 @@ public sealed class RefreshToken
 
     public DateTimeOffset ExpiresAt { get; }
 
+    /// <summary>Appareil de la requête qui a émis ce jeton (connexion ou dernier rafraîchissement) ; null s'il est inconnu.</summary>
+    public string? UserAgent { get; }
+
+    public string? IpAddress { get; }
+
     public DateTimeOffset? RevokedAt { get; private set; }
 
     public RefreshTokenRevocationReason? RevocationReason { get; private set; }
@@ -62,14 +71,16 @@ public sealed class RefreshToken
     public bool IsActive(DateTimeOffset now) => !IsRevoked && now < ExpiresAt;
 
     /// <summary>Premier jeton d'une nouvelle session (connexion réussie).</summary>
-    public static IssuedRefreshToken IssueForNewSession(Guid userId, DateTimeOffset now, TimeSpan lifetime)
+    /// <param name="device">Appareil de la connexion (phase 6) ; inconnu si absent.</param>
+    public static IssuedRefreshToken IssueForNewSession(
+        Guid userId, DateTimeOffset now, TimeSpan lifetime, SessionDevice? device = null)
     {
         if (userId == Guid.Empty)
         {
             throw new ArgumentException("L'utilisateur est obligatoire.", nameof(userId));
         }
 
-        return Issue(userId, familyId: IdGenerator.NewId(now), now, lifetime);
+        return Issue(userId, familyId: IdGenerator.NewId(now), now, lifetime, device ?? SessionDevice.Unknown);
     }
 
     /// <summary>
@@ -77,7 +88,8 @@ public sealed class RefreshToken
     /// En cas d'erreur <see cref="IdentityErrors.RefreshToken.Reused"/>, l'appelant doit révoquer
     /// tous les jetons actifs de la famille (<see cref="Revoke"/> avec <see cref="RefreshTokenRevocationReason.ReuseDetected"/>).
     /// </summary>
-    public Result<IssuedRefreshToken> Rotate(DateTimeOffset now, TimeSpan lifetime)
+    /// <param name="device">Appareil du rafraîchissement (l'IP peut changer) ; inconnu si absent.</param>
+    public Result<IssuedRefreshToken> Rotate(DateTimeOffset now, TimeSpan lifetime, SessionDevice? device = null)
     {
         if (IsRevoked)
         {
@@ -91,7 +103,7 @@ public sealed class RefreshToken
             return IdentityErrors.RefreshToken.Expired;
         }
 
-        var next = Issue(UserId, FamilyId, now, lifetime);
+        var next = Issue(UserId, FamilyId, now, lifetime, device ?? SessionDevice.Unknown);
 
         Revoke(now, RefreshTokenRevocationReason.Rotated);
         ReplacedByTokenId = next.Token.Id;
@@ -123,7 +135,8 @@ public sealed class RefreshToken
         return Convert.ToHexStringLower(hash);
     }
 
-    private static IssuedRefreshToken Issue(Guid userId, Guid familyId, DateTimeOffset now, TimeSpan lifetime)
+    private static IssuedRefreshToken Issue(
+        Guid userId, Guid familyId, DateTimeOffset now, TimeSpan lifetime, SessionDevice device)
     {
         if (lifetime <= TimeSpan.Zero)
         {
@@ -139,7 +152,9 @@ public sealed class RefreshToken
             familyId: familyId,
             tokenHash: HashOf(plainValue),
             createdAt: now,
-            expiresAt: now + lifetime);
+            expiresAt: now + lifetime,
+            userAgent: device.UserAgent,
+            ipAddress: device.IpAddress);
 
         return new IssuedRefreshToken(token, plainValue);
     }

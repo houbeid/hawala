@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Le journal d'audit ne dépend d'aucun autre module : ce sont les autres qui l'appellent par ses Contracts. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Audit.Domain\Audit.Domain.csproj" />
+    <ProjectReference Include="..\Audit.Contracts\Audit.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

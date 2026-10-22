@@ -7,6 +7,7 @@ namespace Identity.Application.Features.Users;
 /// <param name="Role">Supervisor, Agent, Cashier ou ReadOnly.</param>
 /// <param name="Status">Active ou Blocked.</param>
 /// <param name="Agency">Agence de l'agent ; null pour un Superviseur, qui voit les deux.</param>
+/// <param name="LastLoginAt">Dernière connexion réussie ; null si le compte ne s'est jamais connecté.</param>
 /// <param name="LockedUntil">Fin du verrouillage après 5 échecs ; null si le compte n'est pas verrouillé.</param>
 public sealed record UserSummary(
     Guid Id,
@@ -17,7 +18,8 @@ public sealed record UserSummary(
     UserAgency? Agency,
     string Status,
     bool MustChangePassword,
-    DateTimeOffset? LockedUntil);
+    DateTimeOffset? LockedUntil,
+    DateTimeOffset? LastLoginAt);
 
 /// <summary>Résumé de l'agence d'un compte, pour le badge et la couleur.</summary>
 public sealed record UserAgency(Guid Id, string Code, string Name, string Color);
@@ -46,6 +48,7 @@ internal static class UserSummaryMapper
             agency,
             account.Status.ToString(),
             account.MustChangePassword,
-            lockoutEnds.TryGetValue(account.Id, out var lockedUntil) ? lockedUntil : null);
+            lockoutEnds.TryGetValue(account.Id, out var lockedUntil) ? lockedUntil : null,
+            account.LastLoginAt);
     }
 }

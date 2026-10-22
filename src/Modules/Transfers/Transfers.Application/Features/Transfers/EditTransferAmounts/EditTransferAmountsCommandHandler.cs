@@ -1,3 +1,4 @@
+using Audit.Contracts;
 using Hawala.SharedKernel.Messaging;
 using Hawala.SharedKernel.Money;
 using Hawala.SharedKernel.Results;
@@ -21,7 +22,8 @@ public sealed class EditTransferAmountsCommandHandler(
     CreationPosting posting,
     ILedger ledger,
     IUnitOfWork unitOfWork,
-    IClock clock)
+    IClock clock,
+    IAuditLog audit)
     : ICommandHandler<EditTransferAmountsCommand>
 {
     public const string EntryType = "Transfers.Edited";
@@ -107,6 +109,14 @@ public sealed class EditTransferAmountsCommandHandler(
 
         transfer.ReplaceCreationEntry(entry.Value);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var audited = await TransferAudit.RecordAsync(
+            audit, TransferAudit.AmountsEdited, transfer, command.ActorId, transfer.SourceAgencyId, cancellationToken);
+        if (audited.IsFailure)
+        {
+            return audited.Error;
+        }
+
         return Result.Success();
     }
 }

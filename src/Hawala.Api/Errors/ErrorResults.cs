@@ -16,6 +16,11 @@ public static class ErrorResults
         ArgumentNullException.ThrowIfNull(error);
 
         var extensions = new Dictionary<string, object?> { ["code"] = error.Code };
+        foreach (var (key, value) in error.Details ?? new Dictionary<string, object?>())
+        {
+            extensions[key] = value;
+        }
+
         foreach (var (key, value) in extra ?? new Dictionary<string, object?>())
         {
             extensions[key] = value;

@@ -1,3 +1,4 @@
+using Hawala.SharedInfrastructure.Security;
 using Hawala.SharedInfrastructure.Persistence;
 using Hawala.SharedKernel.Time;
 using Microsoft.EntityFrameworkCore;
@@ -41,6 +42,7 @@ public static class DependencyInjection
 
         // Même connexion que le grand livre : un transfert et son écriture sont enregistrés ensemble.
         services.AddSharedConnection(connectionString);
+        services.AddFieldProtection(configuration);
         services.AddDbContext<TransfersDbContext>((sp, options) =>
             options.UseNpgsql(
                 sp.GetRequiredService<SharedConnection>().Connection,
@@ -93,5 +95,34 @@ public static class DependencyInjection
 
         var db = scope.ServiceProvider.GetRequiredService<TransfersDbContext>();
         await db.Database.MigrateAsync(cancellationToken);
+
+        // Phase 6 : les pièces d'identité encore en clair (saisies avant le chiffrement) sont chiffrées une fois.
+        await EncryptLegacyIdDocumentsAsync(db, cancellationToken);
+    }
+
+    /// <summary>
+    /// Chiffre les pièces d'identité écrites avant la phase 6 (sans le préfixe de chiffrement). Sans effet sur une base à jour.
+    /// Sans session au démarrage, aucun transfert n'est visible : le filtre de périmètre est donc ignoré ici.
+    /// </summary>
+    private static async Task EncryptLegacyIdDocumentsAsync(TransfersDbContext db, CancellationToken cancellationToken)
+    {
+        var legacyIds = await db.Database
+            .SqlQuery<Guid>($"""
+                SELECT "Id" AS "Value" FROM transfers.transfers
+                WHERE "BeneficiaryIdDocument" IS NOT NULL AND "BeneficiaryIdDocument" NOT LIKE 'v1:%'
+                """)
+            .ToListAsync(cancellationToken);
+        if (legacyIds.Count == 0)
+        {
+            return;
+        }
+
+        var transfers = await db.Transfers.IgnoreQueryFilters().Where(t => legacyIds.Contains(t.Id)).ToListAsync(cancellationToken);
+        foreach (var transfer in transfers)
+        {
+            db.Entry(transfer).Property(t => t.BeneficiaryIdDocument).IsModified = true;
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
     }
 }

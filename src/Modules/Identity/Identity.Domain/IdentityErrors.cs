@@ -119,10 +119,62 @@ public static class IdentityErrors
                 "Identity.Account.CannotResetOwnPassword",
                 "Impossible de réinitialiser son propre mot de passe. Utiliser le changement de mot de passe.");
 
+        public static readonly Error SupervisorOnly =
+            Error.Forbidden(
+                "Identity.Account.SupervisorOnly",
+                "Réservé au Superviseur : changer le rôle ou l'agence d'un compte, créer un compte Superviseur.");
+
+        public static readonly Error OtherAgency =
+            Error.Forbidden("Identity.Account.OtherAgency", "Un compte se crée dans son agence seulement.");
+
         public static readonly Error LastActiveSupervisor =
             Error.Conflict(
                 "Identity.Account.LastActiveSupervisor",
                 "Impossible : c'est le dernier Superviseur actif. Nommer ou débloquer un autre Superviseur d'abord.");
+    }
+
+    public static class Permissions
+    {
+        public static readonly Error Required =
+            Error.Validation(
+                "Identity.Permissions.Required",
+                "Envoyer la liste complète des permissions voulues (vide = aucune).");
+
+        public static readonly Error Unknown =
+            Error.Validation("Identity.Permissions.Unknown", "Permission inconnue.");
+
+        public static readonly Error SupervisorHasAll =
+            Error.Conflict(
+                "Identity.Permissions.SupervisorHasAll",
+                "Un Superviseur a toujours toutes les permissions. Pour réduire ses droits, changer son rôle.");
+
+        public static readonly Error SupervisorOnly =
+            Error.Forbidden(
+                "Identity.Permissions.SupervisorOnly",
+                "Seul un Superviseur peut donner ou retirer des permissions.");
+    }
+
+    public static class Session
+    {
+        public static readonly Error NotFound =
+            Error.NotFound("Identity.Session.NotFound", "Session introuvable ou déjà fermée.");
+    }
+
+    public static class Limits
+    {
+        public static readonly Error SupervisorHasNone =
+            Error.Conflict("Identity.Limits.SupervisorHasNone", "Un Superviseur n'a jamais de plafond.");
+
+        public static readonly Error Negative =
+            Error.Validation("Identity.Limits.Negative", "Un plafond est positif ou nul (vide = pas de limite).");
+
+        public static readonly Error TooPrecise =
+            Error.Validation(
+                "Identity.Limits.TooPrecise",
+                "Plafond trop précis : FCFA en nombre entier, MRO avec 2 décimales au plus.");
+
+        public static readonly Error AgencyRequired =
+            Error.Conflict("Identity.Limits.AgencyRequired", "Un plafond se fixe dans la devise de l'agence du compte.");
     }
 
     // Côté client, ces quatre erreurs mènent au même résultat : retour à l'écran de connexion.

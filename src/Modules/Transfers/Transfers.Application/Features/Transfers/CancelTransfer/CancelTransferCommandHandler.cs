@@ -1,3 +1,4 @@
+using Audit.Contracts;
 using Hawala.SharedKernel.Messaging;
 using Hawala.SharedKernel.Results;
 using Hawala.SharedKernel.Time;
@@ -20,7 +21,8 @@ public sealed class CancelTransferCommandHandler(
     ITransferRepository transfers,
     ILedger ledger,
     IUnitOfWork unitOfWork,
-    IClock clock)
+    IClock clock,
+    IAuditLog audit)
     : ICommandHandler<CancelTransferCommand>
 {
     public async Task<Result> Handle(CancelTransferCommand command, CancellationToken cancellationToken)
@@ -52,6 +54,14 @@ public sealed class CancelTransferCommandHandler(
 
         transfer.AttachCancellationEntry(reversal.Value);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var audited = await TransferAudit.RecordAsync(
+            audit, TransferAudit.Cancelled, transfer, command.ActorId, transfer.SourceAgencyId, cancellationToken);
+        if (audited.IsFailure)
+        {
+            return audited.Error;
+        }
+
         return Result.Success();
     }
 }

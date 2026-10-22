@@ -67,6 +67,13 @@ public class ModuleBoundaryTests
     private static readonly Assembly CashContracts = typeof(Cash.Contracts.ICashBudgets).Assembly;
     private static readonly Assembly ProfitContracts = typeof(Profit.Contracts.IProfitHistory).Assembly;
 
+    private static readonly Assembly AuditContracts = typeof(Audit.Contracts.IAuditLog).Assembly;
+    private static readonly Assembly AuditDomain = typeof(Audit.Domain.AuditErrors).Assembly;
+    private static readonly Assembly AuditApplication = typeof(Audit.Application.AuditLog).Assembly;
+    private static readonly Assembly AuditInfrastructure = typeof(Audit.Infrastructure.DependencyInjection).Assembly;
+
+    private static readonly Assembly[] AuditModule = [AuditContracts, AuditDomain, AuditApplication, AuditInfrastructure];
+
     private static readonly Assembly[] IdentityModule = [IdentityDomain, IdentityApplication, IdentityInfrastructure];
 
     private static readonly Assembly[] OrganizationModule =
@@ -82,10 +89,10 @@ public class ModuleBoundaryTests
     private static readonly Assembly[] RatesModule = [RatesDomain, RatesApplication, RatesInfrastructure];
 
     private static readonly Assembly[] DomainLayers =
-        [IdentityDomain, OrganizationDomain, LedgerDomain, TreasuryDomain, PartiesDomain, RatesDomain, TransfersDomain, CashDomain, ProfitDomain, BalanceDomain];
+        [IdentityDomain, OrganizationDomain, LedgerDomain, TreasuryDomain, PartiesDomain, RatesDomain, TransfersDomain, CashDomain, ProfitDomain, BalanceDomain, AuditDomain];
 
     private static readonly Assembly[] ApplicationLayers =
-        [IdentityApplication, OrganizationApplication, LedgerApplication, TreasuryApplication, PartiesApplication, RatesApplication, TransfersApplication, CashApplication, ProfitApplication, BalanceApplication];
+        [IdentityApplication, OrganizationApplication, LedgerApplication, TreasuryApplication, PartiesApplication, RatesApplication, TransfersApplication, CashApplication, ProfitApplication, BalanceApplication, AuditApplication];
 
     [Fact]
     public void Identity_sees_Organization_only_through_its_contracts()
@@ -279,6 +286,28 @@ public class ModuleBoundaryTests
     }
 
     [Fact]
+    public void Audit_depends_on_no_other_module()
+    {
+        // Ce sont les autres modules qui appellent le journal d'audit, par ses Contracts ; lui ne voit personne.
+        string[] modules = ["Identity.", "Organization.", "Ledger.", "Treasury.", "Parties.", "Rates.", "Transfers.", "Cash.", "Profit.", "Balance."];
+        foreach (var assembly in AuditModule)
+        {
+            AssertNoReference(assembly, name => modules.Any(module => name.StartsWith(module, StringComparison.Ordinal)));
+        }
+    }
+
+    [Fact]
+    public void Other_modules_see_Audit_only_through_its_contracts()
+    {
+        foreach (var assembly in IdentityModule.Concat(OrganizationModule).Concat(LedgerModule).Concat(TreasuryModule)
+                     .Concat(PartiesModule).Concat(RatesModule).Concat(TransfersModule).Concat(CashModule)
+                     .Concat(ProfitModule).Concat(BalanceModule))
+        {
+            AssertNoReference(assembly, name => name.StartsWith("Audit.", StringComparison.Ordinal) && name != "Audit.Contracts");
+        }
+    }
+
+    [Fact]
     public void Domain_layers_do_not_depend_on_any_framework()
     {
         foreach (var assembly in DomainLayers)
@@ -322,6 +351,8 @@ public class ModuleBoundaryTests
             name is "Parties.Domain" or "Parties.Application" or "Parties.Infrastructure");
         AssertNoReference(RatesContracts, name =>
             name is "Rates.Domain" or "Rates.Application" or "Rates.Infrastructure");
+        AssertNoReference(AuditContracts, name =>
+            name is "Audit.Domain" or "Audit.Application" or "Audit.Infrastructure");
     }
 
     private static bool IsFramework(string name) =>

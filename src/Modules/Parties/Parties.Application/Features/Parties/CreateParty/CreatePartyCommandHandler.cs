@@ -1,7 +1,9 @@
+using Audit.Contracts;
 using Hawala.SharedKernel.Messaging;
 using Hawala.SharedKernel.Results;
 using Hawala.SharedKernel.Text;
 using Hawala.SharedKernel.Time;
+using Identity.Contracts;
 using Ledger.Contracts;
 using Organization.Contracts;
 using Parties.Application.Abstractions;
@@ -13,14 +15,19 @@ namespace Parties.Application.Features.Parties.CreateParty;
 /// <summary>
 /// Crée le tiers et ouvre son compte au grand livre dans CHAQUE agence (MRO à Nouakchott, FCFA à Dakar),
 /// dans une seule transaction commune : si une étape échoue, rien n'existe.
-/// POINT OUVERT : l'audit « qui a créé ce tiers » arrivera avec le module Audit.
+/// Un compte limité (« Limiter les tiers ») qui crée un tiers le voit ensuite : il entre dans sa liste (règle du 21 octobre 2026).
+/// Tracé dans l'audit (« Parties.Party.Created »), téléphone et NNI masqués.
 /// </summary>
 public sealed class CreatePartyCommandHandler(
     IPartyRepository parties,
     IAgencyDirectory agencies,
     ILedger ledger,
     IUnitOfWork unitOfWork,
-    IClock clock)
+    IClock clock,
+    ICurrentAccount currentAccount,
+    IAgencyScope agencyScope,
+    IPartyScopeRepository scopes,
+    IAuditLog audit)
     : ICommandHandler<CreatePartyCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreatePartyCommand command, CancellationToken cancellationToken)
@@ -73,7 +80,23 @@ public sealed class CreatePartyCommandHandler(
         }
 
         parties.Add(party.Value);
+
+        if (currentAccount.AccountId is { } creatorId && !agencyScope.SeesAllAgencies
+            && await scopes.GetAsync(creatorId, cancellationToken) is { } scope)
+        {
+            scope.Allow(party.Value.Id, clock.UtcNow);
+        }
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Auteur : le compte connecté (rempli avec la session) ; null hors requête.
+        var audited = await PartyAudit.RecordAsync(
+            audit, PartyAudit.Created, party.Value.Id, currentAccount.AccountId,
+            PartyAudit.Diff(null, PartyAudit.Snapshot.Of(party.Value)), cancellationToken);
+        if (audited.IsFailure)
+        {
+            return audited.Error;
+        }
 
         return party.Value.Id;
     }

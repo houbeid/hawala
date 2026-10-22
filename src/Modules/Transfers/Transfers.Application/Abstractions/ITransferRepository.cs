@@ -28,6 +28,19 @@ public interface ITransferRepository
     /// <summary>Nombre de transferts visibles, sans aucun filtre (le « 392 » de « 24 / 392 »).</summary>
     Task<int> CountVisibleAsync(CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Pose un verrou propre à ce compte jusqu'à la fin de la transaction (pg_advisory_xact_lock) : deux transferts
+    /// simultanés d'un même agent passent l'un après l'autre, et le total du jour lu ensuite est à jour.
+    /// </summary>
+    Task LockCreatorAsync(Guid createdBy, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Total, dans la devise de l'agence d'envoi, des transferts non annulés créés par ce compte depuis cette agence et
+    /// ENREGISTRÉS dans la période (jour réel, pas la date d'opération) : montant payé et part à crédit.
+    /// </summary>
+    Task<(decimal Paid, decimal Credit)> SumCreatedAsync(
+        Guid createdBy, Guid sourceAgencyId, DateTimeOffset from, DateTimeOffset toExclusive, CancellationToken cancellationToken);
+
     /// <summary>Une page de transferts visibles, du plus récent au plus ancien (date d'opération), et le nombre total.</summary>
     Task<(IReadOnlyList<Transfer> Items, int TotalCount)> ListAsync(
         TransferFilter filter, int skip, int take, CancellationToken cancellationToken);

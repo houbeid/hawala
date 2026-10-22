@@ -1,3 +1,5 @@
+using System.Data.Common;
+using Hawala.SharedInfrastructure.Persistence;
 using Balance.Application.Abstractions;
 using Balance.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +10,8 @@ namespace Balance.Infrastructure.Persistence;
 /// Base du Bilan, dans le schéma PostgreSQL « balance ». Module sans écriture d'argent : il garde sa propre connexion.
 /// Pas de filtre par agence : le bilan général est réservé au Superviseur.
 /// </summary>
-public sealed class BalanceDbContext(DbContextOptions<BalanceDbContext> options) : DbContext(options), IUnitOfWork
+public sealed class BalanceDbContext(DbContextOptions<BalanceDbContext> options)
+    : DbContext(options), IUnitOfWork, ISharedTransactionParticipant
 {
     public const string Schema = "balance";
 
@@ -18,6 +21,9 @@ public sealed class BalanceDbContext(DbContextOptions<BalanceDbContext> options)
 
     async Task IUnitOfWork.SaveChangesAsync(CancellationToken cancellationToken) =>
         await SaveChangesAsync(cancellationToken);
+
+    void ISharedTransactionParticipant.UseSharedTransaction(DbTransaction? transaction) =>
+        Database.UseTransaction(transaction);
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

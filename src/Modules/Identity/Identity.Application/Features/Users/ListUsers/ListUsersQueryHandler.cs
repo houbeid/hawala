@@ -45,7 +45,20 @@ public sealed class ListUsersQueryHandler(
         }
 
         var search = string.IsNullOrWhiteSpace(query.Search) ? null : query.Search.Trim();
-        var filter = new UserAccountFilter(query.AgencyId, role, status, search);
+        // Hors Superviseur : son agence seulement (les Superviseurs, sans agence, n'y figurent donc jamais).
+        var agencyId = query.AgencyId;
+        var manager = await AccountManager.LoadAsync(accounts, query.ActorId, cancellationToken);
+        if (!manager.IsSupervisor)
+        {
+            if (manager.AgencyId is null || (agencyId is { } requested && requested != manager.AgencyId))
+            {
+                return Result.Success<IReadOnlyList<UserSummary>>([]);
+            }
+
+            agencyId = manager.AgencyId;
+        }
+
+        var filter = new UserAccountFilter(agencyId, role, status, search);
 
         var found = await accounts.ListAsync(filter, cancellationToken);
         if (found.Count == 0)

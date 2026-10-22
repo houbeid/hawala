@@ -16,8 +16,10 @@ public sealed class GetUserQueryHandler(
 {
     public async Task<Result<UserSummary>> Handle(GetUserQuery query, CancellationToken cancellationToken)
     {
+        var manager = await AccountManager.LoadAsync(accounts, query.ActorId, cancellationToken);
         var account = await accounts.GetByIdAsync(query.UserId, cancellationToken);
-        if (account is null)
+        // Hors de son périmètre, le compte n'existe pas pour lui (même réponse qu'un id inconnu).
+        if (account is null || !manager.CanManage(account))
         {
             return IdentityErrors.Account.NotFound;
         }

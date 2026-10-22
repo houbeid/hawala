@@ -206,6 +206,9 @@ public sealed class ChangeUserRoleTests(ApiFixture fixture)
         var factory = await fixture.GetFactoryAsync();
         var last = await TestAccounts.CreateAsync(factory, RoleTemplate.Supervisor);
 
+        // L'auteur doit être un compte de rôle Superviseur (phase 6) ; il est bloqué avec les autres ci-dessous.
+        var author = await TestAccounts.CreateAsync(factory, RoleTemplate.Supervisor);
+
         // Ne garder que lui actif ; les autres sont remis en état à la fin (LoginTests utilise
         // le Superviseur créé au démarrage).
         var others = (await TestAccounts.GetActiveSupervisorIdsAsync(factory))
@@ -223,7 +226,7 @@ public sealed class ChangeUserRoleTests(ApiFixture fixture)
             var nouakchott = await TestAccounts.GetAgencyIdAsync(scope.ServiceProvider, "NKC");
 
             var result = await handler.Handle(
-                new ChangeUserRoleCommand(ActorId: Guid.NewGuid(), last.Id, "Agent", nouakchott),
+                new ChangeUserRoleCommand(ActorId: author.Id, last.Id, "Agent", nouakchott),
                 CancellationToken.None);
 
             Assert.Equal(IdentityErrors.Account.LastActiveSupervisor, result.Error);

@@ -37,6 +37,7 @@ public sealed class GetCurrentAccountQueryHandler(
             account.FullName,
             account.Role.ToString(),
             account.MustChangePassword,
-            agency);
+            agency,
+            [.. account.EffectivePermissions.Order(StringComparer.Ordinal)]);
     }
 }

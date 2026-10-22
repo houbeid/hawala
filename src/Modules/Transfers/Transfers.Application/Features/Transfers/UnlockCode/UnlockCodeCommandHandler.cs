@@ -1,3 +1,4 @@
+using Audit.Contracts;
 using Hawala.SharedKernel.Messaging;
 using Hawala.SharedKernel.Results;
 using Hawala.SharedKernel.Time;
@@ -7,7 +8,7 @@ using Transfers.Domain;
 namespace Transfers.Application.Features.Transfers.UnlockCode;
 
 /// <summary>Le compteur d'essais repart à zéro (règle validée le 21 octobre 2026) ; le transfert reste verrouillé pendant la commande.</summary>
-public sealed class UnlockCodeCommandHandler(ITransferRepository transfers, IUnitOfWork unitOfWork, IClock clock)
+public sealed class UnlockCodeCommandHandler(ITransferRepository transfers, IUnitOfWork unitOfWork, IClock clock, IAuditLog audit)
     : ICommandHandler<UnlockCodeCommand>
 {
     public async Task<Result> Handle(UnlockCodeCommand command, CancellationToken cancellationToken)
@@ -25,6 +26,14 @@ public sealed class UnlockCodeCommandHandler(ITransferRepository transfers, IUni
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var audited = await TransferAudit.RecordAsync(
+            audit, TransferAudit.CodeUnlocked, transfer, command.ActorId, transfer.DestinationAgencyId, cancellationToken);
+        if (audited.IsFailure)
+        {
+            return audited.Error;
+        }
+
         return Result.Success();
     }
 }

@@ -1,3 +1,4 @@
+using Audit.Contracts;
 using Cash.Application.Abstractions;
 using Cash.Domain;
 using Hawala.SharedKernel.Messaging;
@@ -19,7 +20,8 @@ public sealed class CancelCashMovementCommandHandler(
     ICashMovementRepository movements,
     ILedger ledger,
     IUnitOfWork unitOfWork,
-    IClock clock)
+    IClock clock,
+    IAuditLog audit)
     : ICommandHandler<CancelCashMovementCommand>
 {
     public async Task<Result> Handle(CancelCashMovementCommand command, CancellationToken cancellationToken)
@@ -46,6 +48,18 @@ public sealed class CancelCashMovementCommandHandler(
 
         movement.AttachCancellationEntry(reversal.Value);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Correction tracée dans l'audit (phase 6, règle du 22 octobre 2026) ; les mouvements courants ne le sont pas.
+        var audited = await audit.RecordAsync(
+            new AuditRecord(
+                "Cash.Movement.Cancelled", "CashMovement", movement.Id, command.ActorId, movement.AgencyId,
+                movement.CancellationReason, [new AuditChange("status", "Active", "Cancelled")]),
+            cancellationToken);
+        if (audited.IsFailure)
+        {
+            return audited.Error;
+        }
+
         return Result.Success();
     }
 }

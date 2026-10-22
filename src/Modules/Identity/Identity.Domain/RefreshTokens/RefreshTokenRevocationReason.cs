@@ -24,4 +24,7 @@ public enum RefreshTokenRevocationReason
     /// Nom court volontaire : la colonne est limitée à 20 caractères.
     /// </summary>
     PasswordReset,
+
+    /// <summary>La session a été fermée depuis la liste des appareils (par son propriétaire ou par celui qui gère le compte).</summary>
+    SessionClosed,
 }

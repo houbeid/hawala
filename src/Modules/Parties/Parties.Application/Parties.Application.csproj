@@ -7,6 +7,7 @@
     <ProjectReference Include="..\..\Ledger\Ledger.Contracts\Ledger.Contracts.csproj" />
     <ProjectReference Include="..\..\Organization\Organization.Contracts\Organization.Contracts.csproj" />
     <ProjectReference Include="..\..\Identity\Identity.Contracts\Identity.Contracts.csproj" />
+    <ProjectReference Include="..\..\Audit\Audit.Contracts\Audit.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

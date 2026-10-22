@@ -3,7 +3,8 @@ using Hawala.SharedKernel.Messaging;
 namespace Identity.Application.Features.Users.UnblockUser;
 
 /// <summary>Déblocage d'un compte par le Superviseur.</summary>
-public sealed record UnblockUserCommand(Guid UserId) : ICommand<UnblockedUser>;
+/// <param name="ActorId">Compte connecté, lu par l'API dans le JWT : Superviseur, ou compte de la même agence avec users.manage.</param>
+public sealed record UnblockUserCommand(Guid ActorId, Guid UserId) : ICommand<UnblockedUser>;
 
 /// <summary>
 /// Règle validée : au déblocage, l'ancien mot de passe n'est plus valable. Le nouveau mot de passe

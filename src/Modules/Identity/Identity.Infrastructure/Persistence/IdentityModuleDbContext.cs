@@ -1,3 +1,5 @@
+using System.Data.Common;
+using Hawala.SharedInfrastructure.Persistence;
 using Identity.Application.Abstractions;
 using Identity.Domain.Accounts;
 using Identity.Domain.RefreshTokens;
@@ -11,9 +13,11 @@ namespace Identity.Infrastructure.Persistence;
 /// Base de données du module Identité, dans le schéma PostgreSQL « identity ».
 /// Contient les tables d'ASP.NET Identity (sans les rôles : on a nos propres modèles de rôle)
 /// et nos tables : comptes et refresh tokens. Une seule unité de travail pour tout le module.
+/// Phase 6 : sur la connexion partagée de la requête, pour qu'une commande et sa ligne d'audit
+/// soient dans la même transaction (décorateur commun, comme les modules d'argent).
 /// </summary>
 public sealed class IdentityModuleDbContext(DbContextOptions<IdentityModuleDbContext> options)
-    : IdentityUserContext<AppUser, Guid>(options), IUnitOfWork
+    : IdentityUserContext<AppUser, Guid>(options), IUnitOfWork, ISharedTransactionParticipant
 {
     public const string Schema = "identity";
 
@@ -23,6 +27,9 @@ public sealed class IdentityModuleDbContext(DbContextOptions<IdentityModuleDbCon
 
     async Task IUnitOfWork.SaveChangesAsync(CancellationToken cancellationToken) =>
         await SaveChangesAsync(cancellationToken);
+
+    void ISharedTransactionParticipant.UseSharedTransaction(DbTransaction? transaction) =>
+        Database.UseTransaction(transaction);
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

@@ -8,6 +8,8 @@ using Identity.Application.Features.Auth.ChangePassword;
 using Identity.Application.Features.Auth.Login;
 using Identity.Application.Features.Auth.Logout;
 using Identity.Application.Features.Auth.Refresh;
+using Identity.Application.Features.Sessions;
+using Hawala.Api.Realtime;
 using Identity.Infrastructure.Tokens;
 
 namespace Hawala.Api.Endpoints.Identity;
@@ -30,7 +32,7 @@ public static class AuthEndpoints
     {
         var group = app.MapGroup("/api/v1/auth").WithTags("Auth");
 
-        group.MapPost("/login", Login).AllowAnonymous();
+        group.MapPost("/login", Login).AllowAnonymous().RequireRateLimiting(RateLimitingSetup.LoginPolicy);
         group.MapPost("/refresh", Refresh).AllowAnonymous();
         group.MapPost("/logout", Logout).AllowAnonymous();
         group.MapPost("/change-password", ChangePassword)
@@ -38,6 +40,10 @@ public static class AuthEndpoints
 
         // Politique standard : refusé (403) tant que le mot de passe temporaire n'est pas changé.
         group.MapGet("/me", Me).RequireAuthorization();
+
+        // Mes appareils connectés (phase 6) : chacun voit et ferme ses propres sessions.
+        group.MapGet("/sessions", MySessions).RequireAuthorization();
+        group.MapPost("/sessions/{sessionId:guid}/revoke", CloseMySession).RequireAuthorization();
 
         return app;
     }
@@ -55,6 +61,49 @@ public static class AuthEndpoints
         var result = await handler.Handle(new GetCurrentAccountQuery(accountId), cancellationToken);
 
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> MySessions(
+        ClaimsPrincipal user,
+        IQueryHandler<ListSessionsQuery, IReadOnlyList<SessionView>> handler,
+        CancellationToken cancellationToken)
+    {
+        if (!user.TryGetAccountId(out var accountId))
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        var result = await handler.Handle(new ListSessionsQuery(accountId, accountId, user.GetSessionId()), cancellationToken);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> CloseMySession(
+        Guid sessionId,
+        ClaimsPrincipal user,
+        ICommandHandler<CloseSessionCommand> handler,
+        SessionNotifications notifications,
+        HttpContext http,
+        CancellationToken cancellationToken)
+    {
+        if (!user.TryGetAccountId(out var accountId))
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        var result = await handler.Handle(new CloseSessionCommand(accountId, accountId, sessionId), cancellationToken);
+        if (result.IsFailure)
+        {
+            return result.Error.ToProblem();
+        }
+
+        // Fermer la session en cours revient à se déconnecter : le cookie de rafraîchissement est retiré.
+        if (user.GetSessionId() == sessionId)
+        {
+            DeleteRefreshCookie(http);
+        }
+
+        await notifications.SessionClosedAsync(sessionId, cancellationToken);
+        return TypedResults.NoContent();
     }
 
     private static async Task<IResult> Login(

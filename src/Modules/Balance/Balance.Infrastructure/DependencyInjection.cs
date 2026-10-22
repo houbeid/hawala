@@ -1,3 +1,4 @@
+using Hawala.SharedInfrastructure.Persistence;
 using Balance.Application.Abstractions;
 using Balance.Application.Features;
 using Balance.Infrastructure.Persistence;
@@ -22,13 +23,16 @@ public static class DependencyInjection
 
         services.TryAddSingleton<IClock, SystemClock>();
 
-        // Connexion propre : le Bilan lit les autres modules et garde son capital et ses photos.
-        services.AddDbContext<BalanceDbContext>(options =>
+        // Phase 6 (tour 7d) : connexion partagée de la requête, pour que l'action et sa ligne d'audit
+        // soient dans la même transaction.
+        services.AddSharedConnection(connectionString);
+        services.AddDbContext<BalanceDbContext>((sp, options) =>
             options.UseNpgsql(
-                connectionString,
+                sp.GetRequiredService<SharedConnection>().Connection,
                 npgsql => npgsql.MigrationsHistoryTable("__ef_migrations_history", BalanceDbContext.Schema)));
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<BalanceDbContext>());
+        services.AddScoped<ISharedTransactionParticipant>(sp => sp.GetRequiredService<BalanceDbContext>());
         services.AddScoped<ICapitalRepository, CapitalRepository>();
         services.AddScoped<IBalanceSnapshotRepository, BalanceSnapshotRepository>();
 
@@ -36,7 +40,7 @@ public static class DependencyInjection
         services.AddScoped<IQueryHandler<GetBalanceQuery, BalanceOverview>>(sp => sp.GetRequiredService<BalanceHandlers>());
         services.AddScoped<ICommandHandler<SaveBalanceCommand, BalanceSnapshotView>>(sp => sp.GetRequiredService<BalanceHandlers>());
         services.AddScoped<IQueryHandler<ListBalanceSnapshotsQuery, IReadOnlyList<BalanceSnapshotView>>>(sp => sp.GetRequiredService<BalanceHandlers>());
-        services.AddScoped<ICommandHandler<SetInitialCapitalCommand>>(sp => sp.GetRequiredService<BalanceHandlers>());
+        services.AddSharedTransactional<SetInitialCapitalCommand, BalanceHandlers>();
         services.AddScoped<IQueryHandler<GetCapitalQuery, IReadOnlyList<CaisseCapitalView>>>(sp => sp.GetRequiredService<BalanceHandlers>());
 
         return services;

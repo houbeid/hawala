@@ -15,7 +15,8 @@ public sealed class LoginCommandHandler(
     IAccessTokenIssuer accessTokens,
     IUnitOfWork unitOfWork,
     IClock clock,
-    AuthSettings settings)
+    AuthSettings settings,
+    IClientInfo client)
     : ICommandHandler<LoginCommand, AuthTokens>
 {
     public async Task<Result<AuthTokens>> Handle(LoginCommand command, CancellationToken cancellationToken)
@@ -54,14 +55,16 @@ public sealed class LoginCommandHandler(
         }
 
         var now = clock.UtcNow;
-        var refresh = RefreshToken.IssueForNewSession(account.Id, now, settings.RefreshTokenLifetime);
+        var refresh = RefreshToken.IssueForNewSession(account.Id, now, settings.RefreshTokenLifetime, client.Device);
         refreshTokens.Add(refresh.Token);
+        account.RecordLogin(now);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new AuthTokens(
-            accessTokens.Issue(account),
+            accessTokens.Issue(account, refresh.Token.FamilyId),
             refresh.PlainValue,
             refresh.Token.ExpiresAt,
-            account.MustChangePassword);
+            account.MustChangePassword,
+            refresh.Token.FamilyId);
     }
 }

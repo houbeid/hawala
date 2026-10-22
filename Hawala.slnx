@@ -5,6 +5,12 @@
     <Project Path="src/Hawala.SharedKernel/Hawala.SharedKernel.csproj" />
   </Folder>
   <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Audit/">
+    <Project Path="src/Modules/Audit/Audit.Application/Audit.Application.csproj" />
+    <Project Path="src/Modules/Audit/Audit.Contracts/Audit.Contracts.csproj" />
+    <Project Path="src/Modules/Audit/Audit.Domain/Audit.Domain.csproj" />
+    <Project Path="src/Modules/Audit/Audit.Infrastructure/Audit.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/Modules/Balance/">
     <Project Path="src/Modules/Balance/Balance.Application/Balance.Application.csproj" />
     <Project Path="src/Modules/Balance/Balance.Domain/Balance.Domain.csproj" />
@@ -66,6 +72,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Architecture.Tests/Architecture.Tests.csproj" />
+    <Project Path="tests/Audit.Domain.Tests/Audit.Domain.Tests.csproj" />
     <Project Path="tests/Balance.Domain.Tests/Balance.Domain.Tests.csproj" />
     <Project Path="tests/Cash.Domain.Tests/Cash.Domain.Tests.csproj" />
     <Project Path="tests/Hawala.SharedKernel.Tests/Hawala.SharedKernel.Tests.csproj" />

@@ -1,3 +1,4 @@
+using Audit.Contracts;
 using Hawala.SharedKernel.Messaging;
 using Hawala.SharedKernel.Results;
 using Hawala.SharedKernel.Time;
@@ -18,7 +19,8 @@ public sealed class NewCodeCommandHandler(
     IWithdrawalCodeHasher codeHasher,
     IAgencyScope scope,
     IUnitOfWork unitOfWork,
-    IClock clock)
+    IClock clock,
+    IAuditLog audit)
     : ICommandHandler<NewCodeCommand, NewWithdrawalCode>
 {
     public async Task<Result<NewWithdrawalCode>> Handle(NewCodeCommand command, CancellationToken cancellationToken)
@@ -42,6 +44,15 @@ public sealed class NewCodeCommandHandler(
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Le fait seulement : jamais le code (ni son hash).
+        var audited = await TransferAudit.RecordAsync(
+            audit, TransferAudit.CodeReplaced, transfer, command.ActorId, transfer.SourceAgencyId, cancellationToken);
+        if (audited.IsFailure)
+        {
+            return audited.Error;
+        }
+
         return new NewWithdrawalCode(transfer.Id, transfer.Reference, code);
     }
 }

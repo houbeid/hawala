@@ -47,16 +47,24 @@ namespace Parties.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(30)");
 
                     b.Property<string>("Nni")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasMaxLength(123)
+                        .HasColumnType("character varying(123)");
+
+                    b.Property<string>("NniIndex")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.Property<string>("Note")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
                     b.Property<string>("Phone")
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
+                        .HasMaxLength(107)
+                        .HasColumnType("character varying(107)");
+
+                    b.Property<string>("PhoneIndex")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.Property<string>("Type")
                         .IsRequired()
@@ -67,13 +75,29 @@ namespace Parties.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("Name");
 
-                    b.HasIndex("Nni")
+                    b.HasIndex("NniIndex")
                         .IsUnique();
 
-                    b.HasIndex("Phone")
+                    b.HasIndex("PhoneIndex")
                         .IsUnique();
 
                     b.ToTable("parties", "parties");
+                });
+
+            modelBuilder.Entity("Parties.Domain.Scopes.AccountPartyScope", b =>
+                {
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsLimited")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("AccountId");
+
+                    b.ToTable("account_party_scopes", "parties");
                 });
 
             modelBuilder.Entity("Parties.Domain.Parties.Party", b =>
@@ -110,6 +134,29 @@ namespace Parties.Infrastructure.Persistence.Migrations
                         });
 
                     b.Navigation("AgencyAccounts");
+                });
+
+            modelBuilder.Entity("Parties.Domain.Scopes.AccountPartyScope", b =>
+                {
+                    b.OwnsMany("Parties.Domain.Scopes.AllowedParty", "AllowedParties", b1 =>
+                        {
+                            b1.Property<Guid>("AccountId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<Guid>("PartyId")
+                                .HasColumnType("uuid");
+
+                            b1.HasKey("AccountId", "PartyId");
+
+                            b1.HasIndex("PartyId");
+
+                            b1.ToTable("account_allowed_parties", "parties");
+
+                            b1.WithOwner()
+                                .HasForeignKey("AccountId");
+                        });
+
+                    b.Navigation("AllowedParties");
                 });
 #pragma warning restore 612, 618
         }

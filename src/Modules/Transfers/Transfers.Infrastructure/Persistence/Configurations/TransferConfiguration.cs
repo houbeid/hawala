@@ -77,7 +77,7 @@ internal sealed class TransferConfiguration : IEntityTypeConfiguration<Transfer>
         builder.Property(t => t.DeliveryNote).HasMaxLength(Transfer.NoteMaxLength);
         builder.Property(t => t.DeliveryEntryId);
         builder.Property(t => t.DeliveredWithoutCode);
-        builder.Property(t => t.BeneficiaryIdDocument).HasMaxLength(Transfer.PartyInfoMaxLength);
+        // BeneficiaryIdDocument : chiffré au repos (phase 6), configuré par TransfersDbContext qui détient le chiffreur.
         builder.Property(t => t.DeliveryWithoutCodeReason).HasMaxLength(Transfer.NoteMaxLength);
         builder.Property(t => t.CodeUnlockedAt);
         builder.Property(t => t.CodeUnlockedBy);

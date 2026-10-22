@@ -19,6 +19,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Modules\Identity\Identity.Infrastructure\Identity.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Ledger\Ledger.Infrastructure\Ledger.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Audit\Audit.Infrastructure\Audit.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Treasury\Treasury.Infrastructure\Treasury.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Parties\Parties.Infrastructure\Parties.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Rates\Rates.Infrastructure\Rates.Infrastructure.csproj" />

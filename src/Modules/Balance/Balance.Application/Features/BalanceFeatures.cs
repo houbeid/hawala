@@ -1,3 +1,4 @@
+using Audit.Contracts;
 using Balance.Application.Abstractions;
 using Balance.Domain;
 using Cash.Contracts;
@@ -85,7 +86,8 @@ public sealed class BalanceHandlers(
     ICapitalRepository capital,
     IBalanceSnapshotRepository snapshots,
     IUnitOfWork unitOfWork,
-    IClock clock)
+    IClock clock,
+    IAuditLog audit)
     : IQueryHandler<GetBalanceQuery, BalanceOverview>,
       ICommandHandler<SaveBalanceCommand, BalanceSnapshotView>,
       IQueryHandler<ListBalanceSnapshotsQuery, IReadOnlyList<BalanceSnapshotView>>,
@@ -169,8 +171,30 @@ public sealed class BalanceHandlers(
             return change.Error;
         }
 
+        // La saisie la plus récente fait foi : c'est l'« avant » de la ligne d'audit.
+        var previous = (await capital.ListAsync(cancellationToken)).FirstOrDefault(c => c.AgencyId == agency.Value.Id)?.Amount;
+
         capital.Add(change.Value);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Une nouvelle saisie au même montant reste tracée (motif), sans champ changé.
+        var previousText = previous?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+        var amountText = change.Value.Amount.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+        var audited = await audit.RecordAsync(
+            new AuditRecord(
+                "Balance.Capital.Set",
+                "Agency",
+                agency.Value.Id,
+                command.ActorId,
+                agency.Value.Id,
+                change.Value.Reason,
+                previousText == amountText ? [] : [new AuditChange("initialCapital", previousText, amountText)]),
+            cancellationToken);
+        if (audited.IsFailure)
+        {
+            return audited.Error;
+        }
+
         return Result.Success();
     }
 

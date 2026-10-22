@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Security.Claims;
+using Hawala.Api.Configuration;
 using Identity.Contracts;
 using Identity.Infrastructure.Sessions;
 using Identity.Infrastructure.Tokens;
@@ -14,8 +15,10 @@ namespace Hawala.Api.Realtime;
 /// en long polling, SignalR recrée un scope et le périmètre de la requête d'origine n'y est pas), puis le compte
 /// rejoint le groupe de son agence, ou celui des Superviseurs. Un compte sans agence et non Superviseur est refusé.
 /// Messages envoyés (légers, sans montant ni nom) : « TransferChanged » et « RatesChanged ».
-/// POINT OUVERT : déconnexion en direct d'un compte bloqué (phase 6, avec les appareils connectés) ;
-/// en attendant, l'API refuse ses requêtes en 30 secondes au plus.
+/// Phase 6 : chaque connexion rejoint aussi le groupe de son compte et celui de sa session (« sid » du jeton) ;
+/// « SessionClosed » (une session fermée depuis la liste des appareils) et « SignedOut » (compte bloqué ou mot de passe
+/// réinitialisé : toutes ses sessions) demandent à l'application de revenir à l'écran de connexion. L'API refuse de toute
+/// façon les requêtes de ces sessions : le message ne fait que rendre l'effet visible tout de suite.
 /// </summary>
 [Authorize]
 public sealed class LiveHub(SessionValidator sessions, IAgencyScope scope) : Hub
@@ -24,8 +27,14 @@ public sealed class LiveHub(SessionValidator sessions, IAgencyScope scope) : Hub
     public const string SupervisorsGroup = "supervisors";
     public const string TransferChangedMessage = "TransferChanged";
     public const string RatesChangedMessage = "RatesChanged";
+    public const string SessionClosedMessage = "SessionClosed";
+    public const string SignedOutMessage = "SignedOut";
 
     public static string AgencyGroup(Guid agencyId) => $"agency:{agencyId:N}";
+
+    public static string AccountGroup(Guid accountId) => $"account:{accountId:N}";
+
+    public static string SessionGroup(Guid sessionId) => $"session:{sessionId:N}";
 
     public override async Task OnConnectedAsync()
     {
@@ -33,6 +42,16 @@ public sealed class LiveHub(SessionValidator sessions, IAgencyScope scope) : Hub
         {
             Context.Abort();
             return;
+        }
+
+        if (Context.User?.TryGetAccountId(out var accountId) == true)
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, AccountGroup(accountId));
+        }
+
+        if (Context.User?.GetSessionId() is { } sessionId)
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, SessionGroup(sessionId));
         }
 
         if (scope.SeesAllAgencies)
@@ -60,7 +79,7 @@ public sealed class LiveHub(SessionValidator sessions, IAgencyScope scope) : Hub
             user?.FindFirstValue(HawalaClaimTypes.SecurityVersion), NumberStyles.None, CultureInfo.InvariantCulture, out var version);
 
         return hasAccountId && hasVersion
-            ? sessions.IsSessionCurrentAsync(accountId, version, Context.ConnectionAborted)
+            ? sessions.IsSessionCurrentAsync(accountId, version, user!.GetSessionId(), Context.ConnectionAborted)
             : Task.FromResult(false);
     }
 }

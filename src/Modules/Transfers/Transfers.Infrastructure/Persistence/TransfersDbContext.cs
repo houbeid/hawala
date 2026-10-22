@@ -1,5 +1,6 @@
 using System.Data.Common;
 using Hawala.SharedInfrastructure.Persistence;
+using Hawala.SharedInfrastructure.Security;
 using Identity.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Transfers.Application.Abstractions;
@@ -17,7 +18,7 @@ namespace Transfers.Infrastructure.Persistence;
 /// <see cref="TransferChangeBuffer"/> ; ils ne seront notifiés qu'après la validation de la transaction.
 /// </remarks>
 public sealed class TransfersDbContext(
-    DbContextOptions<TransfersDbContext> options, IAgencyScope agencyScope, TransferChangeBuffer changes)
+    DbContextOptions<TransfersDbContext> options, IAgencyScope agencyScope, TransferChangeBuffer changes, FieldProtector protector)
     : DbContext(options), IUnitOfWork, ISharedTransactionParticipant
 {
     public const string Schema = "transfers";
@@ -58,6 +59,12 @@ public sealed class TransfersDbContext(
     {
         modelBuilder.HasDefaultSchema(Schema);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(TransfersDbContext).Assembly);
+
+        // Pièce d'identité d'une livraison sans code : chiffrée au repos (phase 6, règle du 22 octobre 2026), jamais renvoyée.
+        modelBuilder.Entity<Transfer>()
+            .Property(t => t.BeneficiaryIdDocument)
+            .HasConversion(document => protector.Protect(document!), stored => protector.Unprotect(stored))
+            .HasMaxLength(FieldProtector.StoredLength(Transfer.PartyInfoMaxLength));
 
         modelBuilder.Entity<Transfer>()
             .HasQueryFilter(t => SeesAllAgencies

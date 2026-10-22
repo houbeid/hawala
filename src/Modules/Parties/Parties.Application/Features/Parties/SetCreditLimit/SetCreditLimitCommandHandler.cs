@@ -1,3 +1,4 @@
+using Audit.Contracts;
 using Hawala.SharedKernel.Messaging;
 using Hawala.SharedKernel.Money;
 using Hawala.SharedKernel.Results;
@@ -15,7 +16,8 @@ namespace Parties.Application.Features.Parties.SetCreditLimit;
 public sealed class SetCreditLimitCommandHandler(
     IPartyRepository parties,
     IAgencyDirectory agencies,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    IAuditLog audit)
     : ICommandHandler<SetCreditLimitCommand>
 {
     public async Task<Result> Handle(SetCreditLimitCommand command, CancellationToken cancellationToken)
@@ -38,13 +40,29 @@ public sealed class SetCreditLimitCommandHandler(
             return invalid.Error;
         }
 
+        var before = party.AgencyAccounts.SingleOrDefault(a => a.AgencyId == agency.Id)?.CreditLimit;
         var set = party.SetCreditLimit(agency.Id, command.CreditLimit);
         if (set.IsFailure)
         {
             return set.Error;
         }
 
+        if (before == command.CreditLimit)
+        {
+            return Result.Success();
+        }
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var audited = await PartyAudit.RecordAsync(
+            audit, PartyAudit.CreditLimitChanged, party.Id, command.ActorId,
+            [new AuditChange("creditLimit", PartyAudit.Text(before), PartyAudit.Text(command.CreditLimit))],
+            cancellationToken, agency.Id);
+        if (audited.IsFailure)
+        {
+            return audited.Error;
+        }
+
         return Result.Success();
     }
 }

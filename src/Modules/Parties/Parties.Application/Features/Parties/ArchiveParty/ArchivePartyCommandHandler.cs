@@ -1,3 +1,4 @@
+using Audit.Contracts;
 using Hawala.SharedKernel.Messaging;
 using Hawala.SharedKernel.Results;
 using Ledger.Contracts;
@@ -16,7 +17,8 @@ namespace Parties.Application.Features.Parties.ArchiveParty;
 public sealed class ArchivePartyCommandHandler(
     IPartyRepository parties,
     ILedger ledger,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    IAuditLog audit)
     : ICommandHandler<ArchivePartyCommand>
 {
     public async Task<Result> Handle(ArchivePartyCommand command, CancellationToken cancellationToken)
@@ -50,6 +52,15 @@ public sealed class ArchivePartyCommandHandler(
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var audited = await PartyAudit.RecordAsync(
+            audit, PartyAudit.Archived, party.Id, command.ActorId,
+            [new AuditChange("isArchived", "false", "true")], cancellationToken);
+        if (audited.IsFailure)
+        {
+            return audited.Error;
+        }
+
         return Result.Success();
     }
 }
@@ -58,7 +69,8 @@ public sealed class ArchivePartyCommandHandler(
 public sealed class UnarchivePartyCommandHandler(
     IPartyRepository parties,
     ILedger ledger,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    IAuditLog audit)
     : ICommandHandler<UnarchivePartyCommand>
 {
     public async Task<Result> Handle(UnarchivePartyCommand command, CancellationToken cancellationToken)
@@ -85,6 +97,15 @@ public sealed class UnarchivePartyCommandHandler(
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var audited = await PartyAudit.RecordAsync(
+            audit, PartyAudit.Unarchived, party.Id, command.ActorId,
+            [new AuditChange("isArchived", "true", "false")], cancellationToken);
+        if (audited.IsFailure)
+        {
+            return audited.Error;
+        }
+
         return Result.Success();
     }
 }

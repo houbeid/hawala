@@ -5,6 +5,9 @@ namespace Parties.Application.Abstractions;
 /// <summary>
 /// Accès aux tiers. Pas de filtre par agence : un tiers est commun aux deux agences (règle validée) ;
 /// c'est la lecture des SOLDES qui est limitée à l'agence. Enregistrement par <see cref="IUnitOfWork"/>.
+/// Phase 6 : les lectures ne renvoient que les tiers visibles par le compte connecté (« Limiter les tiers »),
+/// sauf les méthodes « IgnoringScope » et <see cref="PartyFilter.IgnoreAccountScope"/>, pour ce qui vaut pour
+/// toute l'agence (budget, noms affichés, vérification d'existence) ; le téléphone et le NNI restent uniques pour tous.
 /// </summary>
 public interface IPartyRepository
 {
@@ -13,6 +16,9 @@ public interface IPartyRepository
 
     /// <summary>Les tiers demandés, archivés compris, en lecture seule ; un id inconnu est absent.</summary>
     Task<IReadOnlyList<Party>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
+
+    /// <summary>Comme <see cref="GetByIdsAsync"/>, sans tenir compte des tiers autorisés du compte connecté.</summary>
+    Task<IReadOnlyList<Party>> GetByIdsIgnoringScopeAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
 
     /// <summary>
     /// Tiers correspondant aux filtres qui ne dépendent pas du solde, triés par nom. Lecture seule.
@@ -41,8 +47,10 @@ public interface IPartyRepository
 /// <summary>Filtres de la liste qui ne dépendent pas du solde. Un champ null = pas de filtre.</summary>
 /// <param name="Search">Texte cherché dans le nom, ou chiffres cherchés dans le téléphone.</param>
 /// <param name="InBalanceSheet">Vrai : « dans le bilan » ; faux : « hors bilan » ; null : tous.</param>
+/// <param name="IgnoreAccountScope">Vrai pour un calcul qui vaut pour toute l'agence (budget de la caisse).</param>
 public sealed record PartyFilter(
     string? Search = null,
     PartyType? Type = null,
     bool? InBalanceSheet = null,
-    bool IncludeArchived = false);
+    bool IncludeArchived = false,
+    bool IgnoreAccountScope = false);

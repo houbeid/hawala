@@ -1,3 +1,4 @@
+using Audit.Contracts;
 using Hawala.SharedKernel.Messaging;
 using Hawala.SharedKernel.Results;
 using Hawala.SharedKernel.Text;
@@ -15,7 +16,8 @@ namespace Parties.Application.Features.Parties.UpdateParty;
 /// </summary>
 public sealed class UpdatePartyCommandHandler(
     IPartyRepository parties,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    IAuditLog audit)
     : ICommandHandler<UpdatePartyCommand>
 {
     public async Task<Result> Handle(UpdatePartyCommand command, CancellationToken cancellationToken)
@@ -60,13 +62,28 @@ public sealed class UpdatePartyCommandHandler(
             return PartiesErrors.Party.NniTaken;
         }
 
+        var before = PartyAudit.Snapshot.Of(party);
         var updated = party.Update(command.Name, type, phone, nni, command.Address, command.Note, inBalanceSheet);
         if (updated.IsFailure)
         {
             return updated.Error;
         }
 
+        var after = PartyAudit.Snapshot.Of(party);
+        if (after == before)
+        {
+            return Result.Success();
+        }
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var audited = await PartyAudit.RecordAsync(
+            audit, PartyAudit.Updated, party.Id, command.ActorId, PartyAudit.Diff(before, after), cancellationToken);
+        if (audited.IsFailure)
+        {
+            return audited.Error;
+        }
+
         return Result.Success();
     }
 }

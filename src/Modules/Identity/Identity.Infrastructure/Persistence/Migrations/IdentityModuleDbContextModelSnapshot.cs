@@ -34,6 +34,10 @@ namespace Identity.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<decimal?>("CreditLimitPerDay")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(254)
@@ -43,6 +47,17 @@ namespace Identity.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<DateTimeOffset?>("LastLoginAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("LimitPerDay")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal?>("LimitPerTransfer")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
 
                     b.Property<bool>("MustChangePassword")
                         .HasColumnType("boolean");
@@ -92,6 +107,10 @@ namespace Identity.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("FamilyId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(45)
+                        .HasColumnType("character varying(45)");
+
                     b.Property<Guid?>("ReplacedByTokenId")
                         .HasColumnType("uuid");
 
@@ -107,6 +126,10 @@ namespace Identity.Infrastructure.Persistence.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character(64)")
                         .IsFixedLength();
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
@@ -259,6 +282,30 @@ namespace Identity.Infrastructure.Persistence.Migrations
                         .HasForeignKey("Identity.Domain.Accounts.UserAccount", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.OwnsMany("Identity.Domain.Roles.PermissionOverride", "PermissionOverrides", b1 =>
+                        {
+                            b1.Property<Guid>("AccountId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Permission")
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)");
+
+                            b1.Property<string>("Kind")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("character varying(20)");
+
+                            b1.HasKey("AccountId", "Permission");
+
+                            b1.ToTable("account_permission_overrides", "identity");
+
+                            b1.WithOwner()
+                                .HasForeignKey("AccountId");
+                        });
+
+                    b.Navigation("PermissionOverrides");
                 });
 
             modelBuilder.Entity("Identity.Domain.RefreshTokens.RefreshToken", b =>

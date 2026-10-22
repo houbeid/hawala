@@ -20,7 +20,8 @@ public sealed class ChangePasswordCommandHandler(
     IAccessTokenIssuer accessTokens,
     IUnitOfWork unitOfWork,
     IClock clock,
-    AuthSettings settings)
+    AuthSettings settings,
+    IClientInfo client)
     : ICommandHandler<ChangePasswordCommand, AuthTokens>
 {
     public async Task<Result<AuthTokens>> Handle(ChangePasswordCommand command, CancellationToken cancellationToken)
@@ -56,14 +57,15 @@ public sealed class ChangePasswordCommandHandler(
             token.Revoke(now, RefreshTokenRevocationReason.PasswordChanged);
         }
 
-        var refresh = RefreshToken.IssueForNewSession(account.Id, now, settings.RefreshTokenLifetime);
+        var refresh = RefreshToken.IssueForNewSession(account.Id, now, settings.RefreshTokenLifetime, client.Device);
         refreshTokens.Add(refresh.Token);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new AuthTokens(
-            accessTokens.Issue(account),
+            accessTokens.Issue(account, refresh.Token.FamilyId),
             refresh.PlainValue,
             refresh.Token.ExpiresAt,
-            account.MustChangePassword);
+            account.MustChangePassword,
+            refresh.Token.FamilyId);
     }
 }

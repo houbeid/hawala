@@ -23,6 +23,9 @@ namespace Transfers.Application.Features.Transfers.CreateTransfer;
 ///   (il passe en rouge) ; tiers archivé refusé ; plafond bloquant pour tous, Superviseur compris :
 ///   solde du tiers dans l'agence + part à crédit ≤ plafond (0 = rien au-delà de ce qu'on lui doit, vide = pas de limite) ;
 ///   le compte du tiers est verrouillé pendant la transaction, pour que deux crédits simultanés ne dépassent pas le plafond ;
+/// - plafonds du compte (phase 6, règles du 22 octobre 2026), jamais pour un Superviseur : par transfert, par jour et
+///   crédit par jour, dans la devise de l'agence d'envoi, sur les transferts ENREGISTRÉS dans la journée (annulés exclus) ;
+///   refus net avec le montant encore possible ; un verrou par compte évite que deux envois simultanés dépassent le plafond ;
 /// - une seule transaction commune (compteur de référence + transfert + écriture) ;
 /// - même clé d'idempotence pour le même compte : le transfert déjà créé est renvoyé, sans son code.
 /// POINT OUVERT : la date de l'opération est lue en UTC ; Nouakchott et Dakar sont tous deux en UTC+0.
@@ -38,7 +41,8 @@ public sealed class CreateTransferCommandHandler(
     IDailyRates dailyRates,
     CreationPosting posting,
     IUnitOfWork unitOfWork,
-    IClock clock)
+    IClock clock,
+    IAccountDirectory accounts)
     : ICommandHandler<CreateTransferCommand, CreatedTransfer>
 {
     public const string EntryType = "Transfers.Created";
@@ -122,6 +126,12 @@ public sealed class CreateTransferCommandHandler(
             creditLedgerAccount = credit.Value;
         }
 
+        var withinLimits = await CheckAccountLimitsAsync(command.ActorId, source, draft.Value, now, cancellationToken);
+        if (withinLimits.IsFailure)
+        {
+            return withinLimits.Error;
+        }
+
         var reference = await references.NextAsync(
             source.Id, source.Code, DateOnly.FromDateTime(now.UtcDateTime), cancellationToken);
         var transfer = Transfer.Create(request, reference, codeHasher.Hash(code), key, command.ActorId, now).Value;
@@ -139,6 +149,59 @@ public sealed class CreateTransferCommandHandler(
 
         return ToResponse(transfer, code, replayed: false);
     }
+
+    private async Task<Result> CheckAccountLimitsAsync(
+        Guid actorId, AgencySummary source, Transfer draft, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var account = await accounts.FindAsync(actorId, cancellationToken);
+        if (account is null || account.IsSupervisor)
+        {
+            return Result.Success();
+        }
+
+        var limits = account.Limits;
+        var paid = draft.PaidAmount.Amount;
+        var credit = draft.CreditAmount;
+
+        if (limits.PerTransfer is { } perTransfer && paid > perTransfer)
+        {
+            return Refused(TransfersErrors.Limits.PerTransferExceeded, perTransfer, source.Currency);
+        }
+
+        if (limits.PerDay is null && (limits.CreditPerDay is null || credit == 0))
+        {
+            return Result.Success();
+        }
+
+        // Le jour réel d'enregistrement (UTC : Nouakchott et Dakar sont en UTC+0), pas la date d'opération saisie.
+        await transfers.LockCreatorAsync(actorId, cancellationToken);
+        var dayStart = new DateTimeOffset(now.UtcDateTime.Date, TimeSpan.Zero);
+        var (paidToday, creditToday) = await transfers.SumCreatedAsync(
+            actorId, source.Id, dayStart, dayStart.AddDays(1), cancellationToken);
+
+        if (limits.PerDay is { } perDay && paidToday + paid > perDay)
+        {
+            return Refused(TransfersErrors.Limits.PerDayExceeded, perDay - paidToday, source.Currency);
+        }
+
+        if (limits.CreditPerDay is { } creditPerDay && credit > 0 && creditToday + credit > creditPerDay)
+        {
+            return Refused(TransfersErrors.Limits.CreditPerDayExceeded, creditPerDay - creditToday, source.Currency);
+        }
+
+        return Result.Success();
+    }
+
+    /// <summary>Le refus porte le montant encore possible (jamais négatif) et la devise.</summary>
+    private static Error Refused(Error error, decimal remaining, Currency currency) =>
+        error with
+        {
+            Details = new Dictionary<string, object?>
+            {
+                ["remaining"] = Math.Max(0m, remaining),
+                ["currency"] = currency.ToString(),
+            },
+        };
 
     private static CreatedTransfer ToResponse(Transfer transfer, string? withdrawalCode, bool replayed) =>
         new(transfer.Id, transfer.Reference, withdrawalCode, transfer.AmountXof, transfer.AmountMro,

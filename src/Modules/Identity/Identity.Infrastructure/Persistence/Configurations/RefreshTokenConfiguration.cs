@@ -26,6 +26,8 @@ internal sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refre
         builder.Property(t => t.RevokedAt);
         builder.Property(t => t.RevocationReason).HasConversion<string>().HasMaxLength(20);
         builder.Property(t => t.ReplacedByTokenId);
+        builder.Property(t => t.UserAgent).HasMaxLength(SessionDevice.UserAgentMaxLength);
+        builder.Property(t => t.IpAddress).HasMaxLength(SessionDevice.IpAddressMaxLength);
 
         builder.Ignore(t => t.IsRevoked);
 

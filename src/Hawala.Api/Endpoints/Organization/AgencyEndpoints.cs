@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Hawala.Api.Configuration;
 using Hawala.Api.Errors;
 using Hawala.SharedKernel.Messaging;
@@ -39,10 +40,16 @@ public static class AgencyEndpoints
     private static async Task<IResult> ChangeAgencyColor(
         Guid id,
         ChangeAgencyColorRequest request,
+        ClaimsPrincipal user,
         ICommandHandler<ChangeAgencyColorCommand> handler,
         CancellationToken cancellationToken)
     {
-        var result = await handler.Handle(new ChangeAgencyColorCommand(id, request.Color), cancellationToken);
+        if (!user.TryGetAccountId(out var actorId))
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        var result = await handler.Handle(new ChangeAgencyColorCommand(actorId, id, request.Color), cancellationToken);
         return result.IsSuccess ? TypedResults.NoContent() : result.Error.ToProblem();
     }
 }

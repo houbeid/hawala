@@ -101,6 +101,30 @@ public sealed class TransferCodeActionsTests(ApiFixture fixture)
         Assert.Equal("NotDelivered", (await ctx.GetAsync(id)).GetProperty("status").GetString());
     }
 
+    [Fact]
+    public async Task The_id_document_is_encrypted_in_the_database()
+    {
+        var ctx = await ArrangeAsync();
+        var (id, _) = await ctx.CreateAsync();
+
+        using var response = await ctx.Client.DeliverWithoutCodeAsync(ctx.SupervisorToken, id, new
+        {
+            idDocument = "CNI 1234567",
+            reason = "Code perdu, identité vérifiée",
+            operationAt = ctx.OperationAt.AddHours(1),
+            payments = new[] { new { treasuryAccountId = ctx.DkrCash, amount = 50_000m } },
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        await using var connection = await ctx.Factory.Services.GetRequiredService<Npgsql.NpgsqlDataSource>().OpenConnectionAsync();
+        await using var command = new Npgsql.NpgsqlCommand(
+            """SELECT "BeneficiaryIdDocument" FROM transfers.transfers WHERE "Id" = @id""", connection);
+        command.Parameters.AddWithValue("id", id);
+        var stored = (string)(await command.ExecuteScalarAsync())!;
+        Assert.StartsWith("v1:", stored, StringComparison.Ordinal);
+        Assert.DoesNotContain("1234567", stored, StringComparison.Ordinal);
+    }
+
     // --- Nouveau code ------------------------------------------------------
 
     [Fact]

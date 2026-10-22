@@ -16,6 +16,9 @@ public sealed class HawalaApiFactory(string connectionString) : WebApplicationFa
     // Clé fictive, réservée aux tests (au moins 32 octets).
     private const string TestSigningKey = "cle-de-test-uniquement-0123456789-abcdefghijklmnop";
 
+    // Clé de chiffrement fictive, réservée aux tests : 32 octets en base64 (« cle-fictive-de-test-chiffrement! »).
+    private const string TestEncryptionKey = "Y2xlLWZpY3RpdmUtZGUtdGVzdC1jaGlmZnJlbWVudCE=";
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -25,6 +28,12 @@ public sealed class HawalaApiFactory(string connectionString) : WebApplicationFa
         // UseSetting est appliqué avant que Program.cs lise la configuration.
         builder.UseSetting("ConnectionStrings:Hawala", connectionString);
         builder.UseSetting("Jwt:SigningKey", TestSigningKey);
+        builder.UseSetting("Encryption:Key", TestEncryptionKey);
+
+        // La suite se connecte des centaines de fois depuis la même « IP » : limites relevées ici,
+        // éprouvées à part par RateLimitingTests (avec des limites basses).
+        builder.UseSetting("RateLimits:LoginPerMinute", "100000");
+        builder.UseSetting("RateLimits:RequestsPerMinute", "100000");
         builder.UseSetting("SeedSupervisor:Email", SeedSupervisorEmail);
         builder.UseSetting("SeedSupervisor:FullName", "Superviseur Test");
         builder.UseSetting("SeedSupervisor:TemporaryPassword", SeedSupervisorPassword);

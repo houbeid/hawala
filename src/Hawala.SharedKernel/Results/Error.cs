@@ -28,6 +28,13 @@ public enum ErrorType
 /// <param name="Type">Nature de l'erreur.</param>
 public sealed record Error(string Code, string Message, ErrorType Type)
 {
+    /// <summary>
+    /// Valeurs utiles au client pour un refus précis (ex. « remaining » : montant encore possible sous un plafond),
+    /// ajoutées à la réponse par l'API. Null pour la plupart des erreurs. Se pose avec
+    /// <c>Erreur.Connue with { Details = … }</c> : l'erreur publiée, elle, reste sans détail.
+    /// </summary>
+    public IReadOnlyDictionary<string, object?>? Details { get; init; }
+
     public static Error Failure(string code, string message) => new(code, message, ErrorType.Failure);
 
     public static Error Validation(string code, string message) => new(code, message, ErrorType.Validation);

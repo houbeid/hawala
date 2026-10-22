@@ -1,7 +1,10 @@
+using Audit.Contracts;
 using System.Text;
+using Hawala.SharedInfrastructure.Persistence;
 using Hawala.SharedKernel.Messaging;
 using Hawala.SharedKernel.Time;
 using Identity.Application.Abstractions;
+using Identity.Application.Features.Accounts;
 using Identity.Application.Features.Accounts.GetCurrentAccount;
 using Identity.Application.Features.Users;
 using Identity.Application.Features.Users.BlockUser;
@@ -9,11 +12,14 @@ using Identity.Application.Features.Users.ChangeUserAgency;
 using Identity.Application.Features.Users.ChangeUserRole;
 using Identity.Application.Features.Users.CreateUser;
 using Identity.Application.Features.Users.GetUser;
+using Identity.Application.Features.Users.Limits;
 using Identity.Application.Features.Users.ListUsers;
+using Identity.Application.Features.Users.PermissionOverrides;
 using Identity.Application.Features.Users.ResetUserPassword;
 using Identity.Application.Features.Users.UnblockUser;
 using Identity.Application.Features.Users.UpdateUserProfile;
 using Identity.Application.Features.Auth;
+using Identity.Application.Features.Sessions;
 using Identity.Application.Features.Auth.ChangePassword;
 using Identity.Application.Features.Auth.Login;
 using Identity.Application.Features.Auth.Logout;
@@ -97,18 +103,26 @@ public static class DependencyInjection
         services.AddMemoryCache();
         services.AddSingleton<AccountCacheInvalidationInterceptor>();
 
+        // Connexion partagée de la requête (phase 6) : les commandes d'Identité écrivent leur ligne d'audit
+        // dans la même transaction. Login et Refresh, sans décorateur, enregistrent toujours tout de suite.
+        services.AddSharedConnection(connectionString);
         services.AddDbContext<IdentityModuleDbContext>((sp, options) =>
             options
                 .UseNpgsql(
-                    connectionString,
+                    sp.GetRequiredService<SharedConnection>().Connection,
                     npgsql => npgsql.MigrationsHistoryTable("__ef_migrations_history", IdentityModuleDbContext.Schema))
                 .AddInterceptors(sp.GetRequiredService<AccountCacheInvalidationInterceptor>()));
 
         services.AddScoped<SessionValidator>();
         services.AddScoped<AgencyScope>();
         services.AddScoped<IAgencyScope>(sp => sp.GetRequiredService<AgencyScope>());
+        services.AddScoped<ICurrentAccount>(sp => sp.GetRequiredService<AgencyScope>());
+        services.AddScoped<IAccountDirectory, AccountDirectory>();
+        services.AddHttpContextAccessor();
+        services.AddScoped<IClientInfo, HttpClientInfo>();
         services.AddScoped<IPermissionChecker, PermissionChecker>();
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<IdentityModuleDbContext>());
+        services.AddScoped<ISharedTransactionParticipant>(sp => sp.GetRequiredService<IdentityModuleDbContext>());
         services.AddScoped<IUserAccountRepository, UserAccountRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
     }
@@ -148,41 +162,30 @@ public static class DependencyInjection
         services.AddScoped<IQueryHandler<GetCurrentAccountQuery, CurrentAccount>, GetCurrentAccountQueryHandler>();
         services.AddScoped<IQueryHandler<ListUsersQuery, IReadOnlyList<UserSummary>>, ListUsersQueryHandler>();
         services.AddScoped<IQueryHandler<GetUserQuery, UserSummary>, GetUserQueryHandler>();
+        services.AddScoped<IQueryHandler<GetUserPermissionsQuery, UserPermissions>, GetUserPermissionsQueryHandler>();
 
-        // Une seule table modifiée, pas de verrou : pas besoin de transaction explicite.
-        services.AddScoped<ICommandHandler<ChangeUserAgencyCommand>, ChangeUserAgencyCommandHandler>();
-        services.AddScoped<ICommandHandler<UpdateUserProfileCommand>, UpdateUserProfileCommandHandler>();
+        // Une seule table et pas de verrou, mais la ligne d'audit doit être dans la même transaction (phase 6).
+        services.AddSharedTransactional<ChangeUserAgencyCommand, ChangeUserAgencyCommandHandler>();
+        services.AddSharedTransactional<UpdateUserProfileCommand, UpdateUserProfileCommandHandler>();
 
-        // Ces commandes modifient les tables d'ASP.NET Identity et les nôtres : une seule transaction.
-        AddTransactional<ChangePasswordCommand, AuthTokens, ChangePasswordCommandHandler>(services);
-        AddTransactional<CreateUserCommand, CreatedUser, CreateUserCommandHandler>(services);
-        AddTransactional<UnblockUserCommand, UnblockedUser, UnblockUserCommandHandler>(services);
-        AddTransactional<ResetUserPasswordCommand, ResetPassword, ResetUserPasswordCommandHandler>(services);
+        // Ces commandes modifient les tables d'ASP.NET Identity et les nôtres : une seule transaction
+        // (transaction commune depuis la phase 6, pour y écrire aussi la ligne d'audit).
+        services.AddSharedTransactional<ChangePasswordCommand, AuthTokens, ChangePasswordCommandHandler>();
+        services.AddSharedTransactional<CreateUserCommand, CreatedUser, CreateUserCommandHandler>();
+        services.AddSharedTransactional<UnblockUserCommand, UnblockedUser, UnblockUserCommandHandler>();
+        services.AddSharedTransactional<ResetUserPasswordCommand, ResetPassword, ResetUserPasswordCommandHandler>();
 
         // Pas de table d'Identity ici, mais le verrou sur les Superviseurs exige une transaction.
-        AddTransactional<BlockUserCommand, BlockUserCommandHandler>(services);
-        AddTransactional<ChangeUserRoleCommand, ChangeUserRoleCommandHandler>(services);
-    }
+        services.AddSharedTransactional<BlockUserCommand, BlockUserCommandHandler>();
+        services.AddSharedTransactional<ChangeUserRoleCommand, ChangeUserRoleCommandHandler>();
 
-    private static void AddTransactional<TCommand, THandler>(IServiceCollection services)
-        where TCommand : ICommand
-        where THandler : class, ICommandHandler<TCommand>
-    {
-        services.AddScoped<THandler>();
-        services.AddScoped<ICommandHandler<TCommand>>(sp =>
-            new TransactionalCommandHandler<TCommand>(
-                sp.GetRequiredService<THandler>(),
-                sp.GetRequiredService<IdentityModuleDbContext>()));
-    }
+        // Le compte et sa ligne d'audit dans la même transaction.
+        services.AddSharedTransactional<SetUserPermissionsCommand, UserPermissions, SetUserPermissionsCommandHandler>();
+        services.AddSharedTransactional<SetUserLimitsCommand, UserLimits, UserLimitsHandlers>();
 
-    private static void AddTransactional<TCommand, TResponse, THandler>(IServiceCollection services)
-        where TCommand : ICommand<TResponse>
-        where THandler : class, ICommandHandler<TCommand, TResponse>
-    {
-        services.AddScoped<THandler>();
-        services.AddScoped<ICommandHandler<TCommand, TResponse>>(sp =>
-            new TransactionalCommandHandler<TCommand, TResponse>(
-                sp.GetRequiredService<THandler>(),
-                sp.GetRequiredService<IdentityModuleDbContext>()));
+        // Fermer une session : ses jetons et, si quelqu'un d'autre la ferme, la ligne d'audit.
+        services.AddSharedTransactional<CloseSessionCommand, SessionHandlers>();
+        services.AddScoped<IQueryHandler<ListSessionsQuery, IReadOnlyList<SessionView>>>(sp => sp.GetRequiredService<SessionHandlers>());
+        services.AddScoped<IQueryHandler<GetUserLimitsQuery, UserLimits>>(sp => sp.GetRequiredService<UserLimitsHandlers>());
     }
 }

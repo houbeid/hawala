@@ -37,8 +37,8 @@ namespace Transfers.Infrastructure.Persistence.Migrations
                         .HasColumnType("numeric(18,2)");
 
                     b.Property<string>("BeneficiaryIdDocument")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasMaxLength(843)
+                        .HasColumnType("character varying(843)");
 
                     b.Property<string>("BeneficiaryInfo")
                         .IsRequired()

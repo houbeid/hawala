@@ -97,6 +97,49 @@ Mêmes règles pour Nouakchott et Dakar :
 - **Le mot de passe temporaire est généré par l'app** (format `xxx-xxx-xxx`, sans 0/O/1/l/I, au moins un chiffre), renvoyé une seule fois dans la réponse de création.
 - Permissions définies dans `Identity.Contracts.Permissions` (une permission n'y entre qu'avec son premier endpoint). Endpoints protégés par `.RequirePermission(Permissions.X)` ; le contrôle passe par `IPermissionChecker`, lu côté serveur (option B).
 
+### Limiter les tiers (validé le 21 octobre 2026, fait)
+
+- Seul un compte de rôle Superviseur fixe la liste des tiers autorisés d'un compte ; un Superviseur n'est jamais limité.
+- Un compte limité **ne voit que ses tiers** (liste, fiche, relevé, compteur) et ne fait crédit ou mouvement de caisse qu'avec eux.
+- **Un tiers qu'il crée entre automatiquement dans sa liste.**
+- **Les transferts restent filtrés par agence seulement** : il voit tous les transferts de son agence (deux agences seulement), avec le nom du tiers d'un crédit.
+- Le budget de la caisse compte toujours tous les tiers de l'agence ; téléphone et NNI restent uniques pour tous.
+- Non limité = liste vidée ; effet immédiat ; tracé dans l'audit.
+
+### Plafonds par compte (validés le 22 octobre 2026, faits)
+
+- Fixés compte par compte par le Superviseur, **dans la devise de l'agence** (MRO à Nouakchott, FCFA à Dakar), sur le montant payé à l'agence d'envoi ; chacun facultatif (vide = pas de limite).
+- **Plafond par transfert** ; **plafond par jour** (total des transferts du compte enregistrés ce jour-là, **jour réel d'enregistrement**, pas la date d'opération saisie ; annulés exclus) ; **plafond de crédit par jour** (total des parts à crédit accordées par le compte dans la journée, en plus du plafond de chaque tiers).
+- **Dépassement = refus net**, avec le montant encore possible ; pour aller au-delà, le Superviseur relève le plafond.
+- **Jamais de plafond pour un Superviseur** ; la modification d'argent d'un transfert (Superviseur) n'y est pas soumise.
+- Changement tracé dans l'audit, effet immédiat.
+- **Changer l'agence ou le rôle d'un compte efface ses plafonds** (un montant en MRO n'a pas de sens en FCFA ; un nouveau rôle repart de zéro, comme pour les permissions) — 22 octobre 2026.
+
+### Sessions et appareils (validé le 22 octobre 2026, fait)
+
+- **Chaque compte voit et ferme ses propres sessions** (ex. un téléphone perdu) ; **le Superviseur voit et ferme celles de tous les comptes**.
+- Un compte non Superviseur qui a `users.manage` voit et ferme aussi les sessions des comptes **de son agence** (cohérent avec le blocage).
+- Dernière connexion affichée dans la liste des comptes.
+
+### Chiffrement au repos (validé le 22 octobre 2026, fait)
+
+- Téléphone et NNI des tiers, pièce d'identité « livrer sans code » : chiffrés en base (AES-GCM), avec une empreinte (HMAC) pour l'unicité du téléphone et du NNI.
+- **Une seule clé**, dans une variable d'environnement (user-secret en dev), **sauvegardée hors du serveur** : la perdre = perdre ces données.
+- Recherche par téléphone / NNI : en SQL, seulement sur la valeur exacte ; la recherche partielle actuelle reste possible tant que la liste des tiers est filtrée en mémoire.
+
+### Audit (validé le 22 octobre 2026 ; lecture faite)
+
+- Journal en insertion seule, écrit dans la transaction de chaque action ; aucun service externe.
+- **Lecture : permission `audit.view`, donnée au Superviseur** (il peut la donner à un autre compte ; une permission n'élargit jamais le périmètre : un agent ne lirait que son agence).
+- **Seulement les actions** (pas les consultations de relevés, bilan ou exports).
+- Taux du jour, capital initial et couleur d'agence sont tracés aussi (tour 7d) : leurs modules passent sur la connexion partagée pour écrire l'audit dans la même transaction.
+- **Réglages et corrections, pas les opérations courantes** (validé le 22 octobre 2026) : tracés : comptes (création, profil, rôle, agence, blocage, déblocage, mot de passe réinitialisé, permissions, tiers autorisés, plafonds, sessions fermées par un autre), tiers (création, fiche, solde initial, plafond, archivage), caisse (annulation, ajustement), transferts (annulation, modification d'argent, livraison sans code, déblocage, nouveau code) ; non tracés (déjà au grand livre ou dans l'historique du transfert) : création et livraison normale d'un transfert, textes, mouvements de caisse courants, budget du jour.
+- Le texte lisible (« X a retiré *Annuler un transfert* à Y ») est construit par l'interface en français ou en arabe, à partir du code de l'action, des noms et des changements renvoyés par l'API.
+
+### Limitation de débit (validée le 22 octobre 2026, faite)
+
+- Connexion : **10 tentatives par minute et par IP** ; reste de l'API : **300 requêtes par minute et par compte** ; au-delà, réponse 429.
+
 ### Droits par défaut des rôles (validés le 20 octobre 2026)
 
 Chaque rôle ne voit que son agence (sauf le Superviseur). Ajustables compte par compte en phase 6.
@@ -117,6 +160,15 @@ Chaque rôle ne voit que son agence (sauf le Superviseur). Ajustables compte par
 | Bénéfice, bilan, les quatre cartes | ✔ | ✘ | ✘ | ✘ |
 | Exporter | ✔ | ✘ | ✘ | ✔ |
 | Gérer comptes, agences, caisses | ✔ | ✘ | ✘ | ✘ |
+
+**Ajustements par compte (validés le 21 octobre 2026, phase 6)** :
+1. un Agent (ou Caissier, Consultation) peut recevoir **n'importe quelle permission**, et s'en voir retirer ;
+2. **seul un compte de rôle Superviseur** donne ou retire des permissions, et change le rôle d'un compte, même si un autre compte a reçu `users.manage` ; avec `users.manage`, un non-Superviseur pourra créer, bloquer et réinitialiser des comptes **de son agence**, sans toucher aux rôles ni aux permissions ;
+3. **un Superviseur garde toujours toutes les permissions** : on ne lui en retire pas (pour réduire ses droits, on change son rôle) ;
+4. les **quatre modèles de rôles restent fixés dans le code** (tableau ci-dessus) ; les ajustements se font compte par compte.
+5. **changer le rôle d'un compte efface ses ajouts et retraits** : il repart du modèle du nouveau rôle ;
+6. **une permission n'élargit jamais le périmètre** : un Agent reste sur son agence (avec `profit.view`, il voit le bénéfice et le prix d'achat de son agence seulement) ; les règles « agence d'envoi ou Superviseur » restent liées au rôle.
+Fait le 21 octobre 2026 : `GET` / `PUT /api/v1/users/{id}/permissions`, `permissions` dans `/auth/me`, ligne d'audit `Identity.Account.PermissionsChanged` ; point 2 : un non-Superviseur avec `users.manage` lit, crée (**Agent, Caissier ou Consultation**, décision du 21 octobre 2026, jamais Superviseur), modifie le profil, bloque, débloque et réinitialise les comptes **de son agence** ; un Superviseur ou un compte de l'autre agence lui est invisible (404).
 
 Dans le code aujourd'hui (20 octobre 2026) : `parties.create`, `parties.view_balance`, `cash.budget.read`, `transfers.create`, `transfers.credit`, `transfers.deliver`, `transfers.cancel`, `transfers.manage_code`, `transfers.edit_rate`, `cash.create`, `cash.manage` et `cash.budget.save` appliqués selon ce tableau ; les autres permissions des transferts, de la caisse et de l'export seront ajoutées avec leurs endpoints, et données aux rôles selon ce tableau.
 
@@ -359,7 +411,7 @@ App actuelle (capture du 20 octobre 2026), écran Superviseur qui réunit bilan 
 - Backend : ASP.NET Core .NET 10 (Minimal APIs), monolithe modulaire + Clean Architecture (Domain / Application / Infrastructure / Contracts par module), handlers maison (pas MediatR), FluentValidation, EF Core 10 + Dapper pour les rapports, PostgreSQL 17+ (un schéma par module), Identity + JWT court + refresh token rotatif + TOTP, SignalR, Hangfire, QuestPDF, Serilog + OpenTelemetry.
 - Solution : `Hawala.slnx`, `Directory.Build.props` (nullable, warnings = erreurs), versions NuGet centralisées dans `Directory.Packages.props`, `Result` / `Error` (codes stables `Module.Raison` traduits par le frontend), `IClock` injecté, UUID v7 (`IdGenerator`).
 - Frontend : React 19 + TypeScript + Vite, Tailwind + shadcn/ui, TanStack Query + Router, React Hook Form + Zod, i18next (fr, ar en RTL), vite-plugin-pwa + Dexie (file d'attente hors ligne), Recharts. Client API généré depuis OpenAPI.
-- Modules : Identité & accès, Organisation, Tiers, Trésorerie, Grand livre, Taux, Transferts, Caisse, Bénéfice, Bilan, Notifications (temps réel entre agences), Audit & conformité. Un module n'appelle que les `Contracts` d'un autre (test d'architecture).
+- Modules : Identité & accès, Organisation, Tiers, Trésorerie, Grand livre, Taux, Transferts, Caisse, Bénéfice, Bilan, Notifications (temps réel entre agences), Audit (journal interne, aucun service externe). Un module n'appelle que les `Contracts` d'un autre (test d'architecture).
 - API REST `/api/v1`, une route par cas d'usage (`POST /transfers/{id}/deliver`), erreurs en Problem Details (RFC 9457) avec un champ `code`. Tout endpoint est protégé par défaut, sauf ceux marqués anonymes.
 - IDs UUID v7 ; identifiants techniques jamais affichés à l'utilisateur.
 - Tests : xUnit + Testcontainers (vrai PostgreSQL) ; tests de référence sur 536 893 et −261 005 dès que les données source sont disponibles ; Playwright pour l'E2E.
@@ -380,10 +432,10 @@ Serveur en Europe accepté. Départ : 1 VPS OVHcloud en France (type VPS-2, 4 vC
 3. Transferts
 4. Caisse et clôture journalière (approvisionnement / retrait du patron, budget de la caisse, contrôle de cohérence)
 5. Bénéfice + Bilan
-6. Sécurité avancée
+6. Sécurité avancée — **terminée le 22 octobre 2026** (2FA à part). Historique : socle de l'audit fait le 21 octobre 2026 (`IAuditLog`, journal en insertion seule dans la transaction de la commande, IP et appareil gardés, aucun service externe). Questions tranchées le 22 octobre 2026 : `audit.view` pour le Superviseur, seulement les actions (voir « Audit »).
 7. Hors ligne + reçu
 8. Migration depuis l'ancienne app + mise en service : import des tiers et de leurs soldes à la date de démarrage, **sans les anciens transferts**
-9. Conformité (AML, HarisAI) ; plus tard WhatsApp / SMS
+~~9. Conformité (AML, HarisAI)~~ : **supprimée le 21 octobre 2026**, pas d'intégration HarisAI. WhatsApp / SMS restent reportés (hors V1).
 
 Valider les maquettes des écrans de transfert (création en 3 étapes, livraison) avec les utilisateurs avant la phase 3.
 

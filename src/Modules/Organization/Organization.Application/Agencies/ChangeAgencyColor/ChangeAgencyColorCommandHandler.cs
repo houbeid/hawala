@@ -1,3 +1,4 @@
+using Audit.Contracts;
 using Hawala.SharedKernel.Messaging;
 using Hawala.SharedKernel.Results;
 using Organization.Application.Abstractions;
@@ -16,7 +17,8 @@ namespace Organization.Application.Agencies.ChangeAgencyColor;
 /// </summary>
 public sealed class ChangeAgencyColorCommandHandler(
     IAgencyRepository agencies,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    IAuditLog audit)
     : ICommandHandler<ChangeAgencyColorCommand>
 {
     public async Task<Result> Handle(ChangeAgencyColorCommand command, CancellationToken cancellationToken)
@@ -42,8 +44,25 @@ public sealed class ChangeAgencyColorCommandHandler(
             return OrganizationErrors.Color.AlreadyUsed;
         }
 
+        var before = agency.Color;
+        if (before == color.Value)
+        {
+            return Result.Success();
+        }
+
         agency.ChangeColor(color.Value);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var audited = await audit.RecordAsync(
+            new AuditRecord(
+                "Organization.Agency.ColorChanged", "Agency", agency.Id, command.ActorId, agency.Id,
+                Changes: [new AuditChange("color", before.ToString(), color.Value.ToString())]),
+            cancellationToken);
+        if (audited.IsFailure)
+        {
+            return audited.Error;
+        }
+
         return Result.Success();
     }
 }

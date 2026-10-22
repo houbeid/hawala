@@ -14,7 +14,8 @@ public sealed class RefreshCommandHandler(
     IAccessTokenIssuer accessTokens,
     IUnitOfWork unitOfWork,
     IClock clock,
-    AuthSettings settings)
+    AuthSettings settings,
+    IClientInfo client)
     : ICommandHandler<RefreshCommand, AuthTokens>
 {
     public async Task<Result<AuthTokens>> Handle(RefreshCommand command, CancellationToken cancellationToken)
@@ -45,7 +46,7 @@ public sealed class RefreshCommandHandler(
             return IdentityErrors.Auth.AccountBlocked;
         }
 
-        var rotation = token.Rotate(now, settings.RefreshTokenLifetime);
+        var rotation = token.Rotate(now, settings.RefreshTokenLifetime, client.Device);
         if (rotation.IsFailure)
         {
             if (rotation.Error == IdentityErrors.RefreshToken.Reused)
@@ -61,10 +62,11 @@ public sealed class RefreshCommandHandler(
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new AuthTokens(
-            accessTokens.Issue(account),
+            accessTokens.Issue(account, token.FamilyId),
             rotation.Value.PlainValue,
             rotation.Value.Token.ExpiresAt,
-            account.MustChangePassword);
+            account.MustChangePassword,
+            token.FamilyId);
     }
 
     private async Task RevokeFamilyAsync(Guid familyId, DateTimeOffset now, CancellationToken cancellationToken)

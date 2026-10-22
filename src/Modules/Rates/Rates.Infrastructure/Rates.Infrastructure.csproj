@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Rates.Application\Rates.Application.csproj" />
+    <ProjectReference Include="..\..\..\Hawala.SharedInfrastructure\Hawala.SharedInfrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

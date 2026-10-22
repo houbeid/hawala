@@ -189,6 +189,22 @@ public static class TransfersErrors
             Error.Validation("Transfers.Filter.PageInvalid", "Le numéro de page commence à 1.");
     }
 
+    /// <summary>
+    /// Plafonds du compte (phase 6, règles du 22 octobre 2026) : refus net. La réponse porte « remaining »
+    /// (montant encore possible) et « currency » (devise de l'agence d'envoi).
+    /// </summary>
+    public static class Limits
+    {
+        public static readonly Error PerTransferExceeded =
+            Error.Conflict("Transfers.Limits.PerTransferExceeded", "Montant au-dessus du plafond par transfert de ce compte.");
+
+        public static readonly Error PerDayExceeded =
+            Error.Conflict("Transfers.Limits.PerDayExceeded", "Plafond du jour de ce compte dépassé.");
+
+        public static readonly Error CreditPerDayExceeded =
+            Error.Conflict("Transfers.Limits.CreditPerDayExceeded", "Plafond de crédit du jour de ce compte dépassé.");
+    }
+
     public static class Credit
     {
         public static readonly Error NotAllowed =

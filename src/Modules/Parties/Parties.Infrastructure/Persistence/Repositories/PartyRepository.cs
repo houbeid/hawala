@@ -1,16 +1,34 @@
+using Hawala.SharedInfrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Parties.Application.Abstractions;
+using Parties.Application.Features.Scopes;
 using Parties.Domain.Parties;
+using Parties.Infrastructure.Persistence.Configurations;
 
 namespace Parties.Infrastructure.Persistence.Repositories;
 
-internal sealed class PartyRepository(PartiesDbContext db) : IPartyRepository
+/// <summary>
+/// Les lectures passent par <see cref="VisibleAsync"/> : un compte limité ne voit que ses tiers autorisés
+/// (phase 6). Téléphone et NNI : vérifiés sur tous les tiers (l'unicité vaut pour tous).
+/// </summary>
+internal sealed class PartyRepository(PartiesDbContext db, PartyVisibility visibility, FieldProtector protector) : IPartyRepository
 {
     // Les comptes par agence (OwnsMany) sont toujours chargés avec le tiers.
-    public Task<Party?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
-        db.Parties.FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+    public async Task<Party?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
+        await (await VisibleAsync(db.Parties, cancellationToken)).FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
 
     public async Task<IReadOnlyList<Party>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(ids);
+
+        return ids.Count == 0
+            ? []
+            : await (await VisibleAsync(db.Parties.AsNoTracking(), cancellationToken))
+                .Where(p => ids.Contains(p.Id))
+                .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Party>> GetByIdsIgnoringScopeAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ids);
 
@@ -23,7 +41,9 @@ internal sealed class PartyRepository(PartiesDbContext db) : IPartyRepository
     {
         ArgumentNullException.ThrowIfNull(filter);
 
-        var query = db.Parties.AsNoTracking();
+        var query = filter.IgnoreAccountScope
+            ? db.Parties.AsNoTracking()
+            : await VisibleAsync(db.Parties.AsNoTracking(), cancellationToken);
 
         if (!filter.IncludeArchived)
         {
@@ -50,20 +70,31 @@ internal sealed class PartyRepository(PartiesDbContext db) : IPartyRepository
             : [.. parties.Where(p => Matches(p, filter.Search))];
     }
 
-    public Task<int> CountAsync(bool includeArchived, CancellationToken cancellationToken) =>
-        includeArchived
-            ? db.Parties.CountAsync(cancellationToken)
-            : db.Parties.CountAsync(p => !p.IsArchived, cancellationToken);
+    public async Task<int> CountAsync(bool includeArchived, CancellationToken cancellationToken)
+    {
+        var visible = await VisibleAsync(db.Parties, cancellationToken);
+        return includeArchived
+            ? await visible.CountAsync(cancellationToken)
+            : await visible.CountAsync(p => !p.IsArchived, cancellationToken);
+    }
 
-    public Task<bool> PhoneExistsAsync(PartyPhone phone, Guid? excludingPartyId, CancellationToken cancellationToken) =>
-        db.Parties.AnyAsync(
-            p => p.Phone == phone && (excludingPartyId == null || p.Id != excludingPartyId),
+    // Comparé sur l'empreinte : le texte chiffré change à chaque écriture.
+    public Task<bool> PhoneExistsAsync(PartyPhone phone, Guid? excludingPartyId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(phone);
+        var index = protector.Index(phone.Value);
+        return db.Parties.AnyAsync(
+            p => EF.Property<string?>(p, PartyConfiguration.PhoneIndex) == index && (excludingPartyId == null || p.Id != excludingPartyId),
             cancellationToken);
+    }
 
-    public Task<bool> NniExistsAsync(string nni, Guid? excludingPartyId, CancellationToken cancellationToken) =>
-        db.Parties.AnyAsync(
-            p => p.Nni == nni && (excludingPartyId == null || p.Id != excludingPartyId),
+    public Task<bool> NniExistsAsync(string nni, Guid? excludingPartyId, CancellationToken cancellationToken)
+    {
+        var index = protector.Index(nni);
+        return db.Parties.AnyAsync(
+            p => EF.Property<string?>(p, PartyConfiguration.NniIndex) == index && (excludingPartyId == null || p.Id != excludingPartyId),
             cancellationToken);
+    }
 
     public async Task<bool> LockAgencyAccountAsync(Guid partyId, Guid agencyId, CancellationToken cancellationToken)
     {
@@ -80,6 +111,18 @@ internal sealed class PartyRepository(PartiesDbContext db) : IPartyRepository
     }
 
     public void Add(Party party) => db.Parties.Add(party);
+
+    private async Task<IQueryable<Party>> VisibleAsync(IQueryable<Party> query, CancellationToken cancellationToken)
+    {
+        var visible = await visibility.GetAsync(cancellationToken);
+        if (!visible.IsLimited)
+        {
+            return query;
+        }
+
+        var allowed = visible.AllowedPartyIds.ToArray();
+        return query.Where(p => allowed.Contains(p.Id));
+    }
 
     /// <summary>
     /// Nom : contient le texte, sans tenir compte de la casse (arabe compris).

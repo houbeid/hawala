@@ -1,3 +1,4 @@
+using Hawala.SharedInfrastructure.Persistence;
 using Hawala.SharedKernel.Messaging;
 using Hawala.SharedKernel.Time;
 using Microsoft.EntityFrameworkCore;
@@ -27,20 +28,24 @@ public static class DependencyInjection
 
         services.TryAddSingleton<IClock, SystemClock>();
 
-        services.AddDbContext<OrganizationDbContext>(options =>
+        // Phase 6 (tour 7d) : connexion partagée de la requête, pour que l'action et sa ligne d'audit
+        // soient dans la même transaction.
+        services.AddSharedConnection(connectionString);
+        services.AddDbContext<OrganizationDbContext>((sp, options) =>
             options.UseNpgsql(
-                connectionString,
+                sp.GetRequiredService<SharedConnection>().Connection,
                 npgsql => npgsql.MigrationsHistoryTable("__ef_migrations_history", OrganizationDbContext.Schema)));
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<OrganizationDbContext>());
+        services.AddScoped<ISharedTransactionParticipant>(sp => sp.GetRequiredService<OrganizationDbContext>());
         services.AddScoped<IAgencyRepository, AgencyRepository>();
         services.AddScoped<IAgencyDirectory, AgencyDirectory>();
         services.AddScoped<AgencySeeder>();
 
         services.AddScoped<IQueryHandler<GetAgenciesQuery, IReadOnlyList<AgencySummary>>, GetAgenciesQueryHandler>();
 
-        // Une seule table, un seul enregistrement : pas de transaction explicite.
-        services.AddScoped<ICommandHandler<ChangeAgencyColorCommand>, ChangeAgencyColorCommandHandler>();
+        // Une seule table, mais la ligne d'audit doit être dans la même transaction (phase 6).
+        services.AddSharedTransactional<ChangeAgencyColorCommand, ChangeAgencyColorCommandHandler>();
 
         return services;
     }

@@ -9,7 +9,9 @@ namespace Parties.Application.Features.Parties.UpdateParty;
 /// </summary>
 /// <param name="Type">Client, Supplier, Staff ou Other.</param>
 /// <param name="InBalanceSheet">Obligatoire : un oubli ne doit pas sortir le tiers du bilan en silence.</param>
+/// <param name="ActorId">Compte connecté, lu dans le JWT (auteur de la ligne d'audit).</param>
 public sealed record UpdatePartyCommand(
+    Guid ActorId,
     Guid PartyId,
     string? Name,
     string? Type,

@@ -12,7 +12,7 @@ PWA React (agents Nouakchott + Dakar, Superviseur)
         ▼
 Caddy (TLS) → Hawala.Api (.NET 10, monolithe modulaire)
         │   modules : Identity, Organization, Parties, Treasury, Ledger, Rates,
-        │             Transfers, Cash, Profit, Balance, Notifications, Compliance
+        │             Transfers, Cash, Profit, Balance, Notifications, Audit
         ▼
 PostgreSQL 17 (un schéma par module)   ·   Hangfire (tâches planifiées)
 ```
@@ -51,7 +51,7 @@ Alternatives écartées : Blazor WebAssembly (lourd au premier chargement sur mo
 
 ## Modules métier
 
-Douze modules, chacun avec son schéma SQL et son API. Ils ne se parlent que par des interfaces publiques ou des événements internes, jamais en lisant les tables d'un autre module.
+Onze modules, chacun avec son schéma SQL et son API. Ils ne se parlent que par des interfaces publiques ou des événements internes, jamais en lisant les tables d'un autre module.
 
 | Module | Responsabilité | Dépend de |
 | --- | --- | --- |
@@ -66,7 +66,7 @@ Douze modules, chacun avec son schéma SQL et son API. Ils ne se parlent que par
 | Bénéfice | Calcul de la marge par transfert et par jour, enregistrement du bénéfice du jour | Transferts, Taux |
 | Bilan | Par caisse, dans sa devise : budget de la caisse − (capital initial + apports nets du patron) ; snapshots datés par caisse | Caisse, Grand livre, Bénéfice |
 | Notifications | Notifications temps réel entre agences (WhatsApp / SMS : plus tard) | Transferts |
-| Audit & conformité | Journal de toutes les actions (avant / après), alertes AML (seuils, fractionnement), point d'intégration HarisAI | Tous (abonné aux événements) |
+| Audit | Journal de toutes les actions (qui, quoi, avant / après, IP, appareil), en insertion seule, écrit dans la transaction de la commande ; aucun service externe | Aucun (appelé par les autres modules via `IAuditLog`) |
 
 ## Modèle de données
 
@@ -108,7 +108,6 @@ Si le test de référence (536 893 MRO) montre un écart, on ajuste le point 4, 
 | ProfitSnapshot | agence, date, taux du jour, bénéfice MRO, détail | Onglet Bénéfice |
 | BalanceSnapshot | agence, date, devise, budget, capital initial, apports du patron, capital pris en compte, résultat net et % | Historique du bilan, une photo par caisse et par jour |
 | AuditLog | qui, quoi, entité, avant / après (JSONB), IP, appareil | Inséré seulement, jamais modifié |
-| ComplianceAlert | règle, tiers, transfert(s), score, statut | Seuils, fractionnement, listes |
 
 ## Moteur comptable
 
@@ -214,7 +213,7 @@ Le périmètre par agence est appliqué par un filtre global EF Core, à partir 
 
 ## Tiers
 
-Décisions validées : un tiers est commun aux deux agences (une fiche), avec un solde par agence (un compte au grand livre par agence) ; un agent ne voit que le solde de son agence, et seulement avec `parties.view_balance`. Type = compte comptable : Client (41), Fournisseur (40), Personnel (42), Autre. Obligatoires : nom (30 caractères) et type ; téléphone (E.164) et NNI facultatifs mais uniques ; nom non unique ; pas de champ Homme / Femme (le « genre » de l'app actuelle désignait banque / non banque). « Considéré comme banque » supprimé (les banques sont des comptes de trésorerie). Plafond de crédit par tiers et par agence, fixé par le Superviseur, bloquant (appliqué en phase 3). Un agent peut créer un tiers (`parties.create`) ; seul le Superviseur le modifie (`parties.manage` : fiche, solde initial, plafond, « dans le bilan », archivage). Le solde initial n'est jamais saisi à la création : toujours par l'écriture d'ouverture de la différence. Téléphone et NNI en clair jusqu'à la phase 6 (chiffrement + empreinte). Pas de suppression : archivage à solde nul dans les deux agences. « Dans le bilan » vrai par défaut, modifiable par le Superviseur.
+Décisions validées : un tiers est commun aux deux agences (une fiche), avec un solde par agence (un compte au grand livre par agence) ; un agent ne voit que le solde de son agence, et seulement avec `parties.view_balance`. Type = compte comptable : Client (41), Fournisseur (40), Personnel (42), Autre. Obligatoires : nom (30 caractères) et type ; téléphone (E.164) et NNI facultatifs mais uniques ; nom non unique ; pas de champ Homme / Femme (le « genre » de l'app actuelle désignait banque / non banque). « Considéré comme banque » supprimé (les banques sont des comptes de trésorerie). Plafond de crédit par tiers et par agence, fixé par le Superviseur, bloquant (appliqué en phase 3). Un agent peut créer un tiers (`parties.create`) ; seul le Superviseur le modifie (`parties.manage` : fiche, solde initial, plafond, « dans le bilan », archivage). Le solde initial n'est jamais saisi à la création : toujours par l'écriture d'ouverture de la différence. Téléphone et NNI chiffrés au repos depuis la phase 6 (AES-GCM + empreinte HMAC pour l'unicité). Pas de suppression : archivage à solde nul dans les deux agences. « Dans le bilan » vrai par défaut, modifiable par le Superviseur.
 
 ## Budget de la caisse
 
@@ -322,7 +321,7 @@ hawala/
 │     │  └─ Identity.Contracts/      # ce que les autres modules ont le droit d'appeler
 │     ├─ Organization/  ├─ Parties/  ├─ Treasury/  ├─ Ledger/
 │     ├─ Rates/  ├─ Transfers/  ├─ Cash/  ├─ Profit/
-│     └─ Balance/  ├─ Notifications/  └─ Compliance/
+│     └─ Balance/  ├─ Notifications/  └─ Audit/
 ├─ tests/
 │  ├─ Ledger.Tests/                # équilibre, contre-passation, soldes
 │  ├─ Transfers.Tests/             # bénéfice 536 893, bilan −261 005
@@ -370,10 +369,10 @@ Le cœur comptable vient en premier : tout le reste écrit dedans. Chaque phase 
 3. **Transferts** : taux du jour, formulaire en 3 étapes, répartition des paiements, crédit, livraison, annulation avec motif, historique, temps réel entre agences.
 4. **Caisse** : encaissements, décaissements, virements internes, approvisionnement et retrait du patron, budget de caisse enregistré chaque jour, contrôle de cohérence.
 5. **Bénéfice + Bilan** : calculs, snapshots, tableaux de bord. Validation avec les chiffres de l'app actuelle (536 893 et −261 005). **Fait (21 octobre 2026)** : écran « Bénéfice » et bénéfice du jour enregistré ; bilan par caisse (deux caisses, deux capitaux, sans total converti) ; tableau de bord (par caisse : envoyé, non livrés, livré, taux de livraison en nombre) ; 699 tests sur PostgreSQL.
-6. **Sécurité avancée** : modèles de rôles, périmètre par tiers, plafonds, audit lisible.
+6. **Sécurité avancée** : modèles de rôles, périmètre par tiers, plafonds, audit lisible. **Fait (22 octobre 2026)** : socle de l'audit fait le 21 octobre 2026 (module Audit, journal en insertion seule écrit dans la transaction de la commande, aucun service externe) ; ajouts / retraits de permissions par compte (seul un Superviseur les fixe, un Superviseur garde tout, un changement de rôle les efface, tracés dans l'audit) ; gestion des comptes de son agence par un non-Superviseur qui a `users.manage` (sans rôle, agence ni permissions) ; « Limiter les tiers » (un compte limité ne voit et n'utilise que ses tiers, ceux qu'il crée y entrent, les transferts restent filtrés par agence, le budget compte tous les tiers) ; plafonds par compte (par transfert, par jour, crédit par jour, dans la devise de l'agence, refus net avec le montant restant, jamais pour un Superviseur, effacés au changement d'agence ou de rôle) ; sessions et appareils (chacun voit et ferme les siennes, le Superviseur celles de tous, effet immédiat par le « sid » du jeton, déconnexion en direct par SignalR, dernière connexion) ; chiffrement au repos du téléphone et du NNI des tiers et de la pièce d'identité d'une livraison sans code (AES-GCM, unicité par empreinte, une clé en variable d'environnement sauvegardée hors du serveur) ; lecture de l'audit (`audit.view`, Superviseur, seulement les actions, texte lisible construit par l'interface) ; réglages et corrections tracés (comptes, tiers, caisse, transferts, taux, capital, couleur d'agence ; pas les opérations courantes) ; limitation de débit (10 connexions par minute et par IP, 300 requêtes par minute et par compte) ; 823 tests sur PostgreSQL. La 2FA reste à discuter.
 7. **Hors ligne + reçu** : file d'attente, synchronisation, reçu PDF.
 8. **Migration + mise en service** : import des tiers et de leurs soldes à la date de démarrage, sans les anciens transferts, période en parallèle, bascule.
-9. **Conformité** : alertes AML (seuils, fractionnement), branchement HarisAI. Plus tard : notifications clients par WhatsApp / SMS.
+Phase 9 (conformité : alertes AML, HarisAI) supprimée le 21 octobre 2026 : pas d'intégration HarisAI. Les notifications clients par WhatsApp / SMS restent reportées (hors V1).
 
 ## Questions ouvertes
 

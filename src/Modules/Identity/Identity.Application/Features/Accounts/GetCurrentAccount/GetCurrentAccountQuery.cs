@@ -7,6 +7,7 @@ public sealed record GetCurrentAccountQuery(Guid AccountId) : IQuery<CurrentAcco
 
 /// <summary>Ce que l'interface affiche sur l'utilisateur connecté (nom, rôle, agence…).</summary>
 /// <param name="Agency">Agence de l'agent ; null pour un Superviseur, qui voit les deux.</param>
+/// <param name="Permissions">Permissions effectives (rôle + ajouts − retraits), triées : l'interface n'affiche que les actions permises. Le serveur revérifie toujours.</param>
 public sealed record CurrentAccount(
     Guid Id,
     string Email,
@@ -14,7 +15,8 @@ public sealed record CurrentAccount(
     string FullName,
     string Role,
     bool MustChangePassword,
-    CurrentAccountAgency? Agency);
+    CurrentAccountAgency? Agency,
+    IReadOnlyList<string> Permissions);
 
 /// <summary>Résumé de l'agence, pour le badge et la couleur de l'interface.</summary>
 public sealed record CurrentAccountAgency(Guid Id, string Code, string Name, string Color);

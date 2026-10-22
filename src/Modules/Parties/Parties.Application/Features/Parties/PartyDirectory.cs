@@ -3,19 +3,24 @@ using Parties.Contracts;
 
 namespace Parties.Application.Features.Parties;
 
-/// <summary>Implémentation de la porte publique des noms de tiers.</summary>
+/// <summary>
+/// Implémentation de la porte publique des noms de tiers.
+/// Noms et budget : tous les tiers, même hors de la liste d'un compte limité (règle du 21 octobre 2026 :
+/// il voit tous les transferts de son agence, et le budget vaut pour toute l'agence).
+/// Le compte d'un tiers pour une opération (mouvement de caisse) : seulement un tiers qu'il voit.
+/// </summary>
 public sealed class PartyDirectory(IPartyRepository parties) : IPartyDirectory
 {
     public async Task<IReadOnlyDictionary<Guid, string>> GetNamesAsync(
         IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken)
     {
-        var found = await parties.GetByIdsAsync(ids, cancellationToken);
+        var found = await parties.GetByIdsIgnoringScopeAsync(ids, cancellationToken);
         return found.ToDictionary(p => p.Id, p => p.Name);
     }
 
     public async Task<IReadOnlyList<PartyAccountRef>> ListBalanceSheetAccountsAsync(Guid agencyId, CancellationToken cancellationToken)
     {
-        var found = await parties.ListAsync(new PartyFilter(InBalanceSheet: true, IncludeArchived: true), cancellationToken);
+        var found = await parties.ListAsync(new PartyFilter(InBalanceSheet: true, IncludeArchived: true, IgnoreAccountScope: true), cancellationToken);
         return [.. found
             .Select(p => (Party: p, Account: p.AgencyAccounts.SingleOrDefault(a => a.AgencyId == agencyId)))
             .Where(x => x.Account is not null)

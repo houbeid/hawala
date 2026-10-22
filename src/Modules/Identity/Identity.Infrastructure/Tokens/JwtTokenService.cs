@@ -27,7 +27,7 @@ internal sealed class JwtTokenService : IAccessTokenIssuer
         _signingCredentials = new SigningCredentials(_options.CreateSigningKey(), SecurityAlgorithms.HmacSha256);
     }
 
-    public AccessToken Issue(UserAccount account)
+    public AccessToken Issue(UserAccount account, Guid sessionId)
     {
         ArgumentNullException.ThrowIfNull(account);
 
@@ -39,6 +39,7 @@ internal sealed class JwtTokenService : IAccessTokenIssuer
             new(HawalaClaimTypes.Subject, account.Id.ToString()),
             new(HawalaClaimTypes.SecurityVersion, account.SecurityVersion.ToString(CultureInfo.InvariantCulture)),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new(HawalaClaimTypes.SessionId, sessionId.ToString()),
         };
 
         if (account.MustChangePassword)

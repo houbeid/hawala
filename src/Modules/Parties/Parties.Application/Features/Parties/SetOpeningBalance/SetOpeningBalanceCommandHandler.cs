@@ -1,3 +1,4 @@
+using Audit.Contracts;
 using Hawala.SharedKernel.Messaging;
 using Hawala.SharedKernel.Money;
 using Hawala.SharedKernel.Results;
@@ -22,7 +23,8 @@ public sealed class SetOpeningBalanceCommandHandler(
     IAgencyDirectory agencies,
     ILedger ledger,
     IUnitOfWork unitOfWork,
-    IClock clock)
+    IClock clock,
+    IAuditLog audit)
     : ICommandHandler<SetOpeningBalanceCommand>
 {
     public const string EntryType = "Parties.OpeningBalance";
@@ -53,6 +55,7 @@ public sealed class SetOpeningBalanceCommandHandler(
             return valid.Error;
         }
 
+        var before = party.AgencyAccounts.SingleOrDefault(a => a.AgencyId == agency.Id)?.OpeningBalance;
         var difference = party.ChangeOpeningBalance(agency.Id, amount);
         if (difference.IsFailure)
         {
@@ -72,6 +75,19 @@ public sealed class SetOpeningBalanceCommandHandler(
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        if (difference.Value != 0m)
+        {
+            var audited = await PartyAudit.RecordAsync(
+                audit, PartyAudit.OpeningBalanceChanged, party.Id, command.ActorId,
+                [new AuditChange("openingBalance", PartyAudit.Text(before), PartyAudit.Text(amount))],
+                cancellationToken, agency.Id);
+            if (audited.IsFailure)
+            {
+                return audited.Error;
+            }
+        }
+
         return Result.Success();
     }
 

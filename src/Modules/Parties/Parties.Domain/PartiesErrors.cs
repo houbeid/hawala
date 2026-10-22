@@ -95,4 +95,23 @@ public static class PartiesErrors
                 "Parties.Phone.Invalid",
                 "Le numéro doit être au format international, ex. +222 22 12 34 56 ou +221 77 123 45 67.");
     }
+
+    /// <summary>« Limiter les tiers » d'un compte (phase 6).</summary>
+    public static class Scope
+    {
+        public static readonly Error SupervisorOnly =
+            Error.Forbidden("Parties.Scope.SupervisorOnly", "Seul un Superviseur fixe les tiers autorisés d'un compte.");
+
+        public static readonly Error AccountNotFound =
+            Error.NotFound("Parties.Scope.AccountNotFound", "Compte introuvable.");
+
+        public static readonly Error SupervisorSeesAll =
+            Error.Conflict("Parties.Scope.SupervisorSeesAll", "Un Superviseur voit toujours tous les tiers : il ne peut pas être limité.");
+
+        public static readonly Error LimitedRequired =
+            Error.Validation("Parties.Scope.LimitedRequired", "Indiquer si le compte est limité (true ou false).");
+
+        public static readonly Error PartyNotFound =
+            Error.Validation("Parties.Scope.PartyNotFound", "Un des tiers choisis n'existe pas.");
+    }
 }

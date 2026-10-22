@@ -1,3 +1,4 @@
+using Audit.Contracts;
 using Hawala.SharedKernel.Messaging;
 using Hawala.SharedKernel.Results;
 using Hawala.SharedKernel.Text;
@@ -12,7 +13,7 @@ namespace Identity.Application.Features.Users.CreateUser;
 
 /// <summary>
 /// Crée le compte et ses identifiants dans une seule transaction (voir l'enregistrement en Infrastructure).
-/// POINT OUVERT : l'audit « qui a créé ce compte » arrivera avec le module Audit.
+/// Tracé dans l'audit (« Identity.Account.Created ») dans la même transaction ; jamais le mot de passe temporaire.
 /// </summary>
 public sealed class CreateUserCommandHandler(
     IUserAccountRepository accounts,
@@ -20,7 +21,8 @@ public sealed class CreateUserCommandHandler(
     ITemporaryPasswordGenerator passwords,
     IAgencyDirectory agencies,
     IUnitOfWork unitOfWork,
-    IClock clock)
+    IClock clock,
+    IAuditLog audit)
     : ICommandHandler<CreateUserCommand, CreatedUser>
 {
     public async Task<Result<CreatedUser>> Handle(CreateUserCommand command, CancellationToken cancellationToken)
@@ -46,6 +48,21 @@ public sealed class CreateUserCommandHandler(
         if (!EnumNames.TryParse<RoleTemplate>(command.Role, out var role))
         {
             return IdentityErrors.Account.RoleInvalid;
+        }
+
+        // Règle validée le 21 octobre 2026 : hors Superviseur, un compte de son agence, jamais un Superviseur.
+        var manager = await AccountManager.LoadAsync(accounts, command.ActorId, cancellationToken);
+        if (!manager.IsSupervisor)
+        {
+            if (role == RoleTemplate.Supervisor)
+            {
+                return IdentityErrors.Account.SupervisorOnly;
+            }
+
+            if (command.AgencyId is { } requested && requested != Guid.Empty && requested != manager.AgencyId)
+            {
+                return IdentityErrors.Account.OtherAgency;
+            }
         }
 
         // L'agence doit exister dans le module Organisation (la règle agent / Superviseur est dans le Domain).
@@ -86,6 +103,25 @@ public sealed class CreateUserCommandHandler(
         accounts.Add(account.Value);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return new CreatedUser(account.Value.Id, temporaryPassword);
+        var newAccount = account.Value;
+        var audited = await AccountAudit.RecordAsync(
+            audit,
+            AccountAudit.Created,
+            newAccount,
+            command.ActorId,
+            [
+                AccountAudit.Change("fullName", null, newAccount.FullName),
+                AccountAudit.Change("email", null, newAccount.Email.Value),
+                AccountAudit.Change("phone", null, newAccount.Phone?.Value),
+                AccountAudit.Change("role", null, newAccount.Role),
+                AccountAudit.Change("agencyId", null, newAccount.AgencyId),
+            ],
+            cancellationToken);
+        if (audited.IsFailure)
+        {
+            return audited.Error;
+        }
+
+        return new CreatedUser(newAccount.Id, temporaryPassword);
     }
 }

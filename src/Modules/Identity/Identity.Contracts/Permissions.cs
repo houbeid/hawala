@@ -69,9 +69,12 @@ public static class Permissions
     /// <summary>Saisir le capital initial et enregistrer le bilan du jour (Superviseur seulement).</summary>
     public const string BalanceManage = "balance.manage";
 
+    /// <summary>Lire le journal d'audit (Superviseur ; règle validée le 22 octobre 2026).</summary>
+    public const string AuditView = "audit.view";
+
     public static readonly IReadOnlyList<string> All =
     [
         UsersManage, AgenciesManage, TreasuryManage, CashBudgetRead, PartiesCreate, PartiesManage, PartiesViewBalance,
-        RatesSetDaily, ProfitView, TransfersCreate, TransfersCredit, TransfersDeliver, TransfersCancel, TransfersManageCode, TransfersEditRate, CashCreate, CashManage, CashBudgetSave, BalanceView, BalanceManage,
+        RatesSetDaily, ProfitView, TransfersCreate, TransfersCredit, TransfersDeliver, TransfersCancel, TransfersManageCode, TransfersEditRate, CashCreate, CashManage, CashBudgetSave, BalanceView, BalanceManage, AuditView,
     ];
 }

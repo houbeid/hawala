@@ -1,3 +1,4 @@
+using Hawala.SharedKernel.Money;
 using Microsoft.EntityFrameworkCore;
 using Transfers.Application.Abstractions;
 using Transfers.Domain.Transfers;
@@ -9,6 +10,32 @@ internal sealed class TransferRepository(TransfersDbContext db) : ITransferRepos
     private const string LikeEscape = "\\";
 
     public void Add(Transfer transfer) => db.Transfers.Add(transfer);
+
+    public Task LockCreatorAsync(Guid createdBy, CancellationToken cancellationToken) =>
+        db.Database.ExecuteSqlAsync(
+            $"SELECT pg_advisory_xact_lock(hashtextextended({createdBy.ToString()}, 0))", cancellationToken);
+
+    // Sans le filtre de périmètre : ce sont les transferts de ce compte, quel que soit ce que voit l'appelant.
+    public async Task<(decimal Paid, decimal Credit)> SumCreatedAsync(
+        Guid createdBy, Guid sourceAgencyId, DateTimeOffset from, DateTimeOffset toExclusive, CancellationToken cancellationToken)
+    {
+        var totals = await db.Transfers
+            .IgnoreQueryFilters()
+            .Where(t => t.CreatedBy == createdBy
+                && t.SourceAgencyId == sourceAgencyId
+                && t.Status != TransferStatus.Cancelled
+                && t.CreatedAt >= from
+                && t.CreatedAt < toExclusive)
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                Paid = g.Sum(t => t.SourceCurrency == Currency.MRO ? t.AmountMro : t.AmountXof),
+                Credit = g.Sum(t => t.CreditAmount),
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return totals is null ? (0m, 0m) : (totals.Paid, totals.Credit);
+    }
 
     // Sans le filtre de périmètre : la clé appartient au compte, même s'il a changé d'agence depuis.
     public Task<Transfer?> FindByIdempotencyKeyAsync(Guid createdBy, string idempotencyKey, CancellationToken cancellationToken) =>

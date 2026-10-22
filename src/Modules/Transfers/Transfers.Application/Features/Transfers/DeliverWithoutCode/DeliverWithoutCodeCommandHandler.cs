@@ -1,3 +1,4 @@
+using Audit.Contracts;
 using Hawala.SharedKernel.Messaging;
 using Hawala.SharedKernel.Results;
 using Hawala.SharedKernel.Time;
@@ -18,7 +19,8 @@ public sealed class DeliverWithoutCodeCommandHandler(
     ITransferRepository transfers,
     DeliveryPosting posting,
     IUnitOfWork unitOfWork,
-    IClock clock)
+    IClock clock,
+    IAuditLog audit)
     : ICommandHandler<DeliverWithoutCodeCommand, DeliveredTransfer>
 {
     public async Task<Result<DeliveredTransfer>> Handle(DeliverWithoutCodeCommand command, CancellationToken cancellationToken)
@@ -58,6 +60,14 @@ public sealed class DeliverWithoutCodeCommandHandler(
 
         transfer.AttachDeliveryEntry(entry.Value);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Jamais la pièce d'identité : la ligne reprend l'historique du transfert, qui ne la contient pas.
+        var audited = await TransferAudit.RecordAsync(
+            audit, TransferAudit.DeliveredWithoutCode, transfer, command.ActorId, transfer.DestinationAgencyId, cancellationToken);
+        if (audited.IsFailure)
+        {
+            return audited.Error;
+        }
 
         var warnings = await posting.NegativeBalancesAsync(lines.Value, cancellationToken);
         return new DeliveredTransfer(

@@ -11,4 +11,8 @@ public static class ClaimsPrincipalExtensions
     /// </summary>
     public static bool TryGetAccountId(this ClaimsPrincipal user, out Guid accountId) =>
         Guid.TryParse(user.FindFirstValue(HawalaClaimTypes.Subject), out accountId);
+
+    /// <summary>Session du jeton (« sid », phase 6) ; null pour un jeton émis avant.</summary>
+    public static Guid? GetSessionId(this ClaimsPrincipal user) =>
+        Guid.TryParse(user.FindFirstValue(HawalaClaimTypes.SessionId), out var sessionId) ? sessionId : null;
 }

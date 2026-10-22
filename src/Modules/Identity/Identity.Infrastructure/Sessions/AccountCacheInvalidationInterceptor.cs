@@ -1,4 +1,5 @@
 using Identity.Domain.Accounts;
+using Identity.Domain.RefreshTokens;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Caching.Memory;
@@ -6,7 +7,8 @@ using Microsoft.Extensions.Caching.Memory;
 namespace Identity.Infrastructure.Sessions;
 
 /// <summary>
-/// Retire du cache l'état de sécurité de chaque compte modifié, juste avant l'enregistrement.
+/// Retire du cache l'état de sécurité de chaque compte modifié, et l'état de chaque session dont un jeton change,
+/// juste avant l'enregistrement.
 /// Automatique : aucun handler (blocage, rôle, mot de passe) n'a besoin d'y penser.
 /// </summary>
 internal sealed class AccountCacheInvalidationInterceptor(IMemoryCache cache) : SaveChangesInterceptor
@@ -38,6 +40,15 @@ internal sealed class AccountCacheInvalidationInterceptor(IMemoryCache cache) : 
             if (entry.State is EntityState.Modified or EntityState.Deleted)
             {
                 cache.Remove(SessionValidator.CacheKey(entry.Entity.Id));
+            }
+        }
+
+        // Un jeton révoqué (déconnexion, session fermée, blocage…) : sa session est relue à la requête suivante.
+        foreach (var entry in context.ChangeTracker.Entries<RefreshToken>())
+        {
+            if (entry.State is EntityState.Modified or EntityState.Deleted)
+            {
+                cache.Remove(SessionValidator.SessionCacheKey(entry.Entity.FamilyId));
             }
         }
     }

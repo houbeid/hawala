@@ -1,3 +1,4 @@
+using Hawala.SharedInfrastructure.Persistence;
 using Hawala.SharedKernel.Messaging;
 using Hawala.SharedKernel.Time;
 using Microsoft.EntityFrameworkCore;
@@ -24,16 +25,20 @@ public static class DependencyInjection
 
         services.TryAddSingleton<IClock, SystemClock>();
 
-        services.AddDbContext<RatesDbContext>(options =>
+        // Phase 6 (tour 7d) : connexion partagée de la requête, pour que l'action et sa ligne d'audit
+        // soient dans la même transaction.
+        services.AddSharedConnection(connectionString);
+        services.AddDbContext<RatesDbContext>((sp, options) =>
             options.UseNpgsql(
-                connectionString,
+                sp.GetRequiredService<SharedConnection>().Connection,
                 npgsql => npgsql.MigrationsHistoryTable("__ef_migrations_history", RatesDbContext.Schema)));
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<RatesDbContext>());
+        services.AddScoped<ISharedTransactionParticipant>(sp => sp.GetRequiredService<RatesDbContext>());
         services.AddScoped<IDailyRateRepository, DailyRateRepository>();
         services.AddScoped<Rates.Contracts.IDailyRates, DailyRates>();
 
-        services.AddScoped<ICommandHandler<SetDailyRateCommand>, SetDailyRateCommandHandler>();
+        services.AddSharedTransactional<SetDailyRateCommand, SetDailyRateCommandHandler>();
         services.AddScoped<IQueryHandler<GetDailyRateQuery, DailyRateView>, GetDailyRateQueryHandler>();
         services.AddScoped<IQueryHandler<ListDailyRatesQuery, IReadOnlyList<DailyRateView>>, ListDailyRatesQueryHandler>();
 

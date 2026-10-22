@@ -1,3 +1,4 @@
+using Audit.Contracts;
 using Hawala.SharedKernel.Messaging;
 using Hawala.SharedKernel.Results;
 using Hawala.SharedKernel.Time;
@@ -12,7 +13,7 @@ namespace Identity.Application.Features.Users.ResetUserPassword;
 /// toutes les sessions coupées. Possible sur un compte bloqué et sur un autre Superviseur.
 /// Un compte bloqué reste bloqué : la réinitialisation ne débloque pas (le déblocage est une action à part).
 /// Doit être exécuté dans une transaction : ASP.NET Identity enregistre le nouveau mot de passe lui-même.
-/// POINT OUVERT : l'audit « qui a réinitialisé ce mot de passe » arrivera avec le module Audit.
+/// Tracé dans l'audit (« Identity.Account.PasswordReset ») : le fait seulement, jamais le mot de passe.
 /// </summary>
 public sealed class ResetUserPasswordCommandHandler(
     IUserAccountRepository accounts,
@@ -20,7 +21,8 @@ public sealed class ResetUserPasswordCommandHandler(
     ITemporaryPasswordGenerator passwords,
     IRefreshTokenRepository refreshTokens,
     IUnitOfWork unitOfWork,
-    IClock clock)
+    IClock clock,
+    IAuditLog audit)
     : ICommandHandler<ResetUserPasswordCommand, ResetPassword>
 {
     public async Task<Result<ResetPassword>> Handle(ResetUserPasswordCommand command, CancellationToken cancellationToken)
@@ -31,8 +33,10 @@ public sealed class ResetUserPasswordCommandHandler(
             return IdentityErrors.Account.CannotResetOwnPassword;
         }
 
+        var manager = await AccountManager.LoadAsync(accounts, command.ActorId, cancellationToken);
         var account = await accounts.GetByIdAsync(command.UserId, cancellationToken);
-        if (account is null)
+        // Hors de son périmètre, le compte n'existe pas pour lui (même réponse qu'un id inconnu).
+        if (account is null || !manager.CanManage(account))
         {
             return IdentityErrors.Account.NotFound;
         }
@@ -53,6 +57,14 @@ public sealed class ResetUserPasswordCommandHandler(
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var audited = await AccountAudit.RecordAsync(
+            audit, AccountAudit.PasswordReset, account, command.ActorId, [], cancellationToken);
+        if (audited.IsFailure)
+        {
+            return audited.Error;
+        }
+
         return new ResetPassword(temporaryPassword);
     }
 }
