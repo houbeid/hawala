@@ -85,6 +85,8 @@ Les montants sont en `numeric(18,2)` avec leur code devise (MRO ou XOF), jamais 
 
 Si le test de référence (536 893 MRO) montre un écart, on ajuste le point 4, jamais la règle des transferts.
 
+Saisie (décision du 22 octobre 2026) : à Nouakchott, l'agent saisit le montant en MRO par défaut (à Dakar en FCFA, avec une bascule pour l'autre devise). L'interface en déduit le FCFA entier (MRO × 5 000 ÷ taux, arrondi au plus proche) qu'elle envoie au serveur : le FCFA reste la référence enregistrée, et comme 1 FCFA vaut moins d'1 MRO, le MRO recalculé par le serveur est exactement celui tapé.
+
 | Entité | Champs clés | Remarques |
 | --- | --- | --- |
 | Country | code, nom, devise | MR → MRO, SN → XOF |
@@ -345,7 +347,7 @@ Conventions d'API :
 
 ## Architecture du frontend
 
-Décidée le 22 octobre 2026. La PWA vit dans `frontend/` ; elle se construit avec la méthode `react-frontend-builder` (types, puis client API, puis temps réel, puis état partagé, puis composants UI, puis composants métier, puis pages ; un écran complet et testé par tour). La mise en page vient des maquettes (canvas « Hawala MR–SN — Maquettes PWA ») ; quand une maquette contredit le backend ou le skill métier, le backend fait foi.
+Décidée le 22 octobre 2026. Nom affiché de la marque : **ETS EL-VETH** (clé `app.name`, titre de la page) ; « Hawala » reste le nom technique du projet. La PWA vit dans `frontend/` ; elle se construit avec la méthode `react-frontend-builder` (types, puis client API, puis temps réel, puis état partagé, puis composants UI, puis composants métier, puis pages ; un écran complet et testé par tour). La mise en page vient des maquettes (canvas « Hawala MR–SN — Maquettes PWA ») ; quand une maquette contredit le backend ou le skill métier, le backend fait foi.
 
 ### Vue d'ensemble
 

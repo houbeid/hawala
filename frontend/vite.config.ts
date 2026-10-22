@@ -26,5 +26,8 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     css: false,
+    // Les parcours complets (création d'un transfert : trois étapes de saisie simulée) dépassent 5 s
+    // quand toute la suite tourne en parallèle.
+    testTimeout: 15_000,
   },
 });

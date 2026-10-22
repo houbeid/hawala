@@ -29,6 +29,15 @@
   --green: #17692f;
   --green-bg: #dff2e4;
 
+  /* Panneau de marque des écrans de connexion (ordinateur) : toujours sombre, dans les deux thèmes.
+     Les couleurs d'agence y sont éclaircies pour rester lisibles sur le fond encre. */
+  --panel-bg: #161a22;
+  --panel-fg: #f5f2eb;
+  --panel-muted: #b8bfcb;
+  --panel-line: #353c4a;
+  --nkc-on-panel: #5fd17f;
+  --dkr-on-panel: #7db4ff;
+
   color-scheme: light;
 }
 
@@ -48,6 +57,8 @@
   --red-bg: #42201d;
   --green: #82d99f;
   --green-bg: #173a26;
+
+  --panel-bg: #181c25;
 
   color-scheme: dark;
 }
@@ -75,6 +86,12 @@
   --color-agency: var(--agency);
   --color-nkc: var(--nkc);
   --color-dkr: var(--dkr);
+  --color-panel: var(--panel-bg);
+  --color-panel-fg: var(--panel-fg);
+  --color-panel-muted: var(--panel-muted);
+  --color-panel-line: var(--panel-line);
+  --color-nkc-on-panel: var(--nkc-on-panel);
+  --color-dkr-on-panel: var(--dkr-on-panel);
 
   --font-sans: 'IBM Plex Sans', 'IBM Plex Sans Arabic', system-ui, sans-serif;
   --font-arabic: 'IBM Plex Sans Arabic', 'IBM Plex Sans', system-ui, sans-serif;
@@ -117,5 +134,23 @@
   /* Icône qui indique un sens (retour, chevron) : retournée en RTL. */
   [dir='rtl'] .flip-rtl {
     transform: scaleX(-1);
+  }
+}
+
+/* Impression (choix du 22 octobre 2026) : seule la carte « .print-area » sort sur papier (succès d'un
+   transfert : référence, montants, parties, code). Le vrai reçu PDF viendra en phase 7. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    border: 0;
   }
 }

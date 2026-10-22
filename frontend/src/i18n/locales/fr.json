@@ -1,9 +1,7 @@
 {
   "app": {
-    "name": "Hawala",
-    "corridor": "Nouakchott ↔ Dakar",
-    "skeleton": "Application en construction : la connexion arrive au prochain tour.",
-    "rateOfDay": "Format des taux"
+    "name": "ETS EL-VETH",
+    "corridor": "Nouakchott · Dakar"
   },
   "language": {
     "label": "Langue",
@@ -14,7 +12,118 @@
     "label": "Thème",
     "light": "Clair",
     "dark": "Sombre",
-    "system": "Système"
+    "system": "Système",
+    "toDark": "Passer en thème sombre",
+    "toLight": "Passer en thème clair"
+  },
+  "nav": {
+    "transfers": "Transferts",
+    "newTransfer": "Nouveau",
+    "parties": "Tiers",
+    "cash": "Caisse",
+    "budget": "Budget de la caisse",
+    "rates": "Taux du jour",
+    "profit": "Bénéfice",
+    "balance": "Bilan par caisse",
+    "dashboard": "Tableau de bord",
+    "users": "Comptes",
+    "treasury": "Comptes de trésorerie",
+    "audit": "Journal d'audit",
+    "sessions": "Mes appareils",
+    "more": "Plus",
+    "groups": {
+      "operations": "Opérations",
+      "pilotage": "Pilotage",
+      "administration": "Administration",
+      "account": "Mon compte",
+      "preferences": "Préférences"
+    }
+  },
+  "shell": {
+    "mainNav": "Navigation principale",
+    "sideNav": "Menu de l'application",
+    "allAgencies": "Les deux agences",
+    "agencyChoice": "Agence affichée",
+    "agencyLocked": "Agence {{name}}",
+    "readOnly": "Lecture seule",
+    "preferences": "Langue et thème",
+    "preferencesHint": "Choisissez la langue et le thème de l'application.",
+    "offlinePreferences": "Hors ligne — langue et thème",
+    "offlineBanner": "Hors ligne : les données affichées peuvent ne pas être à jour.",
+    "rtlHint": "Passer en arabe inverse tout l'écran de droite à gauche.",
+    "forbidden": "Votre compte n'a pas accès à cet écran.",
+    "comingSoon": "Cet écran arrive bientôt."
+  },
+  "common": {
+    "close": "Fermer",
+    "offline": "Pas de réseau",
+    "showPassword": "Afficher le mot de passe",
+    "hidePassword": "Masquer le mot de passe",
+    "notFoundTitle": "Page introuvable",
+    "backHome": "Retour à l'accueil",
+    "loading": "Chargement…",
+    "retry": "Réessayer"
+  },
+  "roles": {
+    "Supervisor": "Superviseur",
+    "Agent": "Agent",
+    "Cashier": "Caissier",
+    "ReadOnly": "Consultation"
+  },
+  "auth": {
+    "loading": "Ouverture de la session…",
+    "brand": {
+      "label": "Présentation de {{name}}",
+      "tagline": "Transferts d'argent entre Nouakchott et Dakar",
+      "nouakchott": "Nouakchott",
+      "dakar": "Dakar",
+      "caisses": "L'ouguiya (MRO) à Nouakchott, le franc CFA à Dakar."
+    },
+    "signOut": "Se déconnecter",
+    "login": {
+      "title": "Connexion",
+      "loginLabel": "Email ou téléphone",
+      "loginPlaceholder": "nom@example.com ou +222 …",
+      "passwordLabel": "Mot de passe",
+      "submit": "Se connecter",
+      "submitting": "Connexion en cours…",
+      "forgotten": "Mot de passe oublié ? Contactez votre Superviseur.",
+      "offlineHelp": "La connexion demande Internet. Reconnectez-vous dès que le réseau revient."
+    },
+    "ended": {
+      "expired": "Votre session a expiré. Reconnectez-vous.",
+      "signedOut": "Votre session a été fermée par le Superviseur. Reconnectez-vous ou contactez-le.",
+      "sessionClosed": "Cette session a été fermée depuis un autre appareil."
+    },
+    "changePassword": {
+      "title": "Choisissez un nouveau mot de passe",
+      "why": "Votre mot de passe est temporaire. Vous devez le changer pour continuer.",
+      "currentLabel": "Mot de passe temporaire",
+      "newLabel": "Nouveau mot de passe",
+      "confirmLabel": "Confirmer le nouveau mot de passe",
+      "rulesTitle": "Règles du mot de passe",
+      "rules": {
+        "minLength": "8 caractères minimum",
+        "hasDigit": "Au moins un chiffre"
+      },
+      "ruleMet": "respectée",
+      "ruleNotMet": "non respectée",
+      "submit": "Enregistrer et continuer",
+      "submitting": "Enregistrement…",
+      "otherSessions": "Les autres sessions de ce compte seront fermées."
+    },
+    "unreachable": {
+      "title": "Serveur injoignable",
+      "message": "Impossible de joindre le serveur. Vérifiez le réseau, puis réessayez.",
+      "retry": "Réessayer"
+    },
+    "validation": {
+      "loginRequired": "Saisissez un email ou un numéro de téléphone.",
+      "passwordRequired": "Saisissez le mot de passe.",
+      "currentPasswordRequired": "Saisissez le mot de passe temporaire.",
+      "passwordRules": "Le mot de passe doit avoir 8 caractères minimum, dont au moins un chiffre.",
+      "confirmMismatch": "Les deux mots de passe ne sont pas identiques."
+    }
   },
   "errors": {
     "generic": "Une erreur est survenue. Réessayez.",
@@ -44,6 +153,324 @@
         "Expired": "Votre session a expiré. Reconnectez-vous.",
         "Revoked": "Votre session a été fermée. Reconnectez-vous."
       }
+    },
+    "Rates": {
+      "Rate": {
+        "NotFound": "Taux du jour non fixé pour cette date.",
+        "PurchaseInvalid": "Le prix d’achat doit être positif, avec au plus 2 décimales.",
+        "SaleInvalid": "Le prix de vente doit être positif, avec au plus 2 décimales."
+      }
+    },
+    "Transfers": {
+      "Filter": {
+        "PeriodInvalid": "La période est invalide (la date de début dépasse celle de fin).",
+        "PageInvalid": "Page invalide.",
+        "AgencyNotAllowed": "Cette agence est hors de votre périmètre.",
+        "AgencyRequired": "Choisissez une agence.",
+        "AgencyNotFound": "Agence introuvable.",
+        "StatusInvalid": "Statut inconnu.",
+        "DirectionInvalid": "Sens inconnu.",
+        "DirectionNeedsAgency": "Choisissez une agence pour filtrer par sens."
+      },
+      "Transfer": {
+        "AmountInvalid": "Le montant en FCFA doit être un nombre entier positif.",
+        "BeneficiaryRequired": "Le bénéficiaire est obligatoire.",
+        "SenderRequired": "L'expéditeur est obligatoire.",
+        "CorridorInvalid": "Un transfert va d’une agence à l’autre.",
+        "DestinationNotFound": "Agence de destination introuvable.",
+        "FutureDate": "La date de l'opération ne peut pas être dans le futur.",
+        "IdempotencyKeyRequired": "Envoi incomplet. Réessayez.",
+        "RateNotSet": "Le taux du jour n'est pas fixé pour cette date : demandez au Superviseur de le saisir.",
+        "SourceNotAllowed": "Vous ne pouvez créer un transfert que depuis votre agence.",
+        "SourceRequired": "Choisissez l'agence d'envoi.",
+        "TextTooLong": "Texte trop long."
+      },
+      "Payment": {
+        "AccountDuplicated": "Un compte apparaît deux fois dans la répartition.",
+        "AccountNotAllowed": "Ce compte n'est pas un compte actif de l'agence d'envoi.",
+        "AmountNotPositive": "Chaque montant de la répartition doit être positif.",
+        "CurrencyMismatch": "Le compte n'est pas dans la devise de l'agence d'envoi.",
+        "Required": "Ajoutez au moins un compte de paiement.",
+        "TotalMismatch": "Le total réparti doit être égal au montant payé."
+      },
+      "Limits": {
+        "PerTransferExceeded": "Plafond par transfert de votre compte dépassé : au plus {{remainingText}}.",
+        "PerDayExceeded": "Plafond par jour de votre compte dépassé : il reste {{remainingText}}.",
+        "CreditPerDayExceeded": "Plafond de crédit par jour de votre compte dépassé : il reste {{remainingText}}."
+      },
+      "Credit": {
+        "NotAllowed": "Votre compte ne peut pas faire crédit.",
+        "PartyNotFound": "Tiers du crédit introuvable : choisissez-le dans la liste ou créez-le.",
+        "PartyArchived": "Ce tiers est archivé : il ne peut pas recevoir de crédit.",
+        "NotNeeded": "Tout est payé : rien à mettre à crédit, désactivez le crédit.",
+        "LimitExceeded": "Plafond de crédit du tiers dépassé dans cette agence : le Superviseur doit d'abord relever le plafond."
+      }
+    },
+    "Parties": {
+      "Party": {
+        "NameEmpty": "Le nom du tiers est obligatoire.",
+        "NameTooLong": "Le nom du tiers dépasse 30 caractères.",
+        "TypeInvalid": "Type de tiers inconnu.",
+        "PhoneTaken": "Ce numéro appartient déjà à un autre tiers : cherchez-le dans la liste.",
+        "NniTaken": "Ce NNI appartient déjà à un autre tiers.",
+        "NotFound": "Tiers introuvable."
+      },
+      "Phone": {
+        "Invalid": "Le numéro doit être au format international, ex. +222 22 12 34 56 ou +221 77 123 45 67."
+      }
+    }
+  },
+  "rates": {
+    "today": "aujourd'hui",
+    "yesterday": "hier",
+    "tomorrow": "demain",
+    "previousDay": "Jour précédent",
+    "nextDay": "Jour suivant",
+    "backToToday": "Aujourd'hui",
+    "purchaseLabel": "Prix d'achat (taux du marché)",
+    "saleLabel": "Prix de vente (taux appliqué au client)",
+    "purchaseShort": "Achat",
+    "saleShort": "Vente",
+    "date": "Date",
+    "gap": "Écart de commission",
+    "per5000": "pour 5 000 FCFA",
+    "negativeGap": "Le prix de vente est inférieur au prix d’achat : la commission sera négative ({{gap}} pour 5 000 FCFA). Vous pouvez enregistrer.",
+    "existingKeepRate": "Les transferts déjà créés gardent leur taux. Le nouveau prix de vente ne s’applique qu’aux suivants.",
+    "notSet": "Aucun taux fixé pour cette date. Sans taux du jour, les agents ne peuvent pas créer de transfert.",
+    "notSetReadOnly": "Aucun taux fixé pour cette date : les transferts ne peuvent pas être créés. Le Superviseur doit le fixer.",
+    "copyPrevious": "Reprendre le taux de la veille",
+    "previousCopied": "Taux de la veille repris. Vérifiez-les, puis enregistrez.",
+    "noPreviousRate": "Aucun taux n’était fixé la veille.",
+    "save": "Enregistrer le taux",
+    "saving": "Enregistrement…",
+    "saved": "Taux du {{date}} enregistré.",
+    "offline": "Fixer ou modifier un taux demande le réseau : un taux ne se met jamais en file d’attente.",
+    "history": "Historique",
+    "historyEmpty": "Aucun taux sur cette période.",
+    "validation": {
+      "empty": "Saisissez le taux.",
+      "invalid": "Saisissez un nombre (ex. 3600 ou 3604,77).",
+      "tooPrecise": "Deux décimales au maximum.",
+      "notPositive": "Le taux doit être supérieur à zéro."
+    }
+  },
+  "agencies": {
+    "NKC": "Nouakchott",
+    "DKR": "Dakar"
+  },
+  "transfers": {
+    "new": "Nouveau transfert",
+    "detailTitle": "Transfert",
+    "toDeliver": "À livrer",
+    "routeText": "{{from}} → {{to}}",
+    "codeLocked": "Code bloqué",
+    "tableCaption": "Transferts de la période",
+    "counter": "{{shown}} / {{all}} transferts",
+    "status": {
+      "NotDelivered": "Non livré",
+      "Delivered": "Livré",
+      "Cancelled": "Annulé"
+    },
+    "direction": {
+      "Sent": "Envoyé",
+      "Received": "Reçu"
+    },
+    "columns": {
+      "time": "Heure",
+      "reference": "Référence",
+      "route": "Sens",
+      "parties": "Expéditeur → bénéficiaire",
+      "paid": "Payé",
+      "profit": "Bénéfice",
+      "status": "Statut"
+    },
+    "cards": {
+      "label": "Chiffres de la période",
+      "count_one": "{{count}} transfert",
+      "count_other": "{{count}} transferts",
+      "incoming": "Entrées · {{agency}}",
+      "outgoing": "Sorties · {{agency}}",
+      "sentByOther": "Montant envoyé · {{agency}}",
+      "deliveredByOther": "Montant livré · {{agency}}",
+      "bought": "Total acheté",
+      "sold": "Total vendu",
+      "notDelivered": "Non livrés",
+      "profit": "Bénéfice de la période",
+      "rates": "Taux du jour",
+      "saleRate": "Prix de vente",
+      "rateNotSet": "Taux non fixé",
+      "chooseAgency": "Cartes pour :"
+    },
+    "filters": {
+      "search": "Recherche",
+      "searchPlaceholder": "Référence, expéditeur, bénéficiaire, note",
+      "today": "Aujourd'hui",
+      "button": "Filtres",
+      "buttonCount": "Filtres · {{count}}",
+      "from": "Du",
+      "to": "Au",
+      "status": "Statut",
+      "direction": "Sens",
+      "allStatuses": "Tous les statuts",
+      "allDirections": "Envoyés et reçus",
+      "backToToday": "Revenir à aujourd'hui",
+      "remove": "retirer ce filtre"
+    },
+    "empty": {
+      "title": "Aucun transfert",
+      "hint": "Aucun transfert ne correspond à la période et aux filtres choisis."
+    },
+    "pagination": {
+      "label": "Pages",
+      "previous": "Précédents",
+      "next": "Suivants",
+      "position": "Page {{page}} sur {{count}}"
+    },
+    "create": {
+      "steps": {
+        "1": "Montant",
+        "2": "Paiement",
+        "3": "Personnes",
+        "label": "Étapes"
+      },
+      "source": "Agence d'envoi",
+      "sourceLocked": "Verrouillée sur votre agence.",
+      "destination": "Agence de réception",
+      "amountXof": "Montant en FCFA ({{city}})",
+      "amountMro": "Montant en MRO ({{city}})",
+      "formula": "{{xof}} × {{rate}} ÷ 5 000, arrondi à l’unité",
+      "rate": "Taux du jour",
+      "rateLocked": "Fixé par le Superviseur, non modifiable ici.",
+      "rateNotSet": "Le taux du jour n'est pas encore fixé pour cette date. Demandez au Superviseur de le saisir, puis réessayez.",
+      "operationAt": "Date et heure de l'opération",
+      "operationNow": "Date de l'opération : maintenant",
+      "changeDate": "Changer",
+      "totalToPay": "Total à payer",
+      "split": "Répartition du paiement",
+      "noAccounts": "Aucun compte de trésorerie actif dans cette agence : le Superviseur doit en ouvrir un.",
+      "account": "Compte {{n}}",
+      "chooseAccount": "Choisir un compte",
+      "removeLine": "Retirer la ligne {{n}}",
+      "lineAmount": "Montant de la ligne {{n}}",
+      "unit": "Unité de saisie",
+      "addAccount": "Ajouter un compte",
+      "totalSplit": "Total réparti",
+      "unpaid": "Reste non payé",
+      "sender": "Expéditeur",
+      "beneficiary": "Bénéficiaire",
+      "note": "Note (facultatif)",
+      "recap": "Récapitulatif",
+      "recapDeliver": "À livrer · {{city}}",
+      "recapCollect": "À encaisser · {{city}}",
+      "recapPaid": "Payé",
+      "back": "Retour",
+      "continue": "Continuer",
+      "submit": "Créer le transfert",
+      "creating": "Création…",
+      "offline": "La création d’un transfert demande le réseau pour l’instant (la file d’attente hors ligne viendra plus tard).",
+      "done": {
+        "title": "Transfert enregistré",
+        "replayedTitle": "Transfert déjà enregistré",
+        "code": "Code de retrait",
+        "paid": "Payé par le client",
+        "codeOnce": "Ce code ne sera plus jamais affiché. Imprimez le reçu maintenant. L'expéditeur remet lui-même ce code au bénéficiaire ; l'agence qui livre ne peut pas le lire.",
+        "noCodeReplayed": "Ce transfert avait déjà été enregistré (envoi répété) : son code n'est plus affiché. En cas de perte, demandez un nouveau code depuis la fiche.",
+        "print": "Imprimer",
+        "finish": "Terminé"
+      },
+      "validation": {
+        "sourceRequired": "Choisissez l'agence d'envoi.",
+        "amount": {
+          "empty": "Saisissez le montant.",
+          "invalid": "Saisissez un nombre entier.",
+          "tooPrecise": "Le FCFA est toujours entier.",
+          "notPositive": "Le montant doit être supérieur à zéro.",
+          "tooPreciseMRO": "Le montant d'un transfert en MRO est entier.",
+          "tooPreciseXOF": "Le FCFA est toujours entier."
+        },
+        "dateInvalid": "Date invalide.",
+        "dateFuture": "La date de l'opération ne peut pas être dans le futur.",
+        "accountRequired": "Choisissez un compte.",
+        "accountDuplicated": "Ce compte est déjà dans la répartition.",
+        "payment": {
+          "empty": "Saisissez le montant.",
+          "invalid": "Saisissez un nombre.",
+          "tooPrecise": "Trop de décimales (2 en MRO, 3 en MRU, aucune en FCFA).",
+          "notPositive": "Le montant doit être supérieur à zéro."
+        },
+        "overpaid": "Le total réparti dépasse le montant à payer.",
+        "totalMismatch": "Le total réparti doit être égal au montant à payer.",
+        "creditNotNeeded": "Tout est payé : rien à mettre à crédit.",
+        "paymentRequired": "Ajoutez au moins un compte.",
+        "senderRequired": "Saisissez l'expéditeur.",
+        "beneficiaryRequired": "Saisissez le bénéficiaire.",
+        "tooLong": "200 caractères au plus.",
+        "noteTooLong": "500 caractères au plus.",
+        "creditPartyRequired": "Choisissez le tiers qui porte le crédit."
+      },
+      "creditPart": "Part à crédit",
+      "recapCredit": "À crédit · {{name}}",
+      "credit": {
+        "toggle": "Activer le crédit",
+        "on": "Activé",
+        "off": "Désactivé",
+        "party": "Tiers à débiter (crédit)",
+        "part": "Part à crédit : {{amount}}, ajoutée à ce que {{name}} nous doit.",
+        "current": "Solde actuel dans cette agence : {{balance}}.",
+        "owesUs": "il nous doit {{amount}}",
+        "weOwe": "on lui doit {{amount}}",
+        "settled": "soldé",
+        "limit": "Plafond de crédit : {{limit}}.",
+        "noLimit": "Pas de plafond de crédit.",
+        "overLimit": "Ce crédit dépasserait le plafond du tiers ({{limit}}) : le transfert sera refusé. Réduisez la part à crédit ou payez davantage."
+      },
+      "amountUnit": "Saisir en :",
+      "amountMroInput": "Montant payé en MRO ({{city}})",
+      "amountXofResult": "Montant en FCFA ({{city}})",
+      "formulaFromMro": "{{mro}} × 5 000 ÷ {{rate}}, arrondi au FCFA"
+    }
+  },
+  "dashboard": {
+    "period": "Période",
+    "presets": {
+      "today": "Aujourd'hui",
+      "yesterday": "Hier",
+      "last7": "7 derniers jours",
+      "month": "Ce mois"
+    },
+    "caisseLabel": "Caisse de {{city}}",
+    "sentBy": "Envoyés par {{city}}",
+    "transfers": "Transferts",
+    "delivered": "Livrés",
+    "notDelivered": "Non livrés",
+    "deliveryRate": "Taux de livraison",
+    "noTransfers": "Aucun transfert envoyé sur la période.",
+    "toTransfers": "Voir les transferts",
+    "toBalance": "Voir le bilan par caisse"
+  },
+  "parties": {
+    "types": {
+      "Client": "Client",
+      "Supplier": "Fournisseur",
+      "Staff": "Personnel",
+      "Other": "Autre"
+    },
+    "picker": {
+      "searchPlaceholder": "Nom ou téléphone",
+      "results": "Tiers trouvés",
+      "none": "Aucun tiers trouvé.",
+      "create": "Créer un tiers",
+      "change": "Changer"
+    },
+    "create": {
+      "title": "Nouveau tiers",
+      "hint": "Le minimum pour faire crédit ; le Superviseur complète la fiche plus tard.",
+      "name": "Nom (30 caractères au plus)",
+      "type": "Type",
+      "phone": "Téléphone (facultatif, avec l'indicatif)",
+      "nameRequired": "Le nom est obligatoire.",
+      "submit": "Créer le tiers",
+      "creating": "Création…"
     }
   }
 }

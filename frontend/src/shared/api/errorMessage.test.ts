@@ -36,6 +36,16 @@ describe('errorMessage', () => {
     expect(errorMessage(i18n, other)).toBe('Une erreur est survenue. Réessayez.');
   });
 
+  it('met en forme le montant restant d’un plafond dépassé', () => {
+    const error = new ApiError({
+      status: 409,
+      code: 'Transfers.Limits.PerDayExceeded',
+      details: { remaining: 250000, currency: 'MRO' },
+    });
+    // Espaces spéciales (groupes, unité) ramenées à des espaces ordinaires pour la comparaison.
+    expect(errorMessage(i18n, error).replace(/\s/g, ' ')).toBe('Plafond par jour de votre compte dépassé : il reste 250 000 MRO.');
+  });
+
   it('donne un message générique pour une erreur inattendue', () => {
     expect(errorMessage(i18n, new TypeError('x'))).toBe('Une erreur est survenue. Réessayez.');
   });
