@@ -10,6 +10,7 @@ import { Sheet } from '@/shared/ui/Sheet';
 import { TextField } from '@/shared/ui/TextField';
 import { useOnlineStatus } from '@/shared/useOnlineStatus';
 import { cancelTransfer, editTransferTexts, newTransferCode, unlockTransferCode } from '../api';
+import { ReceiptButton } from '../components/ReceiptButton';
 import { WithdrawalCode } from '../components/WithdrawalCode';
 import { useTransferAction } from '../queries';
 import type { EditTransferTextsRequest, NewWithdrawalCode, Transfer } from '../types';
@@ -36,7 +37,14 @@ export function TransferActions({ transfer, actions, onReload }: Props) {
   const online = useOnlineStatus();
   const [open, setOpen] = useState<Open>(null);
   const any =
-    actions.editTexts || actions.cancel || actions.newCode || actions.unlock || actions.editAmounts || actions.deliver || actions.deliverWithoutCode;
+    actions.editTexts ||
+    actions.cancel ||
+    actions.newCode ||
+    actions.unlock ||
+    actions.editAmounts ||
+    actions.deliver ||
+    actions.deliverWithoutCode ||
+    actions.receipt;
   if (!any) return null;
 
   if (!online) {
@@ -94,6 +102,7 @@ export function TransferActions({ transfer, actions, onReload }: Props) {
             {t('transfers.detail.actions.newCode')}
           </Button>
         )}
+        {actions.receipt && <ReceiptButton transferId={transfer.id} reference={transfer.reference} />}
         {actions.cancel && (
           <Button variant="danger" icon={<Icon name="x" />} onClick={() => setOpen('cancel')}>
             {t('transfers.detail.actions.cancel')}
@@ -300,9 +309,7 @@ function NewCodeSheet({ transfer, onClose }: { transfer: Transfer; onClose: () =
               <WithdrawalCode code={result.withdrawalCode} />
             </div>
             <Notice tone="warning">{t('transfers.detail.newCodeOnce')}</Notice>
-            <Button fullWidth icon={<Icon name="doc" />} onClick={() => window.print()}>
-              {t('transfers.create.done.print')}
-            </Button>
+            <ReceiptButton transferId={transfer.id} reference={result.reference} code={result.withdrawalCode} />
             <Button variant="primary" fullWidth onClick={onClose}>
               {t('transfers.create.done.finish')}
             </Button>

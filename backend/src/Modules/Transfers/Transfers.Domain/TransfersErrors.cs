@@ -125,6 +125,24 @@ public static class TransfersErrors
             Error.Validation("Transfers.Delivery.WrongCode", "Code de retrait faux.");
     }
 
+    /// <summary>Reçu PDF de l'expéditeur (règles du 24 octobre 2026).</summary>
+    public static class Receipt
+    {
+        public static readonly Error NotSendingAgency =
+            Error.Forbidden("Transfers.Receipt.NotSendingAgency", "Le reçu se demande à l'agence d'envoi.");
+
+        public static readonly Error NotCodeHolder =
+            Error.Forbidden(
+                "Transfers.Receipt.NotCodeHolder",
+                "Seul le compte qui a obtenu le code peut l'écrire sur le reçu ; les autres demandent le reçu sans code.");
+
+        public static readonly Error WrongCode =
+            Error.Validation("Transfers.Receipt.WrongCode", "Ce code n'est pas celui du transfert.");
+
+        public static readonly Error CodeNotUsable =
+            Error.Conflict("Transfers.Receipt.CodeNotUsable", "Transfert livré ou annulé : le reçu se donne sans code.");
+    }
+
     public static class Code
     {
         public static readonly Error NotLocked =

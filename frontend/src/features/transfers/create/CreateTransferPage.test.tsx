@@ -5,6 +5,7 @@ import type { TreasuryAccount } from '@/features/treasury/types';
 import { todayIso } from '@/shared/format/dates';
 import { agentAccount, dkr, nkc, readOnlyAccount, supervisorAccount } from '@/test/fixtures';
 import { renderApp, signedInAs } from '@/test/renderApp';
+import { stubDownloads } from '@/test/downloads';
 import { apiUrl, server } from '@/test/server';
 import type { CreatedTransfer } from '../types';
 
@@ -32,6 +33,7 @@ const created: CreatedTransfer = {
 /** Serveur de la création : taux du jour, comptes, et POST /transfers qui enregistre ce qu'il reçoit. */
 function creationServer(options: { rate?: boolean; saleRate?: number; post?: () => Response } = {}) {
   const posts: { body: unknown; key: string | null }[] = [];
+  const receipts: { id: unknown; body: unknown }[] = [];
   const accountQueries: (string | null)[] = [];
   server.use(
     http.get(apiUrl('/rates/:date'), () =>
@@ -48,8 +50,12 @@ function creationServer(options: { rate?: boolean; saleRate?: number; post?: () 
       posts.push({ body: await request.json(), key: request.headers.get('Idempotency-Key') });
       return options.post ? options.post() : HttpResponse.json(created, { status: 201 });
     }),
+    http.post(apiUrl('/transfers/:id/receipt'), async ({ params, request }) => {
+      receipts.push({ id: params.id, body: await request.json() });
+      return new HttpResponse(new Uint8Array([0x25, 0x50, 0x44, 0x46]), { headers: { 'Content-Type': 'application/pdf' } });
+    }),
   );
-  return { posts, accountQueries };
+  return { posts, receipts, accountQueries };
 }
 
 const mroField = () => screen.getByLabelText(/Montant payé en MRO/);
@@ -116,7 +122,7 @@ describe('Création d’un transfert — Agent de Nouakchott', () => {
   });
 
   it('crée un transfert réparti sur deux comptes, dont un saisi en MRU, et affiche le code une seule fois', async () => {
-    const { posts } = creationServer();
+    const { posts, receipts } = creationServer();
     const { user } = renderApp('/transfers/new');
 
     await fillAmount(user);
@@ -148,6 +154,15 @@ describe('Création d’un transfert — Agent de Nouakchott', () => {
     expect(screen.getByRole('group', { name: 'Code de retrait' })).toBeInTheDocument();
     expect(screen.getByText('482917')).toHaveClass('sr-only');
     expect(screen.getByText(/Ce code ne sera plus jamais affiché/)).toBeInTheDocument();
+
+    // Pas d'imprimante : le reçu PDF, qui porte le code, est envoyé à l'expéditeur.
+    expect(screen.queryByRole('button', { name: 'Imprimer' })).not.toBeInTheDocument();
+    const downloads = stubDownloads();
+    await user.click(screen.getByRole('button', { name: 'Envoyer le reçu avec le code' }));
+    expect(await screen.findByText('Reçu téléchargé : envoyez-le au client.')).toBeInTheDocument();
+    expect(receipts).toEqual([{ id: created.id, body: { code: '482917' } }]);
+    expect(downloads.files).toEqual(['Recu-TR-NKC-20261022-000043.pdf']);
+    downloads.restore();
 
     expect(posts).toHaveLength(1);
     expect(posts[0]!.key).toMatch(/^[0-9a-f-]{36}$/);

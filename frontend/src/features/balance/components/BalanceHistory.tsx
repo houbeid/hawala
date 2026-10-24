@@ -1,12 +1,14 @@
 import { useTranslation } from 'react-i18next';
 import type { Agency } from '@/features/organization/types';
 import { formatDayShort, formatDayTimeShort } from '@/shared/format/dates';
-import { formatAmount, formatPercent } from '@/shared/format/money';
+import { formatAmount, formatPercent, unitOf } from '@/shared/format/money';
+import { HistoryChart } from '@/shared/ui/HistoryChart';
+import { historySeries } from '@/shared/ui/historySeries';
 import type { BalanceSnapshot } from '../types';
 
-// Bilans enregistrés (30 derniers jours), une liste par caisse dans sa devise, plus récent d'abord : jour, heure,
-// résultat net et rapport au capital (« — » si le capital n'était pas saisi ce jour-là).
-// POINT OUVERT : la courbe des maquettes 12 / D5 viendra avec celle du budget (Recharts), dans un tour à part.
+// Bilans enregistrés (30 derniers jours), par caisse dans sa devise (jamais deux devises sur un même graphique) :
+// courbe du résultat net (maquettes 12 / D5, à partir de deux jours ; un jour sans capital saisi n'y figure pas),
+// puis la liste, plus récent d'abord : jour, heure, résultat net et rapport au capital (« — » sans capital).
 
 export function BalanceHistory({ snapshots, agencies }: { snapshots: BalanceSnapshot[]; agencies: Agency[] }) {
   const { t } = useTranslation();
@@ -17,9 +19,17 @@ export function BalanceHistory({ snapshots, agencies }: { snapshots: BalanceSnap
         {agencies.map((agency) => {
           const own = snapshots.filter((s) => s.agencyId === agency.id).sort((a, b) => b.date.localeCompare(a.date));
           const name = t(`agencies.${agency.code}`, { defaultValue: agency.name });
+          const currency = own[0]?.currency;
           return (
             <div key={agency.id} className="flex flex-col gap-1.5">
               <h3 className="m-0 text-sm font-semibold text-muted">{t('balance.caisse', { name })}</h3>
+              {currency && (
+                <HistoryChart
+                  title={`${t('balance.caisse', { name })} · ${t('balance.history.chartTitle', { unit: unitOf(currency) })}`}
+                  points={historySeries(own, (s) => s.date, (s) => s.netResult)}
+                  formatValue={(value) => formatAmount(value, currency, { signed: true, maxDecimals: 0 })}
+                />
+              )}
               {own.length === 0 ? (
                 <p className="m-0 text-sm text-muted">{t('balance.history.empty')}</p>
               ) : (

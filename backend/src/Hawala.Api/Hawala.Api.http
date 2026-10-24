@@ -292,6 +292,17 @@ Content-Type: application/json
 POST {{host}}/api/v1/transfers/{{transferId}}/new-code
 Authorization: Bearer {{token}}
 
+### Reçu PDF avec le code (seulement le compte qui a obtenu le code : créateur ou auteur du dernier nouveau code)
+POST {{host}}/api/v1/transfers/{{transferId}}/receipt
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "code": "000000" }
+
+### Reçu PDF sans code (duplicata : agence d'envoi ou Superviseur)
+GET {{host}}/api/v1/transfers/{{transferId}}/receipt
+Authorization: Bearer {{token}}
+
 ### Historique d'un transfert
 GET {{host}}/api/v1/transfers/{{transferId}}/history
 Authorization: Bearer {{token}}

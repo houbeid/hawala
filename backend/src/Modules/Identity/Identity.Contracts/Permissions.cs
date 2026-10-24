@@ -72,9 +72,12 @@ public static class Permissions
     /// <summary>Lire le journal d'audit (Superviseur ; règle validée le 22 octobre 2026).</summary>
     public const string AuditView = "audit.view";
 
+    /// <summary>Exporter les listes en Excel (Superviseur, Consultation ; tableau du 20 octobre 2026, format du 24 octobre).</summary>
+    public const string Export = "export";
+
     public static readonly IReadOnlyList<string> All =
     [
         UsersManage, AgenciesManage, TreasuryManage, CashBudgetRead, PartiesCreate, PartiesManage, PartiesViewBalance,
-        RatesSetDaily, ProfitView, TransfersCreate, TransfersCredit, TransfersDeliver, TransfersCancel, TransfersManageCode, TransfersEditRate, CashCreate, CashManage, CashBudgetSave, BalanceView, BalanceManage, AuditView,
+        RatesSetDaily, ProfitView, TransfersCreate, TransfersCredit, TransfersDeliver, TransfersCancel, TransfersManageCode, TransfersEditRate, CashCreate, CashManage, CashBudgetSave, BalanceView, BalanceManage, AuditView, Export,
     ];
 }

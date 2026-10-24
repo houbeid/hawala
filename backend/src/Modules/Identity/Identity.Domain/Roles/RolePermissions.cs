@@ -24,8 +24,8 @@ public static class RolePermissions
     private static readonly HashSet<string> Cashier =
         [Permissions.TransfersDeliver, Permissions.CashCreate, Permissions.CashBudgetRead, Permissions.CashBudgetSave];
 
-    // La consultation : lit seulement.
-    private static readonly HashSet<string> ReadOnly = [Permissions.PartiesViewBalance, Permissions.CashBudgetRead];
+    // La consultation : lit et exporte.
+    private static readonly HashSet<string> ReadOnly = [Permissions.PartiesViewBalance, Permissions.CashBudgetRead, Permissions.Export];
 
     public static IReadOnlySet<string> For(RoleTemplate role) => role switch
     {

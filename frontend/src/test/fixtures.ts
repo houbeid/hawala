@@ -49,6 +49,7 @@ export const supervisorAccount: CurrentAccount = {
     'cash.budget.save',
     'cash.create',
     'cash.manage',
+    'export',
     'parties.create',
     'parties.manage',
     'parties.view_balance',
@@ -84,7 +85,7 @@ export const readOnlyAccount: CurrentAccount = {
   role: 'ReadOnly',
   mustChangePassword: false,
   agency: { id: dkr.id, code: 'DKR', name: 'Dakar', color: '#1565C0' },
-  permissions: ['cash.budget.read', 'parties.view_balance'],
+  permissions: ['cash.budget.read', 'export', 'parties.view_balance'],
 };
 
 export const agentAccount: CurrentAccount = {

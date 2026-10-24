@@ -187,6 +187,18 @@ public static class ApiClient
     public static Task<HttpResponseMessage> NewTransferCodeAsync(this HttpClient client, string? accessToken, Guid id) =>
         client.SendAsync(HttpMethod.Post, $"/api/v1/transfers/{id}/new-code", accessToken: accessToken);
 
+    /// <param name="queryString">Filtres déjà encodés, sans « ? ».</param>
+    public static Task<HttpResponseMessage> ExportTransfersAsync(this HttpClient client, string? accessToken, string queryString) =>
+        client.SendAsync(HttpMethod.Get, $"/api/v1/transfers/export?{queryString}", accessToken: accessToken);
+
+    /// <summary>Duplicata du reçu (PDF, sans code).</summary>
+    public static Task<HttpResponseMessage> GetTransferReceiptAsync(this HttpClient client, string? accessToken, Guid id) =>
+        client.SendAsync(HttpMethod.Get, $"/api/v1/transfers/{id}/receipt", accessToken: accessToken);
+
+    /// <summary>Reçu avec le code de retrait (PDF), demandé par le compte qui détient le code.</summary>
+    public static Task<HttpResponseMessage> GetTransferReceiptWithCodeAsync(this HttpClient client, string? accessToken, Guid id, string? code) =>
+        client.SendAsync(HttpMethod.Post, $"/api/v1/transfers/{id}/receipt", body: new { code }, accessToken: accessToken);
+
     /// <param name="body">Objet anonyme : version, senderInfo, beneficiaryInfo, note, reason.</param>
     public static Task<HttpResponseMessage> EditTransferTextsAsync(this HttpClient client, string? accessToken, Guid id, object body) =>
         client.SendAsync(HttpMethod.Put, $"/api/v1/transfers/{id}", body: body, accessToken: accessToken);

@@ -1,19 +1,28 @@
 import { useTranslation } from 'react-i18next';
 import { formatDayShort, formatDayTimeShort } from '@/shared/format/dates';
-import { formatAmount } from '@/shared/format/money';
+import { formatAmount, unitOf } from '@/shared/format/money';
+import { HistoryChart } from '@/shared/ui/HistoryChart';
+import { historySeries } from '@/shared/ui/historySeries';
 import type { CashBudgetSnapshot } from '../types';
 
-// Historique des budgets enregistrés (30 derniers jours, plus récent d'abord) : date, heure, budget, nombre
-// d'alertes gardées avec la photo.
-// POINT OUVERT : la courbe de la maquette 10 (Recharts, prévu dans l'architecture) viendra dans un tour à part ;
-// la liste donne déjà les mêmes valeurs en texte.
+// Historique des budgets enregistrés (30 derniers jours) : la courbe du budget (maquette 10, à partir de deux jours),
+// puis la liste, plus récent d'abord : date, heure, budget, nombre d'alertes gardées avec la photo. La liste est la
+// vue en texte de la courbe. Une seule caisse, donc une seule devise.
 
 export function SnapshotHistory({ snapshots }: { snapshots: CashBudgetSnapshot[] }) {
   const { t } = useTranslation();
   const sorted = [...snapshots].sort((a, b) => b.date.localeCompare(a.date));
+  const currency = sorted[0]?.currency;
   return (
     <section className="flex flex-col gap-2" aria-label={t('budget.history.title')}>
       <h2 className="m-0 text-base font-bold">{t('budget.history.title')}</h2>
+      {currency && (
+        <HistoryChart
+          title={t('budget.history.chartTitle', { unit: unitOf(currency) })}
+          points={historySeries(sorted, (s) => s.date, (s) => s.budget)}
+          formatValue={(value) => formatAmount(value, currency, { maxDecimals: 0 })}
+        />
+      )}
       {sorted.length === 0 ? (
         <p className="m-0 text-muted">{t('budget.history.empty')}</p>
       ) : (

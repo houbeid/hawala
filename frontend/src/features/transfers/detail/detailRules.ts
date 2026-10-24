@@ -19,6 +19,8 @@ export interface DetailActions {
   deliver: boolean;
   /** Livrer sans code (pièce d'identité + motif) : Superviseur (transfers.manage_code), même code bloqué. */
   deliverWithoutCode: boolean;
+  /** Reçu PDF sans code (duplicata) : agence d'envoi ou Superviseur (transfers.create), quel que soit le statut. */
+  receipt: boolean;
 }
 
 export function availableActions(transfer: Transfer, account: CurrentAccount): DetailActions {
@@ -37,6 +39,7 @@ export function availableActions(transfer: Transfer, account: CurrentAccount): D
       can('transfers.deliver') &&
       (account.role === 'Supervisor' || account.agency?.id === transfer.destinationAgencyId),
     deliverWithoutCode: open && can('transfers.manage_code'),
+    receipt: can('transfers.create') && sendingSide,
   };
 }
 

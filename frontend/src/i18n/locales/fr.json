@@ -132,7 +132,10 @@
     "notFound": "Élément introuvable ou hors de votre agence.",
     "Api": {
       "RateLimited": "Trop de tentatives. Patientez un instant.",
-      "RateLimitedWait": "Trop de tentatives. Réessayez dans {{seconds}} s."
+      "RateLimitedWait": "Trop de tentatives. Réessayez dans {{seconds}} s.",
+      "Export": {
+        "TooLarge": "Plus de {{maxRows}} lignes : réduisez la période ou ajoutez un filtre."
+      }
     },
     "Identity": {
       "Login": {
@@ -281,6 +284,12 @@
         "DateBeforeTransfer": "La date de livraison ne peut pas précéder le transfert.",
         "NoteTooLong": "Note trop longue (500 caractères au plus).",
         "TotalMismatch": "Le total remis doit être égal au montant du transfert."
+      },
+      "Receipt": {
+        "NotSendingAgency": "Le reçu se demande à l’agence d’envoi.",
+        "NotCodeHolder": "Seul le compte qui a obtenu le code peut l’écrire sur le reçu. Demandez le duplicata sans code.",
+        "WrongCode": "Ce code n’est pas celui du transfert.",
+        "CodeNotUsable": "Transfert livré ou annulé : le reçu se donne sans code."
       }
     },
     "Parties": {
@@ -569,9 +578,8 @@
         "replayedTitle": "Transfert déjà enregistré",
         "code": "Code de retrait",
         "paid": "Payé par le client",
-        "codeOnce": "Ce code ne sera plus jamais affiché. Imprimez le reçu maintenant. L'expéditeur remet lui-même ce code au bénéficiaire ; l'agence qui livre ne peut pas le lire.",
+        "codeOnce": "Ce code ne sera plus jamais affiché. Envoyez le reçu à l’expéditeur maintenant. L’expéditeur remet lui-même ce code au bénéficiaire ; l’agence qui livre ne peut pas le lire.",
         "noCodeReplayed": "Ce transfert avait déjà été enregistré (envoi répété) : son code n'est plus affiché. En cas de perte, demandez un nouveau code depuis la fiche.",
-        "print": "Imprimer",
         "finish": "Terminé"
       },
       "validation": {
@@ -662,7 +670,7 @@
       "newCodeHint": "Un nouveau code de 6 chiffres remplace l'ancien, qui ne marchera plus.",
       "newCodeLocked": "Un nouveau code remplace l'ancien, mais ne débloque pas le transfert : le Superviseur doit aussi le débloquer.",
       "newCodeConfirm": "Créer un nouveau code",
-      "newCodeOnce": "Ce code ne sera plus jamais affiché. Imprimez-le ou transmettez-le à l'expéditeur maintenant.",
+      "newCodeOnce": "Ce code ne sera plus jamais affiché. Envoyez le reçu à l’expéditeur maintenant.",
       "actions": {
         "label": "Actions",
         "editTexts": "Modifier les textes",
@@ -763,6 +771,15 @@
         "toDetail": "Voir la fiche",
         "toList": "Retour aux transferts"
       }
+    },
+    "receipt": {
+      "withCode": "Envoyer le reçu avec le code",
+      "duplicate": "Reçu (duplicata)",
+      "busy": "Préparation du reçu…",
+      "shared": "Reçu partagé.",
+      "downloaded": "Reçu téléchargé : envoyez-le au client.",
+      "offline": "Pas de réseau : le reçu se prépare en ligne.",
+      "codeHint": "Le reçu porte le code de retrait : envoyez-le seulement à l’expéditeur."
     }
   },
   "dashboard": {
@@ -1196,7 +1213,8 @@
       "empty": "Aucun budget enregistré sur cette période.",
       "savedAt": "Enregistré à {{time}}",
       "alerts_one": "{{count}} alerte",
-      "alerts_other": "{{count}} alertes"
+      "alerts_other": "{{count}} alertes",
+      "chartTitle": "Budget enregistré · {{unit}}"
     }
   },
   "profit": {
@@ -1286,7 +1304,8 @@
     },
     "history": {
       "title": "Bilans enregistrés (30 derniers jours)",
-      "empty": "Aucun bilan enregistré."
+      "empty": "Aucun bilan enregistré.",
+      "chartTitle": "Résultat net · {{unit}}"
     }
   },
   "users": {
@@ -1441,7 +1460,8 @@
       },
       "audit": {
         "view": "Lire le journal d’audit"
-      }
+      },
+      "export": "Exporter les listes (Excel)"
     },
     "partyScope": {
       "all": "Tous les tiers",
@@ -1632,5 +1652,15 @@
   "realtime": {
     "reconnecting": "Mises à jour en direct interrompues : reconnexion en cours…",
     "disconnected": "Mises à jour en direct coupées : les nouveautés de l’autre agence n’arrivent plus d’elles-mêmes. Nouvel essai bientôt."
+  },
+  "chart": {
+    "summary": "Courbe : {{title}}, du {{from}} au {{to}}, de {{first}} à {{last}}."
+  },
+  "export": {
+    "button": "Exporter",
+    "busy": "Préparation du fichier…",
+    "shared": "Fichier partagé.",
+    "downloaded": "Fichier Excel téléchargé.",
+    "offline": "Pas de réseau : l’export se fait en ligne."
   }
 }

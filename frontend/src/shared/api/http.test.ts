@@ -118,6 +118,37 @@ describe('createHttpClient', () => {
     expect(error.details).toEqual({ remaining: 125000, currency: 'MRO' });
   });
 
+  it('lit une réponse binaire (PDF) avec le jeton, le corps JSON et le rejeu après 401', async () => {
+    const seen: { auth: string | null; body: unknown }[] = [];
+    server.use(
+      http.post(apiUrl('/files'), async ({ request }) => {
+        seen.push({ auth: request.headers.get('Authorization'), body: await request.json() });
+        if (seen.length === 1) return new HttpResponse(null, { status: 401 });
+        return new HttpResponse(new Uint8Array([0x25, 0x50, 0x44, 0x46]), { headers: { 'Content-Type': 'application/pdf' } });
+      }),
+    );
+    const client = createHttpClient({ auth: tokenSource('t1', 't2') });
+
+    const file = await client.blob('/files', { method: 'POST', body: { code: '123456' } });
+
+    expect(file.type).toBe('application/pdf');
+    expect(new TextDecoder().decode(await file.arrayBuffer())).toBe('%PDF');
+    expect(seen).toEqual([
+      { auth: 'Bearer t1', body: { code: '123456' } },
+      { auth: 'Bearer t2', body: { code: '123456' } },
+    ]);
+  });
+
+  it('un refus sur une réponse binaire reste une ApiError avec son code', async () => {
+    server.use(
+      http.get(apiUrl('/files'), () =>
+        HttpResponse.json({ status: 403, code: 'Transfers.Receipt.NotSendingAgency' }, { status: 403 }),
+      ),
+    );
+    const client = createHttpClient({ auth: tokenSource('t1') });
+    await expect(client.blob('/files')).rejects.toMatchObject({ status: 403, code: 'Transfers.Receipt.NotSendingAgency' });
+  });
+
   it('lit Retry-After sur un 429', async () => {
     server.use(
       http.post(apiUrl('/auth/login'), () =>

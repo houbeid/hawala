@@ -2,6 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { agentAccount, dkr, nkc, supervisorAccount } from '@/test/fixtures';
 import { renderApp, signedInAs } from '@/test/renderApp';
+import { stubDownloads } from '@/test/downloads';
 import { apiUrl, server } from '@/test/server';
 import type { Transfer, TransferList, TransferSummary } from '../types';
 
@@ -164,6 +165,14 @@ describe('Liste des transferts — Agent', () => {
     expect(await screen.findByText('Aucun transfert')).toBeInTheDocument();
   });
 
+  it('sans la permission export, pas de bouton « Exporter »', async () => {
+    listServer(page([transfer()]));
+    renderApp('/transfers');
+
+    await screen.findByRole('link', { name: /TR-NKC/ });
+    expect(screen.queryByRole('button', { name: 'Exporter' })).not.toBeInTheDocument();
+  });
+
   it('pagine par 50', async () => {
     const calls = listServer((url) => page([transfer({ reference: `TR-PAGE-${url.searchParams.get('page') ?? '1'}` })], { totalCount: 120, page: Number(url.searchParams.get('page') ?? 1) }));
     const { user } = renderApp('/transfers');
@@ -178,6 +187,41 @@ describe('Liste des transferts — Agent', () => {
 
 describe('Liste des transferts — Superviseur', () => {
   beforeEach(() => signedInAs(supervisorAccount));
+
+  it('exporte en Excel avec les filtres de l’écran et la langue de l’interface', async () => {
+    listServer(page([transfer({ direction: null })]));
+    const exports: URLSearchParams[] = [];
+    server.use(
+      http.get(apiUrl('/transfers/export'), ({ request }) => {
+        exports.push(new URL(request.url).searchParams);
+        return new HttpResponse(new Uint8Array([0x50, 0x4b]), {
+          headers: { 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+        });
+      }),
+    );
+    const downloads = stubDownloads();
+    const { user } = renderApp('/transfers?from=2026-10-01&to=2026-10-22&status=Delivered&page=2');
+
+    await user.click(await screen.findByRole('button', { name: 'Exporter' }));
+
+    expect(await screen.findByText('Fichier Excel téléchargé.')).toBeInTheDocument();
+    expect(Object.fromEntries(exports[0]!)).toEqual({ from: '2026-10-01', to: '2026-10-22', status: 'Delivered', lang: 'fr' });
+    expect(downloads.files).toEqual(['Transferts-20261001-20261022.xlsx']);
+    downloads.restore();
+  });
+
+  it('explique un export trop gros', async () => {
+    listServer(page([transfer({ direction: null })]));
+    server.use(
+      http.get(apiUrl('/transfers/export'), () =>
+        HttpResponse.json({ status: 400, code: 'Api.Export.TooLarge', maxRows: 10000 }, { status: 400 }),
+      ),
+    );
+    const { user } = renderApp('/transfers');
+
+    await user.click(await screen.findByRole('button', { name: 'Exporter' }));
+    expect(await screen.findByText('Plus de 10000 lignes : réduisez la période ou ajoutez un filtre.')).toBeInTheDocument();
+  });
 
   it('sur « les deux agences » : tous les transferts, cartes après le choix d’une agence, sans filtre de sens', async () => {
     const calls = listServer(page([transfer({ direction: null })]));

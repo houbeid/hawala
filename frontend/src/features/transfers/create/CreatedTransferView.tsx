@@ -3,12 +3,13 @@ import { formatAmount, formatRate } from '@/shared/format/money';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
 import { Notice } from '@/shared/ui/Notice';
+import { ReceiptButton } from '../components/ReceiptButton';
 import { WithdrawalCode } from '../components/WithdrawalCode';
 import type { CreatedTransfer } from '../types';
 
 // Succès (maquette 04) : SEUL écran où le code de retrait apparaît, en six grandes cases. Il n'est jamais
-// relu ensuite (le serveur ne le garde que haché). « Imprimer » imprime cette carte (choix A du
-// 22 octobre 2026) ; le vrai reçu PDF viendra en phase 7.
+// relu ensuite (le serveur ne le garde que haché). Pas d'imprimante en agence (24 octobre 2026) : le reçu PDF,
+// qui porte le code, est envoyé à l'expéditeur (partage du téléphone) ; sans code (envoi répété), le duplicata.
 
 interface Props {
   created: CreatedTransfer;
@@ -74,9 +75,7 @@ export function CreatedTransferView({ created, deliver, paid, credit, sender, be
       </section>
 
       {created.withdrawalCode && <Notice tone="warning">{t('transfers.create.done.codeOnce')}</Notice>}
-      <Button fullWidth icon={<Icon name="doc" />} onClick={() => window.print()}>
-        {t('transfers.create.done.print')}
-      </Button>
+      <ReceiptButton transferId={created.id} reference={created.reference} code={created.withdrawalCode ?? undefined} />
       <Button variant="primary" fullWidth onClick={onDone}>
         {t('transfers.create.done.finish')}
       </Button>

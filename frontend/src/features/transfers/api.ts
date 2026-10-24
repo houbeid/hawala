@@ -81,6 +81,38 @@ export function newTransferCode(http: HttpClient, id: string): Promise<NewWithdr
   return http.post<NewWithdrawalCode>(`/transfers/${id}/new-code`);
 }
 
+/**
+ * Export Excel de la liste (permission export) : mêmes filtres et même périmètre que la liste, sans la page ;
+ * `lang` donne la langue des en-têtes.
+ */
+export function exportTransfers(
+  http: HttpClient,
+  filters: Omit<TransferFilters, 'page'> & { agencyId?: string },
+  lang: 'fr' | 'ar',
+): Promise<Blob> {
+  return http.blob('/transfers/export', {
+    query: {
+      from: filters.from,
+      to: filters.to,
+      status: filters.status,
+      direction: filters.direction,
+      agencyId: filters.agencyId,
+      search: filters.search,
+      lang,
+    },
+  });
+}
+
+/**
+ * Reçu PDF de l'expéditeur (règles du 24 octobre 2026). Avec le code : POST, le code dans le corps (jamais dans
+ * l'adresse), seulement pour le compte qui vient de l'obtenir ; sans : GET, duplicata (agence d'envoi ou Superviseur).
+ */
+export function getTransferReceipt(http: HttpClient, id: string, code?: string): Promise<Blob> {
+  return code === undefined
+    ? http.blob(`/transfers/${id}/receipt`)
+    : http.blob(`/transfers/${id}/receipt`, { method: 'POST', body: { code } });
+}
+
 /** Modification d'argent (Superviseur) : 204 ; 409 VersionConflict si la fiche a changé. */
 export function editTransferAmounts(http: HttpClient, id: string, request: EditTransferAmountsRequest): Promise<void> {
   return http.put<void>(`/transfers/${id}/amounts`, request);

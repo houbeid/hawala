@@ -38,6 +38,11 @@ export function formatDayLong(day: string, language: string): string {
   return `${weekday} ${day.slice(8, 10)}/${day.slice(5, 7)}/${day.slice(0, 4)}`;
 }
 
+/** « 20261024 » : jour dans un nom de fichier (export). */
+export function compactDay(day: string): string {
+  return day.replaceAll('-', '');
+}
+
 /** « 21/10 » : colonne d'un historique. */
 export function formatDayShort(day: string): string {
   return `${day.slice(8, 10)}/${day.slice(5, 7)}`;

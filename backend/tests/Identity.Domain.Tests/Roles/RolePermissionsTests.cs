@@ -66,15 +66,17 @@ public class RolePermissionsTests
         Assert.DoesNotContain(Permissions.PartiesViewBalance, granted);
         Assert.DoesNotContain(Permissions.PartiesCreate, granted);
         Assert.DoesNotContain(Permissions.PartiesManage, granted);
+        Assert.DoesNotContain(Permissions.Export, granted);
     }
 
     [Fact]
-    public void Read_only_reads_balances_and_creates_nothing()
+    public void Read_only_reads_balances_exports_and_creates_nothing()
     {
         var granted = RolePermissions.For(RoleTemplate.ReadOnly);
 
         Assert.Contains(Permissions.PartiesViewBalance, granted);
         Assert.Contains(Permissions.CashBudgetRead, granted);
+        Assert.Contains(Permissions.Export, granted);
         Assert.DoesNotContain(Permissions.TransfersCreate, granted);
         Assert.DoesNotContain(Permissions.TransfersDeliver, granted);
         Assert.DoesNotContain(Permissions.CashCreate, granted);

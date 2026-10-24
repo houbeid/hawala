@@ -30,6 +30,8 @@ export interface HttpClient {
   get<T>(path: string, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<T>;
   post<T>(path: string, body?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<T>;
   put<T>(path: string, body?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<T>;
+  /** Réponse binaire (PDF, Excel) : mêmes en-têtes, erreurs et rejeu que les autres appels. */
+  blob(path: string, options?: RequestOptions): Promise<Blob>;
 }
 
 export interface HttpClientOptions {
@@ -77,7 +79,7 @@ export function createHttpClient(options: HttpClientOptions = {}): HttpClient {
     }
   }
 
-  async function request<T>(path: string, req: RequestOptions = {}): Promise<T> {
+  async function fetchOk(path: string, req: RequestOptions): Promise<Response> {
     const auth = options.auth;
     let response = await send(path, req, auth?.getAccessToken() ?? null);
 
@@ -88,6 +90,11 @@ export function createHttpClient(options: HttpClientOptions = {}): HttpClient {
     }
 
     if (!response.ok) throw await apiErrorFromResponse(response);
+    return response;
+  }
+
+  async function request<T>(path: string, req: RequestOptions = {}): Promise<T> {
+    const response = await fetchOk(path, req);
     if (response.status === 204) return undefined as T;
 
     const text = await response.text();
@@ -99,5 +106,6 @@ export function createHttpClient(options: HttpClientOptions = {}): HttpClient {
     get: (path, opts) => request(path, { ...opts, method: 'GET' }),
     post: (path, body, opts) => request(path, { ...opts, method: 'POST', body }),
     put: (path, body, opts) => request(path, { ...opts, method: 'PUT', body }),
+    blob: async (path, opts = {}) => (await fetchOk(path, { ...opts, headers: { Accept: '*/*', ...opts.headers } })).blob(),
   };
 }

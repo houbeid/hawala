@@ -6,7 +6,8 @@ import type { Agency } from '@/features/organization/types';
 import { scopedAgencyId, useAgencyScope } from '@/shared/agency/agencyScope';
 import { errorMessage } from '@/shared/api/errorMessage';
 import { usePermission } from '@/shared/auth/hooks';
-import { todayIso } from '@/shared/format/dates';
+import { ExportButton } from '@/shared/files/ExportButton';
+import { compactDay, todayIso } from '@/shared/format/dates';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
 import { Notice } from '@/shared/ui/Notice';
@@ -15,6 +16,7 @@ import { SummaryCards } from '../components/SummaryCards';
 import { TransferCard } from '../components/TransferCard';
 import { TransferFiltersPanel } from '../components/TransferFiltersPanel';
 import { TransferTable } from '../components/TransferTable';
+import { exportTransfers } from '../api';
 import { useTransferList, useTransferSummary } from '../queries';
 import type { TransferFilters } from '../types';
 
@@ -112,9 +114,15 @@ export function TransfersPage() {
       </div>
 
       {list.data && (
-        <p className="m-0 font-semibold text-muted" aria-live="polite">
-          {t('transfers.counter', { shown: list.data.totalCount, all: list.data.allCount })}
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <p className="m-0 self-center font-semibold text-muted" aria-live="polite">
+            {t('transfers.counter', { shown: list.data.totalCount, all: list.data.allCount })}
+          </p>
+          <ExportButton
+            fileName={`Transferts-${compactDay(filters.from ?? today)}-${compactDay(filters.to ?? today)}.xlsx`}
+            fetchFile={(http, lang) => exportTransfers(http, { ...effectiveFilters, agencyId }, lang)}
+          />
+        </div>
       )}
 
       {list.isPending && (

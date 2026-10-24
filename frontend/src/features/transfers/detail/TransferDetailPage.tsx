@@ -50,7 +50,7 @@ export function TransferDetailPage() {
   }
 
   const data = transfer.data;
-  const actions = account ? availableActions(data, account) : { editTexts: false, cancel: false, newCode: false, unlock: false, editAmounts: false, deliver: false, deliverWithoutCode: false };
+  const actions = account ? availableActions(data, account) : { editTexts: false, cancel: false, newCode: false, unlock: false, editAmounts: false, deliver: false, deliverWithoutCode: false, receipt: false };
   const tabs: Tab[] = ['details', 'history'];
   const onTabKey = (event: KeyboardEvent) => {
     if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') setTab(tab === 'details' ? 'history' : 'details');

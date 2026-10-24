@@ -15,7 +15,7 @@ const transfer = {
 const dakarAgent = { ...agentAccount, agency: { id: dkr.id, code: 'DKR', name: 'Dakar', color: '#1565C0' } };
 
 describe('actions de la fiche selon le compte', () => {
-  it("l'agence d'envoi modifie les textes et demande un nouveau code, sans annuler", () => {
+  it("l'agence d'envoi modifie les textes, demande un nouveau code et le reçu, sans annuler", () => {
     expect(availableActions(transfer, agentAccount)).toEqual({
       editTexts: true,
       cancel: false,
@@ -24,6 +24,7 @@ describe('actions de la fiche selon le compte', () => {
       editAmounts: false,
       deliver: false,
       deliverWithoutCode: false,
+      receipt: true,
     });
   });
 
@@ -36,6 +37,7 @@ describe('actions de la fiche selon le compte', () => {
       editAmounts: false,
       deliver: true,
       deliverWithoutCode: false,
+      receipt: false,
     });
     expect(availableActions({ ...transfer, isCodeLocked: true }, dakarAgent).deliver).toBe(false);
   });
@@ -49,6 +51,7 @@ describe('actions de la fiche selon le compte', () => {
       editAmounts: true,
       deliver: true,
       deliverWithoutCode: true,
+      receipt: true,
     });
     expect(availableActions({ ...transfer, isCodeLocked: true }, supervisorAccount)).toMatchObject({
       unlock: true,
@@ -57,7 +60,7 @@ describe('actions de la fiche selon le compte', () => {
     });
   });
 
-  it('un transfert livré ou annulé est verrouillé', () => {
+  it('un transfert livré ou annulé est verrouillé ; seul le duplicata du reçu reste', () => {
     for (const status of ['Delivered', 'Cancelled'] as const) {
       expect(availableActions({ ...transfer, status }, supervisorAccount)).toEqual({
         editTexts: false,
@@ -67,6 +70,7 @@ describe('actions de la fiche selon le compte', () => {
         editAmounts: false,
         deliver: false,
         deliverWithoutCode: false,
+        receipt: true,
       });
     }
   });

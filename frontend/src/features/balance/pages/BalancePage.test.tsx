@@ -102,6 +102,8 @@ describe('Bilan par caisse — Superviseur', () => {
 
     const history = screen.getByRole('region', { name: 'Bilans enregistrés (30 derniers jours)' });
     expect(within(history).getByText('+ 270 000 MRO')).toBeInTheDocument();
+    // Un seul bilan enregistré : pas de courbe, la liste suffit.
+    expect(within(history).queryByRole('img')).not.toBeInTheDocument();
   });
 
   it('« Actualiser » recalcule le bilan', async () => {

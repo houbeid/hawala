@@ -18,12 +18,14 @@ using Transfers.Application.Features.Transfers.EditTransferAmounts;
 using Transfers.Application.Features.Transfers.EditTransferTexts;
 using Transfers.Application.Features.Transfers.GetTransfer;
 using Transfers.Application.Features.Transfers.GetTransferHistory;
+using Transfers.Application.Features.Transfers.GetTransferReceipt;
 using Transfers.Application.Features.Transfers.GetTransferDashboard;
 using Transfers.Application.Features.Transfers.GetTransferSummary;
 using Transfers.Application.Features.Transfers.ListTransfers;
 using Transfers.Infrastructure.Messaging;
 using Transfers.Infrastructure.Persistence;
 using Transfers.Infrastructure.Persistence.Repositories;
+using Transfers.Infrastructure.Receipts;
 using Transfers.Infrastructure.Security;
 
 namespace Transfers.Infrastructure;
@@ -68,6 +70,10 @@ public static class DependencyInjection
         services.AddScoped<IQueryHandler<GetTransferSummaryQuery, TransferSummary>, GetTransferSummaryQueryHandler>();
         services.AddScoped<IQueryHandler<GetTransferDashboardQuery, TransferDashboard>, GetTransferDashboardQueryHandler>();
         services.AddScoped<IQueryHandler<GetTransferHistoryQuery, IReadOnlyList<TransferEventView>>, GetTransferHistoryQueryHandler>();
+
+        // Reçu PDF de l'expéditeur (lecture seule : le code envoyé est vérifié, jamais gardé).
+        services.AddSingleton<ITransferReceiptRenderer, QuestPdfReceiptRenderer>();
+        services.AddScoped<IQueryHandler<GetTransferReceiptQuery, TransferReceiptFile>, GetTransferReceiptQueryHandler>();
 
         // Écrit dans deux schémas (transfers + ledger) : une seule transaction commune, puis notifications temps réel.
         services.AddPublishingTransactional<CreateTransferCommand, CreatedTransfer, CreateTransferCommandHandler>();

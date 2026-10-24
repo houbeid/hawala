@@ -310,6 +310,7 @@ Le réseau tombe ; l'agent doit pouvoir continuer à saisir. La PWA garde les do
 - **Synchronisation** : au retour du réseau, envoi dans l'ordre ; un refus (plafond, tiers bloqué) remonte à l'agent avec le motif.
 - **Temps réel** : hub SignalR (`/hubs/live`), un groupe par agence et un groupe des Superviseurs ; un transfert créé à Nouakchott apparaît « Non livré » à Dakar sans rafraîchir. Message léger sans montant ni nom (l'application relit la fiche par l'API), envoyé après la validation de la transaction ; « RatesChanged » à tous quand un taux change (décisions du 21 octobre 2026).
 - **Notifications client** : reportées à une phase ultérieure (WhatsApp / SMS). En V1, le reçu PDF s'imprime ou se télécharge depuis l'app.
+- **Reçu et export (décisions du 24 octobre 2026)** : pas d'imprimante en agence ; reçu PDF bilingue (fr + ar) au format téléphone, partagé au client (WhatsApp). Il montre les montants payé et à livrer, la répartition du paiement et la part à crédit, jamais les taux ni la note. Le code de retrait n'y figure qu'à la création, demandé par le compte qui détient le code (vérifié par son empreinte, jamais gardé ; code faux refusé sans être compté) ; duplicata sans code pour l'agence d'envoi et le Superviseur. Export des listes en Excel (.xlsx) par le serveur, permission `export`. Un transfert saisi hors ligne garde la date et l'heure de sa saisie (taux de ce jour-là).
 
 ## Structure de la solution
 

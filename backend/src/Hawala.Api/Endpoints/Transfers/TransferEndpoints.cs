@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Hawala.Api.Configuration;
 using Hawala.Api.Errors;
+using Hawala.Api.Exports;
 using Hawala.SharedKernel.Messaging;
 using Identity.Contracts;
 using Microsoft.AspNetCore.Mvc;
@@ -15,6 +16,7 @@ using Transfers.Application.Features.Transfers.EditTransferAmounts;
 using Transfers.Application.Features.Transfers.EditTransferTexts;
 using Transfers.Application.Features.Transfers.GetTransfer;
 using Transfers.Application.Features.Transfers.GetTransferHistory;
+using Transfers.Application.Features.Transfers.GetTransferReceipt;
 using Transfers.Application.Features.Transfers.GetTransferDashboard;
 using Transfers.Application.Features.Transfers.GetTransferSummary;
 using Transfers.Application.Features.Transfers.ListTransfers;
@@ -53,6 +55,9 @@ public static class TransferEndpoints
         group.MapGet("/{id:guid}", GetTransfer).RequireAuthorization();
         group.MapGet("/{id:guid}/history", GetTransferHistory).RequireAuthorization();
 
+        // Export Excel de la liste (permission export) : mêmes filtres, même périmètre et mêmes champs masqués.
+        group.MapGet("/export", TransferExport.ExportAsync).RequirePermission(Permissions.Export);
+
         // Textes d'un non livré : agence d'envoi (transfers.create, contrôlée par le handler) ou Superviseur.
         group.MapPut("/{id:guid}", EditTransferTexts).RequirePermission(Permissions.TransfersCreate);
 
@@ -74,6 +79,11 @@ public static class TransferEndpoints
         group.MapPost("/{id:guid}/unlock-code", UnlockCode).RequirePermission(Permissions.TransfersManageCode);
         group.MapPost("/{id:guid}/deliver-without-code", DeliverWithoutCode).RequirePermission(Permissions.TransfersManageCode);
         group.MapPost("/{id:guid}/new-code", NewCode).RequirePermission(Permissions.TransfersCreate);
+
+        // Reçu PDF de l'expéditeur (règles du 24 octobre 2026) : agence d'envoi ou Superviseur. GET = duplicata sans code ;
+        // POST = reçu avec le code, envoyé dans le corps (jamais dans l'adresse ni les journaux), par le compte qui le détient.
+        group.MapGet("/{id:guid}/receipt", GetReceipt).RequirePermission(Permissions.TransfersCreate);
+        group.MapPost("/{id:guid}/receipt", GetReceiptWithCode).RequirePermission(Permissions.TransfersCreate);
 
         return app;
     }
@@ -248,6 +258,48 @@ public static class TransferEndpoints
 
         var result = await handler.Handle(new NewCodeCommand(actorId, id), cancellationToken);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    /// <summary>200 : le PDF du duplicata (sans code).</summary>
+    private static Task<IResult> GetReceipt(
+        Guid id,
+        ClaimsPrincipal user,
+        IQueryHandler<GetTransferReceiptQuery, TransferReceiptFile> handler,
+        CancellationToken cancellationToken) =>
+        Receipt(user, handler, id, code: null, cancellationToken);
+
+    /// <param name="Code">Code de retrait reçu à la création (ou au dernier nouveau code), 6 chiffres.</param>
+    public sealed record ReceiptWithCodeRequest(string? Code);
+
+    /// <summary>200 : le PDF avec le code. Code faux : 400 (non compté) ; autre compte : 403 ; livré ou annulé : 409.</summary>
+    private static Task<IResult> GetReceiptWithCode(
+        Guid id,
+        ReceiptWithCodeRequest request,
+        ClaimsPrincipal user,
+        IQueryHandler<GetTransferReceiptQuery, TransferReceiptFile> handler,
+        CancellationToken cancellationToken) =>
+        Receipt(user, handler, id, request.Code ?? string.Empty, cancellationToken);
+
+    private static async Task<IResult> Receipt(
+        ClaimsPrincipal user,
+        IQueryHandler<GetTransferReceiptQuery, TransferReceiptFile> handler,
+        Guid id,
+        string? code,
+        CancellationToken cancellationToken)
+    {
+        if (!user.TryGetAccountId(out var actorId))
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        var result = await handler.Handle(new GetTransferReceiptQuery(actorId, id, code), cancellationToken);
+        if (result.IsFailure)
+        {
+            return result.Error.ToProblem();
+        }
+
+        // Le reçu avec code ne doit rester dans aucun cache (navigateur, proxy).
+        return new NoStoreResult(TypedResults.File(result.Value.Content.ToArray(), "application/pdf", result.Value.FileName));
     }
 
     /// <param name="Reason">Motif obligatoire (500 caractères au plus).</param>

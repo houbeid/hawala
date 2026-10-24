@@ -2,6 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { agentAccount, dkr, nkc, supervisorAccount } from '@/test/fixtures';
 import { renderApp, signedInAs } from '@/test/renderApp';
+import { stubDownloads } from '@/test/downloads';
 import { apiUrl, server } from '@/test/server';
 import type { Transfer, TransferEvent } from '../types';
 
@@ -86,6 +87,14 @@ function detailServer(initial: Transfer) {
       await record('newCode', request);
       return HttpResponse.json({ id: ID, reference: current.reference, withdrawalCode: '654321' });
     }),
+    http.get(apiUrl(`/transfers/${ID}/receipt`), () => {
+      calls.push({ path: 'receipt', body: null });
+      return new HttpResponse(new Uint8Array([0x25, 0x50, 0x44, 0x46]), { headers: { 'Content-Type': 'application/pdf' } });
+    }),
+    http.post(apiUrl(`/transfers/${ID}/receipt`), async ({ request }) => {
+      await record('receiptWithCode', request);
+      return new HttpResponse(new Uint8Array([0x25, 0x50, 0x44, 0x46]), { headers: { 'Content-Type': 'application/pdf' } });
+    }),
     http.post(apiUrl(`/transfers/${ID}/unlock-code`), async ({ request }) => {
       await record('unlock', request);
       current = { ...current, isCodeLocked: false };
@@ -169,6 +178,47 @@ describe('Fiche d’un transfert — Agent de l’agence d’envoi', () => {
     expect(within(sheet).getByRole('button', { name: 'Recharger le transfert' })).toBeInTheDocument();
   });
 
+  it('envoie le duplicata du reçu, sans code', async () => {
+    const downloads = stubDownloads();
+    const calls = detailServer(transfer());
+    const { user } = renderApp(`/transfers/${ID}`);
+
+    await user.click(await screen.findByRole('button', { name: 'Reçu (duplicata)' }));
+
+    expect(await screen.findByText('Reçu téléchargé : envoyez-le au client.')).toBeInTheDocument();
+    expect(calls.map((c) => c.path)).toEqual(['receipt']);
+    expect(downloads.files).toEqual(['Recu-TR-NKC-20261022-000043.pdf']);
+    downloads.restore();
+  });
+
+  it('après un nouveau code, le reçu envoyé porte ce code', async () => {
+    const downloads = stubDownloads();
+    const calls = detailServer(transfer());
+    const { user } = renderApp(`/transfers/${ID}`);
+
+    await user.click(await screen.findByRole('button', { name: 'Nouveau code' }));
+    const sheet = await screen.findByRole('dialog', { name: 'Nouveau code' });
+    await user.click(within(sheet).getByRole('button', { name: 'Créer un nouveau code' }));
+    await user.click(await within(sheet).findByRole('button', { name: 'Envoyer le reçu avec le code' }));
+
+    expect(await within(sheet).findByText('Reçu téléchargé : envoyez-le au client.')).toBeInTheDocument();
+    expect(calls.at(-1)).toEqual({ path: 'receiptWithCode', body: { code: '654321' } });
+    downloads.restore();
+  });
+
+  it('explique un refus du serveur pour le reçu', async () => {
+    detailServer(transfer());
+    server.use(
+      http.get(apiUrl(`/transfers/${ID}/receipt`), () =>
+        HttpResponse.json({ status: 403, code: 'Transfers.Receipt.NotSendingAgency' }, { status: 403 }),
+      ),
+    );
+    const { user } = renderApp(`/transfers/${ID}`);
+
+    await user.click(await screen.findByRole('button', { name: 'Reçu (duplicata)' }));
+    expect(await screen.findByText('Le reçu se demande à l’agence d’envoi.')).toBeInTheDocument();
+  });
+
   it('affiche le nouveau code une seule fois', async () => {
     const calls = detailServer(transfer());
     const { user } = renderApp(`/transfers/${ID}`);
@@ -236,7 +286,8 @@ describe('Fiche d’un transfert — Superviseur', () => {
 
     expect(await screen.findByText('Annulé : Erreur de saisie')).toBeInTheDocument();
     expect(calls).toEqual([{ path: 'cancel', body: { reason: 'Erreur de saisie', operationAt: null } }]);
-    expect(actions()).not.toBeInTheDocument();
+    // Annulé : plus aucune action, sauf le duplicata du reçu.
+    expect(within(actions()!).getAllByRole('button').map((b) => b.textContent)).toEqual(['Reçu (duplicata)']);
   });
 
   it('débloque un code bloqué', async () => {

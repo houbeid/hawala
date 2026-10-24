@@ -43,6 +43,7 @@ const PATHS = {
   pencil: 'M4 20l1-4.5L16.5 4a2 2 0 0 1 3 3L8 18.5zM14.5 6l3.5 3.5',
   unlock: 'M6 11h12v9H6zM8.5 11V8a3.5 3.5 0 0 1 6.8-1.2',
   calendar: 'M5 5h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1M4 10h16M8 3v4M16 3v4',
+  download: 'M12 4v11M7 11l5 5 5-5M5 20h14',
 } as const;
 
 export type IconName = keyof typeof PATHS;

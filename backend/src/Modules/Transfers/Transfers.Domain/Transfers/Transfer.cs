@@ -204,6 +204,12 @@ public sealed class Transfer
     /// <summary>Essais de code restants avant blocage.</summary>
     public int RemainingCodeAttempts => Math.Max(0, MaxCodeAttempts - FailedCodeAttempts);
 
+    /// <summary>
+    /// Compte qui a vu le code en cours : l'auteur du dernier nouveau code, sinon le créateur. Lui seul peut demander
+    /// le reçu avec le code (règle du 24 octobre 2026).
+    /// </summary>
+    public Guid CodeHolderId => CodeReplacedBy ?? CreatedBy;
+
     public IReadOnlyList<TransferPayment> Payments => _payments;
 
     /// <summary>Historique, dans l'ordre : ajouté, modifié, livré, annulé, actions sur le code.</summary>

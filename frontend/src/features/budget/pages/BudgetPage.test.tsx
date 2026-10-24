@@ -90,6 +90,17 @@ describe('Budget de la caisse — Caissier de Dakar', () => {
     expect(within(history).getByText('39 000 000 FCFA')).toBeInTheDocument();
   });
 
+  it('trace la courbe des budgets enregistrés à partir de deux jours, résumée en texte', async () => {
+    budgetServer({ snapshots: [snapshot('2026-10-20', '2026-10-20T18:02:00Z'), { ...snapshot('2026-10-18', '2026-10-18T18:00:00Z'), budget: 37_500_000 }] });
+    renderApp('/budget');
+
+    const history = await screen.findByRole('region', { name: 'Budgets enregistrés (30 derniers jours)' });
+    const spaced = (text: string) => text.replace(/\s+/g, ' ');
+    const summary = 'Courbe : Budget enregistré · FCFA, du 18/10 au 20/10, de 37 500 000 FCFA à 39 000 000 FCFA.';
+    expect(await within(history).findByRole('img', { name: (name) => spaced(name) === summary })).toBeInTheDocument();
+    expect(within(history).getByText('Budget enregistré · FCFA')).toBeInTheDocument();
+  });
+
   it('liste les alertes de cohérence par famille, avec la référence ou le nom et le motif', async () => {
     budgetServer();
     renderApp('/budget');
