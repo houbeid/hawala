@@ -1,4 +1,4 @@
-import { addDays, daysBetween, formatDayLong, formatDayShort, isIsoDay, todayIso } from './dates';
+import { addDays, daysBetween, formatDayLong, formatDayShort, formatDayTimeShort, isIsoDay, todayIso } from './dates';
 
 describe('dates « jour »', () => {
   it('donne la date UTC du jour', () => {
@@ -21,5 +21,12 @@ describe('dates « jour »', () => {
     expect(formatDayLong('2026-10-21', 'fr')).toMatch(/21\/10\/2026/);
     expect(formatDayLong('2026-10-21', 'ar')).toMatch(/21\/10\/2026/);
     expect(formatDayShort('2026-10-21')).toBe('21/10');
+  });
+});
+
+describe('formatDayTimeShort', () => {
+  it('écrit jour, mois et heure en UTC', () => {
+    expect(formatDayTimeShort('2026-10-24T15:20:59Z')).toBe('24/10 · 15:20');
+    expect(formatDayTimeShort('2026-01-05T03:07:00+00:00')).toBe('05/01 · 03:07');
   });
 });

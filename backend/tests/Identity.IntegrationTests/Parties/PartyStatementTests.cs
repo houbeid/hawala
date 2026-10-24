@@ -48,6 +48,7 @@ public sealed class PartyStatementTests(ApiFixture fixture)
         Assert.Equal(0m, september.GetProperty("openingBalance").GetDecimal());
         var line = Assert.Single(september.GetProperty("lines").EnumerateArray());
         Assert.StartsWith("Solde initial", line.GetProperty("label").GetString(), StringComparison.Ordinal);
+        Assert.Equal("Parties.OpeningBalance", line.GetProperty("entryType").GetString());
         Assert.Equal(1_000m, september.GetProperty("closingBalance").GetDecimal());
     }
 

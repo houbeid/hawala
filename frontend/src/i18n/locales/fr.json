@@ -152,6 +152,51 @@
         "Invalid": "Votre session a pris fin. Reconnectez-vous.",
         "Expired": "Votre session a expiré. Reconnectez-vous.",
         "Revoked": "Votre session a été fermée. Reconnectez-vous."
+      },
+      "Account": {
+        "NotFound": "Compte introuvable.",
+        "EmailTaken": "Cette adresse email est déjà utilisée par un autre compte.",
+        "PhoneTaken": "Ce numéro est déjà utilisé par un autre compte.",
+        "FullNameEmpty": "Le nom est obligatoire.",
+        "FullNameTooLong": "Le nom est trop long.",
+        "RoleInvalid": "Rôle inconnu.",
+        "StatusInvalid": "Statut inconnu.",
+        "AgencyRequired": "Choisissez l’agence du compte.",
+        "AgencyNotFound": "Cette agence n’existe pas.",
+        "AgencyNotAllowedForSupervisor": "Un Superviseur n’a pas d’agence.",
+        "AlreadyBlocked": "Ce compte est déjà bloqué.",
+        "NotBlocked": "Ce compte n’est pas bloqué.",
+        "CannotBlockSelf": "Vous ne pouvez pas bloquer votre propre compte.",
+        "CannotChangeOwnRole": "Vous ne pouvez pas changer votre propre rôle.",
+        "CannotResetOwnPassword": "Changez votre mot de passe depuis votre propre compte.",
+        "LastActiveSupervisor": "Impossible : c’est le dernier Superviseur actif. Créez ou débloquez d’abord un autre Superviseur.",
+        "SupervisorOnly": "Seul un Superviseur peut faire cette action.",
+        "OtherAgency": "Vous ne gérez que les comptes de votre agence.",
+        "Blocked": "Ce compte est bloqué."
+      },
+      "Email": {
+        "Empty": "L’email est obligatoire.",
+        "Invalid": "Adresse email invalide.",
+        "TooLong": "Adresse email trop longue."
+      },
+      "Phone": {
+        "Empty": "Le téléphone est vide.",
+        "Invalid": "Le numéro doit être au format international (ex. +222 22 12 34 56)."
+      },
+      "Permissions": {
+        "Required": "Envoyez la liste des permissions.",
+        "Unknown": "Permission inconnue.",
+        "SupervisorOnly": "Seul un Superviseur donne ou retire des permissions.",
+        "SupervisorHasAll": "Un Superviseur garde toutes les permissions."
+      },
+      "Limits": {
+        "AgencyRequired": "Ce compte n’a pas d’agence.",
+        "Negative": "Un plafond ne peut pas être négatif.",
+        "TooPrecise": "Trop de décimales pour la devise de l’agence.",
+        "SupervisorHasNone": "Un Superviseur n’a pas de plafond."
+      },
+      "Session": {
+        "NotFound": "Session introuvable ou déjà fermée."
       }
     },
     "Rates": {
@@ -245,10 +290,38 @@
         "TypeInvalid": "Type de tiers inconnu.",
         "PhoneTaken": "Ce numéro appartient déjà à un autre tiers : cherchez-le dans la liste.",
         "NniTaken": "Ce NNI appartient déjà à un autre tiers.",
-        "NotFound": "Tiers introuvable."
+        "NotFound": "Tiers introuvable.",
+        "NniTooLong": "Le NNI dépasse 20 caractères.",
+        "AddressTooLong": "L'adresse dépasse 200 caractères.",
+        "NoteTooLong": "La note dépasse 500 caractères.",
+        "AgencyAccountNotFound": "Ce tiers n'a pas de compte dans cette agence.",
+        "Archived": "Ce tiers est archivé : désarchivez-le d'abord.",
+        "AlreadyArchived": "Ce tiers est déjà archivé.",
+        "NotArchived": "Ce tiers n'est pas archivé.",
+        "BalanceNotZero": "Le solde doit être à zéro dans les deux agences pour archiver ce tiers.",
+        "CreditLimitNegative": "Le plafond de crédit est positif ou nul.",
+        "AmountRequired": "Le montant est obligatoire.",
+        "InBalanceSheetRequired": "Indiquez si le tiers est « dans le bilan »."
       },
       "Phone": {
         "Invalid": "Le numéro doit être au format international, ex. +222 22 12 34 56 ou +221 77 123 45 67."
+      },
+      "List": {
+        "AgencyRequiredForBalanceFilter": "Choisissez une agence pour filtrer sur le solde.",
+        "BalanceFilterInvalid": "Filtre de solde inconnu.",
+        "BalanceNotVisible": "Votre compte ne voit pas les soldes des tiers.",
+        "BalanceSheetFilterInvalid": "Filtre « bilan » inconnu."
+      },
+      "Statement": {
+        "AgencyRequired": "Choisissez l’agence du relevé.",
+        "NotVisible": "Votre compte ne peut pas lire le relevé de ce tiers."
+      },
+      "Scope": {
+        "SupervisorOnly": "Seul un Superviseur fixe les tiers autorisés d’un compte.",
+        "AccountNotFound": "Compte introuvable.",
+        "SupervisorSeesAll": "Un Superviseur voit toujours tous les tiers.",
+        "LimitedRequired": "Indiquez si le compte est limité.",
+        "PartyNotFound": "Un des tiers choisis n’existe pas."
       }
     },
     "Money": {
@@ -261,6 +334,85 @@
       },
       "Mru": {
         "TooManyDecimals": "Le montant en MRU a au plus 3 décimales."
+      }
+    },
+    "Treasury": {
+      "Account": {
+        "NotFound": "Compte de trésorerie introuvable.",
+        "NameEmpty": "Le nom du compte est obligatoire.",
+        "NameTooLong": "Le nom du compte dépasse 50 caractères.",
+        "NameTaken": "Un compte de cette agence porte déjà ce nom.",
+        "TypeInvalid": "Type de compte inconnu.",
+        "AgencyRequired": "Choisissez une agence.",
+        "AgencyNotFound": "Cette agence n'existe pas.",
+        "AlreadyInactive": "Ce compte est déjà désactivé.",
+        "AlreadyActive": "Ce compte est déjà actif.",
+        "BalanceNotZero": "Le solde doit être à zéro pour désactiver le compte : transférez d'abord l'argent restant."
+      },
+      "Statement": {
+        "NotVisible": "Votre compte ne peut pas lire les mouvements de ce compte de trésorerie."
+      }
+    },
+    "Ledger": {
+      "Entry": {
+        "FutureDate": "La date d'une opération ne peut pas être dans le futur."
+      },
+      "Statement": {
+        "PeriodInvalid": "La date de début doit être avant la date de fin."
+      }
+    },
+    "Cash": {
+      "Movement": {
+        "NotFound": "Mouvement de caisse introuvable.",
+        "TypeInvalid": "Type d’opération inconnu.",
+        "AmountInvalid": "Le montant doit être supérieur à zéro.",
+        "UnitInvalid": "Unité inconnue.",
+        "PartyRequired": "Le tiers est obligatoire pour un encaissement ou un décaissement.",
+        "PartyNotAllowed": "Cette opération se fait sans tiers.",
+        "PartyNotFound": "Tiers introuvable.",
+        "PartyArchived": "Ce tiers est archivé : plus aucune opération possible.",
+        "DestinationRequired": "Choisissez le compte qui reçoit.",
+        "DestinationNotAllowed": "Seul un virement interne a un compte de destination.",
+        "SameAccount": "Le compte qui reçoit doit être différent.",
+        "AccountNotAllowed": "Compte inconnu, désactivé ou d’une autre agence.",
+        "AgencyNotAllowed": "Votre compte ne travaille que sur la caisse de son agence.",
+        "AgencyRequired": "Choisissez l’agence.",
+        "FutureDate": "La date ne peut pas être dans le futur.",
+        "NoteTooLong": "La note dépasse 500 caractères.",
+        "AlreadyCancelled": "Ce mouvement est déjà annulé.",
+        "ReasonRequired": "Le motif est obligatoire.",
+        "ReasonTooLong": "Le motif dépasse 500 caractères.",
+        "IdempotencyKeyRequired": "Envoi incomplet : réessayez."
+      },
+      "Filter": {
+        "PageInvalid": "Page invalide.",
+        "PeriodInvalid": "La date de début doit être avant la date de fin."
+      },
+      "Adjustment": {
+        "TargetInvalid": "Cible inconnue.",
+        "TargetNotFound": "Compte ou tiers introuvable, désactivé, archivé ou d’une autre agence.",
+        "AmountInvalid": "Le montant de l’ajustement doit être différent de zéro.",
+        "ReasonRequired": "Le motif est obligatoire.",
+        "ReasonTooLong": "Le motif dépasse 500 caractères."
+      }
+    },
+    "Profit": {
+      "Filter": {
+        "AgencyNotFound": "Cette agence n’existe pas.",
+        "PeriodInvalid": "La date de début doit être avant la date de fin."
+      }
+    },
+    "Balance": {
+      "Agency": {
+        "Required": "Choisissez la caisse.",
+        "NotFound": "Caisse inconnue."
+      },
+      "Capital": {
+        "AmountInvalid": "Le capital est positif : MRO à 2 décimales au plus, FCFA entier.",
+        "ReasonTooLong": "Le motif dépasse 500 caractères."
+      },
+      "Filter": {
+        "PeriodInvalid": "La date de début doit être avant la date de fin."
       }
     }
   },
@@ -653,7 +805,832 @@
       "phone": "Téléphone (facultatif, avec l'indicatif)",
       "nameRequired": "Le nom est obligatoire.",
       "submit": "Créer le tiers",
-      "creating": "Création…"
+      "creating": "Création…",
+      "open": "Nouveau tiers"
+    },
+    "balance": {
+      "red": "Il nous doit",
+      "green": "On lui doit",
+      "zero": "Soldé"
+    },
+    "inBalanceSheet": "Dans le bilan",
+    "outOfBalanceSheet": "Hors bilan",
+    "archived": "Archivé",
+    "offline": "Pas de réseau : créer ou modifier un tiers exige le réseau.",
+    "count_one": "{{count}} / {{total}} tiers",
+    "count_other": "{{count}} / {{total}} tiers",
+    "totals": {
+      "red": "Ils nous doivent",
+      "green": "On leur doit",
+      "net": "Net",
+      "netState": {
+        "red": "à recevoir",
+        "green": "à payer",
+        "zero": "équilibré"
+      }
+    },
+    "filters": {
+      "label": "Filtres",
+      "search": "Rechercher un tiers",
+      "searchPlaceholder": "Nom, téléphone ou NNI",
+      "type": "Type",
+      "allTypes": "Tous les types",
+      "balanceSheet": "Bilan",
+      "all": "Tous",
+      "in": "Dans le bilan",
+      "out": "Hors bilan",
+      "balance": "Solde",
+      "red": "Rouge · ils nous doivent",
+      "green": "Vert · on leur doit",
+      "archived": "Afficher les archivés",
+      "reset_one": "Réinitialiser ({{count}} filtre)",
+      "reset_other": "Réinitialiser ({{count}} filtres)"
+    },
+    "empty": {
+      "title": "Aucun tiers trouvé.",
+      "reset": "Réinitialiser les filtres"
+    },
+    "credit": {
+      "limit": "Plafond de crédit",
+      "used": "Plafond utilisé",
+      "noLimit": "Pas de plafond de crédit.",
+      "noCredit": "Aucun crédit autorisé (plafond à zéro).",
+      "usage": "Utilisé {{percent}} % · il reste {{amount}}",
+      "over": "Plafond dépassé de {{amount}} : tout nouveau crédit sera refusé."
+    },
+    "detail": {
+      "title": "Fiche du tiers",
+      "backToList": "Retour à la liste des tiers",
+      "accountCode": "compte {{code}}",
+      "phone": "Téléphone",
+      "nni": "NNI",
+      "address": "Adresse",
+      "note": "Note",
+      "balances": "Solde et plafond de crédit par agence",
+      "statement": "Voir le relevé"
+    },
+    "statement": {
+      "title": "Relevé",
+      "backToParty": "Retour à la fiche",
+      "legend": "« + » augmente ce qu’il nous doit, « − » augmente ce qu’on lui doit."
+    },
+    "manage": {
+      "label": "Actions du Superviseur",
+      "offline": "Pas de réseau : modifier, archiver, changer le solde initial ou le plafond exige le réseau.",
+      "edit": "Modifier la fiche",
+      "editTitle": "Modifier la fiche du tiers",
+      "nni": "NNI (20 caractères au plus)",
+      "inBalanceSheet": "Dans le bilan (compté dans le budget de la caisse)",
+      "save": "Enregistrer la fiche",
+      "saving": "Enregistrement…",
+      "back": "Retour",
+      "archive": "Archiver",
+      "unarchive": "Désarchiver",
+      "archiveTitle": "Archiver « {{name}} » ?",
+      "unarchiveTitle": "Désarchiver « {{name}} » ?",
+      "archiveText": "Le tiers disparaît de la liste et ne peut plus servir pour un crédit ou un mouvement de caisse. Il n'est pas supprimé : on peut le désarchiver.",
+      "unarchiveText": "Le tiers revient dans la liste et peut de nouveau servir pour un crédit ou un mouvement de caisse.",
+      "archiveBlocked": "Pour archiver ce tiers, son solde doit être à zéro dans les deux agences.",
+      "opening": "Solde initial",
+      "openingFor": "Solde initial · {{agency}}",
+      "openingTitle": "Solde initial · {{agency}}",
+      "openingHint": "Le serveur enregistre une écriture d'ouverture de la différence avec le solde initial actuel.",
+      "currentOpening": "Solde initial actuel",
+      "currentBalance": "Solde actuel (toutes opérations)",
+      "direction": "Sens du solde initial",
+      "newOpening": "Nouveau solde initial",
+      "openingDate": "Date de l'écriture d'ouverture",
+      "difference": "Écriture d'ouverture : {{amount}}",
+      "noChange": "Aucun changement : rien ne sera écrit.",
+      "saveOpening": "Enregistrer le solde initial",
+      "limit": "Plafond",
+      "limitFor": "Plafond de crédit · {{agency}}",
+      "limitTitle": "Plafond de crédit · {{agency}}",
+      "currentLimit": "Plafond actuel : {{amount}}.",
+      "limitMode": {
+        "none": "Pas de plafond",
+        "limit": "Fixer un plafond"
+      },
+      "limitHint": "0 = aucun crédit autorisé. Le plafond bloque tout le monde, Superviseur compris.",
+      "saveLimit": "Enregistrer le plafond"
+    },
+    "amount": {
+      "unit": "Unité de saisie",
+      "empty": "Saisissez un montant (0 permis).",
+      "invalid": "Saisissez un nombre (ex. 150000 ou 1250,50).",
+      "tooPreciseMRO": "Deux décimales au plus en MRO.",
+      "tooPreciseMRU": "Trois décimales au plus en MRU.",
+      "tooPreciseXOF": "Le FCFA est toujours entier."
+    },
+    "entryTypes": {
+      "Parties": {
+        "OpeningBalance": "Solde initial"
+      },
+      "Transfers": {
+        "Created": "Crédit sur un transfert",
+        "Edited": "Crédit d’un transfert modifié",
+        "Delivered": "Livraison d’un transfert"
+      },
+      "Cash": {
+        "Receipt": "Encaissement",
+        "Payment": "Décaissement",
+        "Adjustment": "Ajustement de solde"
+      }
     }
+  },
+  "treasury": {
+    "types": {
+      "Cash": "Caisse espèces",
+      "Bank": "Banque",
+      "Wallet": "Wallet"
+    },
+    "groups": {
+      "cash": "Caisses",
+      "banks": "Banques et wallets"
+    },
+    "active": "Actif",
+    "inactive": "Désactivé",
+    "balance": "Solde",
+    "activeTotal": "Total des comptes actifs",
+    "empty": "Cette agence n'a encore aucun compte de trésorerie.",
+    "offline": "Pas de réseau : créer, renommer, désactiver ou réactiver un compte exige le réseau.",
+    "create": {
+      "open": "Nouveau compte",
+      "title": "Nouveau compte de trésorerie",
+      "hint": "Caisse, banque ou wallet. La devise est celle de l’agence.",
+      "name": "Nom (50 caractères au plus)",
+      "type": "Type",
+      "agency": "Agence",
+      "agencyFixed": "Agence : {{agency}}",
+      "nameRequired": "Le nom est obligatoire.",
+      "openingBalanceNote": "Le compte démarre avec un solde de zéro.",
+      "submit": "Créer le compte",
+      "creating": "Création…"
+    },
+    "actions": {
+      "name": "Nom du compte",
+      "rename": "Renommer",
+      "saving": "Enregistrement…",
+      "deactivate": "Désactiver ce compte",
+      "deactivating": "Désactivation…",
+      "reactivate": "Réactiver ce compte",
+      "reactivating": "Réactivation…",
+      "back": "Retour",
+      "confirmTitle": "Désactiver « {{name}} » ?",
+      "confirmText": "Le compte n'apparaîtra plus dans les choix de paiement ni de livraison. Il reste visible ici et peut être réactivé.",
+      "balanceNotZero": "Pour désactiver ce compte, son solde doit être à zéro : transférez d'abord l'argent restant."
+    },
+    "detail": {
+      "title": "Compte de trésorerie",
+      "backToList": "Retour aux comptes de trésorerie",
+      "manage": "Renommer, désactiver ou réactiver",
+      "statement": "Mouvements du compte",
+      "legend": "« + » : argent entré sur le compte ; « − » : argent sorti.",
+      "noStatement": "Votre compte ne voit pas les soldes ni les mouvements des comptes de trésorerie."
+    },
+    "entryTypes": {
+      "Transfers": {
+        "Created": "Paiement d’un transfert",
+        "Edited": "Transfert modifié",
+        "Delivered": "Livraison d’un transfert"
+      },
+      "Cash": {
+        "Receipt": "Encaissement",
+        "Payment": "Décaissement",
+        "OwnerContribution": "Approvisionnement de caisse",
+        "OwnerWithdrawal": "Retrait du patron",
+        "InternalTransfer": "Virement interne",
+        "Adjustment": "Ajustement de solde"
+      }
+    }
+  },
+  "statement": {
+    "title": "Relevé",
+    "period": "Période du relevé",
+    "from": "Du",
+    "to": "Au",
+    "opening": "Solde de début · {{date}}",
+    "closing": "Solde de fin · {{date}}",
+    "after": "Solde après",
+    "reversal": "Contre-passation",
+    "empty": "Aucune opération sur cette période."
+  },
+  "money": {
+    "unit": "Unité de saisie"
+  },
+  "cash": {
+    "types": {
+      "Receipt": "Encaissement",
+      "Payment": "Décaissement",
+      "OwnerContribution": "Approvisionnement de caisse",
+      "OwnerWithdrawal": "Retrait du patron",
+      "InternalTransfer": "Virement interne"
+    },
+    "ownerContribution": "Apports du patron",
+    "cancelled": "Annulé",
+    "cancellationReason": "Motif : {{reason}}",
+    "agencyChoice": "Caisse de :",
+    "new": "Nouveau mouvement",
+    "offline": "Pas de réseau : enregistrer un mouvement de caisse exige le réseau pour l’instant.",
+    "count_one": "{{count}} / {{total}} mouvement",
+    "count_other": "{{count}} / {{total}} mouvements",
+    "empty": "Aucun mouvement sur cette période.",
+    "pagination": "Pages des mouvements",
+    "previous": "Précédente",
+    "next": "Suivante",
+    "page": "Page {{page}} sur {{last}}",
+    "totals": {
+      "incoming": "Entrées",
+      "outgoing": "Sorties",
+      "net": "Net",
+      "internal_one": "Virement interne : {{count}} · {{amount}} (sans effet sur le net)",
+      "internal_other": "Virements internes : {{count}} · {{amount}} (sans effet sur le net)"
+    },
+    "filters": {
+      "label": "Filtres de la caisse",
+      "search": "Rechercher dans les notes",
+      "searchPlaceholder": "Texte de la note",
+      "from": "Du",
+      "to": "Au",
+      "type": "Type",
+      "allTypes": "Tous les types",
+      "account": "Compte",
+      "allAccounts": "Tous les comptes"
+    },
+    "form": {
+      "title": "Nouveau mouvement de caisse",
+      "back": "Retour à la caisse",
+      "type": "Opération",
+      "typeHint": {
+        "Receipt": "L’argent entre, venant d’un tiers",
+        "Payment": "L’argent sort, vers un tiers",
+        "OwnerContribution": "Le patron apporte de l’argent",
+        "OwnerWithdrawal": "Le patron retire de l’argent",
+        "InternalTransfer": "D’un compte vers un autre de l’agence"
+      },
+      "agency": "Agence",
+      "account": "Compte de trésorerie",
+      "fromAccount": "Depuis le compte",
+      "toAccount": "Vers le compte",
+      "chooseAccount": "Choisir un compte",
+      "party": "Tiers (obligatoire)",
+      "amount": "Montant",
+      "note": "Note (facultative)",
+      "operationAt": "Date et heure de l’opération",
+      "now": "Date de l’opération : maintenant.",
+      "changeDate": "Changer la date",
+      "overdraft": "Le compte « {{account}} » passera en négatif : {{amount}}. Vous pouvez continuer.",
+      "effect": {
+        "in": "L’argent entre sur le compte choisi.",
+        "out": "L’argent sort du compte choisi.",
+        "internal": "Deux lignes : une sortie du premier compte, une entrée sur le second. Le net de la caisse ne change pas."
+      },
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "errors": {
+        "accountRequired": "Choisissez un compte de trésorerie.",
+        "destinationRequired": "Choisissez le compte qui reçoit.",
+        "sameAccount": "Le compte qui reçoit doit être différent.",
+        "partyRequired": "Le tiers est obligatoire pour un encaissement ou un décaissement.",
+        "amount": {
+          "empty": "Saisissez un montant.",
+          "invalid": "Saisissez un nombre (ex. 150000 ou 1250,50).",
+          "notPositive": "Le montant doit être supérieur à zéro."
+        },
+        "tooPreciseMRO": "Deux décimales au plus en MRO.",
+        "tooPreciseMRU": "Trois décimales au plus en MRU.",
+        "tooPreciseXOF": "Le FCFA est toujours entier.",
+        "dateInvalid": "Date invalide.",
+        "futureDate": "La date ne peut pas être dans le futur."
+      }
+    },
+    "cancel": {
+      "button": "Annuler",
+      "open": "Annuler : {{type}} · {{who}}",
+      "title": "Annuler ce mouvement ?",
+      "hint": "Le mouvement reste dans la liste, barré, et ne compte plus dans les totaux. L’écriture est contre-passée aujourd’hui.",
+      "reason": "Motif (obligatoire)",
+      "reasonRequired": "Le motif est obligatoire.",
+      "confirm": "Annuler le mouvement",
+      "cancelling": "Annulation…"
+    },
+    "adjustment": {
+      "open": "Ajustement de solde",
+      "title": "Ajustement de solde · {{agency}}",
+      "hint": "Corrige un solde par la différence, contre « Écarts et ajustements ». Tracé dans l’audit et signalé au contrôle de cohérence.",
+      "target": "Solde à corriger",
+      "targets": {
+        "TreasuryAccount": "Compte de trésorerie",
+        "Party": "Tiers"
+      },
+      "party": "Tiers",
+      "direction": "Sens de la correction",
+      "directions": {
+        "TreasuryAccount": {
+          "up": "Augmenter le solde (plus d’argent sur le compte)",
+          "down": "Baisser le solde (moins d’argent sur le compte)"
+        },
+        "Party": {
+          "up": "Augmenter ce qu’il nous doit",
+          "down": "Baisser ce qu’il nous doit (ou augmenter ce qu’on lui doit)"
+        }
+      },
+      "amount": "Montant de la correction",
+      "after": "Nouveau solde de « {{account}} » : {{amount}}.",
+      "reason": "Motif (obligatoire)",
+      "save": "Enregistrer l’ajustement",
+      "listTitle": "Ajustements de solde de la période",
+      "errors": {
+        "partyRequired": "Choisissez le tiers.",
+        "reasonRequired": "Le motif est obligatoire."
+      },
+      "account": "Compte à corriger"
+    }
+  },
+  "budget": {
+    "agencyChoice": "Budget de :",
+    "total": "Budget de la caisse (en direct)",
+    "formula": "Espèces + banques + soldes débiteurs − soldes créditeurs − transferts non livrés",
+    "showDetail": "Afficher le détail",
+    "offline": "Pas de réseau : enregistrer le budget exige le réseau (il se calcule sur le serveur).",
+    "lines": {
+      "cash": "Espèces",
+      "banks": "Banques et wallets",
+      "debtors": "Soldes débiteurs (ils nous doivent)",
+      "creditors": "Soldes créditeurs (on leur doit)",
+      "undelivered": "Transferts non livrés"
+    },
+    "coherence": {
+      "title": "Contrôle de cohérence",
+      "since": "Opérations enregistrées depuis le dernier budget ({{date}}). Les alertes ne bloquent pas l’enregistrement.",
+      "none": "Rien à signaler depuis le dernier budget enregistré.",
+      "reason": "Motif : {{reason}}",
+      "kinds": {
+        "UnusualRate": "Taux de change inhabituel (plus de 5 % d’écart)",
+        "BalanceAdjustment": "Ajustements de solde",
+        "OpeningBalanceChanged": "Solde initial d’un tiers changé",
+        "CashMovementCancelled": "Mouvements de caisse annulés",
+        "TransferCancelled": "Transferts annulés",
+        "DeliveredWithoutCode": "Livraisons sans code",
+        "NegativeBalance": "Comptes en négatif"
+      }
+    },
+    "save": {
+      "open": "Enregistrer le budget du jour",
+      "title": "Enregistrer le budget du jour ?",
+      "hint": "Cette photo datée devient la base du prochain contrôle de cohérence.",
+      "budget": "Budget",
+      "alerts": "Alertes",
+      "alertCount_one": "{{count}} à vérifier",
+      "alertCount_other": "{{count}} à vérifier",
+      "alreadyToday": "Budget du jour déjà enregistré à {{time}} : l’enregistrer de nouveau le remplace.",
+      "replaces": "Le budget déjà enregistré aujourd’hui sera remplacé.",
+      "confirm": "Je confirme",
+      "confirmAnyway": "Enregistrer quand même",
+      "back": "Revoir",
+      "saving": "Enregistrement…",
+      "done": "Budget enregistré ({{time}}) : {{amount}}."
+    },
+    "history": {
+      "title": "Budgets enregistrés (30 derniers jours)",
+      "empty": "Aucun budget enregistré sur cette période.",
+      "savedAt": "Enregistré à {{time}}",
+      "alerts_one": "{{count}} alerte",
+      "alerts_other": "{{count}} alertes"
+    }
+  },
+  "profit": {
+    "period": "Période",
+    "presets": {
+      "today": "Aujourd’hui",
+      "last7": "7 derniers jours",
+      "last30": "30 derniers jours",
+      "month": "Mois en cours"
+    },
+    "from": "Du",
+    "to": "Au",
+    "bothAgencies": "Les deux agences (bénéfice général)",
+    "total_one": "Bénéfice de la période · {{count}} jour",
+    "total_other": "Bénéfice de la période · {{count}} jours",
+    "counted_one": "{{count}} transfert, livré ou non, hors annulés",
+    "counted_other": "{{count}} transferts, livrés ou non, hors annulés",
+    "byDay": "Par jour",
+    "today": "aujourd’hui",
+    "transfers_one": "{{count}} transfert",
+    "transfers_other": "{{count}} transferts",
+    "purchaseRate": "prix d’achat {{rate}}",
+    "severalRates": "plusieurs prix d’achat",
+    "saved": "Enregistré : {{amount}} ({{time}})",
+    "loss": "perte",
+    "empty": "Aucun transfert sur cette période.",
+    "offline": "Pas de réseau : enregistrer le bénéfice du jour exige le réseau.",
+    "detail": {
+      "title": "Transferts du {{date}}",
+      "amountXof": "Montant envoyé",
+      "saleRate": "Prix de vente",
+      "amountMro": "Montant MRO (client)",
+      "cost": "Coût au prix d’achat ({{rate}})",
+      "profit": "Bénéfice"
+    },
+    "save": {
+      "open": "Enregistrer le bénéfice du jour",
+      "title": "Enregistrer le bénéfice du {{date}} ?",
+      "hint": "Photo du bénéfice du jour (transferts non livrés compris), pour l’agence affichée ou les deux.",
+      "count": "Transferts comptés",
+      "rate": "Prix d’achat",
+      "profit": "Bénéfice",
+      "notInPeriod": "Le jour courant n’est pas dans la période affichée : le serveur calcule le bénéfice d’aujourd’hui.",
+      "replaces": "Déjà enregistré ({{time}}) : l’enregistrer de nouveau le remplace.",
+      "confirm": "Je confirme",
+      "back": "Annuler",
+      "saving": "Enregistrement…",
+      "done": "Bénéfice du jour enregistré ({{time}}) : {{amount}}."
+    }
+  },
+  "balance": {
+    "asOf": "Bilan au {{date}}",
+    "refresh": "Actualiser",
+    "offline": "Pas de réseau : chiffres non à jour ; enregistrer le bilan ou le capital exige le réseau.",
+    "caisse": "Caisse de {{name}}",
+    "budget": "Budget de la caisse",
+    "initialCapital": "Capital initial",
+    "notSet": "non saisi",
+    "ownerContributions": "Apports nets du patron",
+    "capitalUsed": "Capital pris en compte",
+    "netResult": "Résultat net",
+    "percent": "Rapport au capital",
+    "noCapital": "Saisissez le capital initial de cette caisse pour calculer son résultat net.",
+    "savedProfits": "Bénéfices enregistrés",
+    "savedProfitsHint": "Cumul des bénéfices du jour enregistrés pour cette caisse (en MRO), à titre d’information : il ne s’ajoute pas au résultat.",
+    "saving": "Enregistrement…",
+    "save": {
+      "open": "Enregistrer le bilan",
+      "title": "Enregistrer le bilan de {{name}} ?",
+      "hint": "Photo datée du bilan de cette caisse, avec le capital utilisé.",
+      "separately": "Le bilan de l’autre caisse s’enregistre séparément.",
+      "replaces": "Le bilan déjà enregistré aujourd’hui pour cette caisse sera remplacé.",
+      "confirm": "Je confirme",
+      "back": "Annuler",
+      "done": "Bilan de {{name}} enregistré ({{time}})."
+    },
+    "capital": {
+      "open": "Capital initial",
+      "title": "Capital initial · {{name}}",
+      "hint": "Dans la devise de la caisse. Chaque saisie est gardée et tracée ; la plus récente fait foi.",
+      "none": "Aucun capital initial saisi pour cette caisse.",
+      "current": "Capital initial actuel : {{amount}}.",
+      "amount": "Nouveau capital initial",
+      "reason": "Motif (facultatif)",
+      "save": "Enregistrer le capital",
+      "history": "Saisies précédentes"
+    },
+    "history": {
+      "title": "Bilans enregistrés (30 derniers jours)",
+      "empty": "Aucun bilan enregistré."
+    }
+  },
+  "users": {
+    "detailTitle": "Fiche du compte",
+    "backToList": "Retour aux comptes",
+    "offline": "Pas de réseau : créer, bloquer ou modifier un compte exige le réseau.",
+    "empty": "Aucun compte ne correspond à ces filtres.",
+    "saving": "Enregistrement…",
+    "back": "Annuler",
+    "never": "jamais",
+    "actions": "Actions sur le compte",
+    "statuses": {
+      "Active": "Actif",
+      "Blocked": "Bloqué"
+    },
+    "marks": {
+      "active": "Actif",
+      "blocked": "Bloqué",
+      "temporaryPassword": "Mot de passe temporaire",
+      "locked": "Verrouillé",
+      "lockedUntil": "Verrouillé jusqu’à {{time}}"
+    },
+    "fields": {
+      "fullName": "Nom complet",
+      "email": "Email (sert à se connecter)",
+      "phone": "Téléphone",
+      "phoneOptional": "Téléphone (facultatif, avec l’indicatif ; vide = retiré)",
+      "role": "Rôle",
+      "agency": "Agence",
+      "status": "Statut",
+      "lastLogin": "Dernière connexion"
+    },
+    "filters": {
+      "label": "Filtres des comptes",
+      "search": "Rechercher un compte",
+      "searchPlaceholder": "Nom, email ou téléphone",
+      "allAgencies": "Toutes les agences",
+      "allRoles": "Tous les rôles",
+      "allStatuses": "Tous les statuts",
+      "reset": "Effacer les filtres"
+    },
+    "create": {
+      "open": "Nouveau compte",
+      "title": "Nouveau compte",
+      "hint": "Un mot de passe temporaire sera créé ; le compte devra le changer à la première connexion.",
+      "passwordNote": "Le mot de passe temporaire sera affiché une seule fois, juste après la création.",
+      "nameRequired": "Le nom est obligatoire.",
+      "emailRequired": "L’email est obligatoire.",
+      "submit": "Créer le compte",
+      "done": "Compte créé"
+    },
+    "password": {
+      "title": "Mot de passe temporaire",
+      "copy": "Copier",
+      "copied": "Copié",
+      "once": "Il ne sera plus jamais affiché. Transmettez-le à la personne : elle devra le changer à sa première connexion.",
+      "done": "J’ai transmis le mot de passe"
+    },
+    "profile": {
+      "open": "Modifier le nom, l’email, le téléphone",
+      "title": "Modifier le profil",
+      "hint": "Les sessions ouvertes sont gardées.",
+      "save": "Enregistrer le profil"
+    },
+    "role": {
+      "open": "Changer le rôle ou l’agence",
+      "title": "Rôle et agence",
+      "hint": "Un Superviseur n’a pas d’agence : il voit les deux.",
+      "reset": "Changer le rôle ou l’agence efface les permissions ajustées et les plafonds de ce compte.",
+      "save": "Enregistrer"
+    },
+    "block": {
+      "open": "Bloquer le compte",
+      "title": "Bloquer « {{name}} » ?",
+      "text": "Toutes ses sessions sont fermées tout de suite ; il ne peut plus se connecter jusqu’au déblocage.",
+      "confirm": "Bloquer le compte"
+    },
+    "unblock": {
+      "open": "Débloquer le compte",
+      "title": "Débloquer « {{name}} » ?",
+      "text": "L’ancien mot de passe ne marchera plus : un nouveau mot de passe temporaire sera affiché une seule fois.",
+      "confirm": "Débloquer"
+    },
+    "reset": {
+      "open": "Nouveau mot de passe temporaire",
+      "title": "Réinitialiser le mot de passe de « {{name}} » ?",
+      "text": "Un nouveau mot de passe temporaire sera affiché une seule fois ; le verrouillage est levé et toutes ses sessions sont fermées. Un compte bloqué reste bloqué.",
+      "confirm": "Réinitialiser"
+    },
+    "tabs": {
+      "label": "Réglages du compte",
+      "permissions": "Permissions",
+      "partyScope": "Tiers autorisés",
+      "limits": "Plafonds",
+      "sessions": "Sessions"
+    },
+    "permissions": {
+      "template": "Modèle de rôle : {{role}}",
+      "supervisorHasAll": "Un Superviseur a toujours toutes les permissions : pour réduire ses droits, changez son rôle.",
+      "sources": {
+        "Role": "du rôle",
+        "Added": "ajoutée",
+        "Removed": "retirée",
+        "None": "non accordée"
+      },
+      "pending": "modifiée · à enregistrer",
+      "granted": "Accordée",
+      "notGranted": "Non accordée",
+      "save": "Enregistrer les permissions",
+      "saved": "Permissions enregistrées : effet immédiat."
+    },
+    "permissionNames": {
+      "users": {
+        "manage": "Gérer les comptes"
+      },
+      "agencies": {
+        "manage": "Gérer les agences (couleur)"
+      },
+      "treasury": {
+        "manage": "Gérer les comptes de trésorerie"
+      },
+      "cash": {
+        "budget": {
+          "read": "Lire le budget de la caisse et les soldes",
+          "save": "Enregistrer le budget de la caisse"
+        },
+        "create": "Enregistrer un mouvement de caisse",
+        "manage": "Annuler un mouvement, ajuster un solde"
+      },
+      "parties": {
+        "create": "Créer un tiers",
+        "manage": "Modifier un tiers",
+        "view_balance": "Voir les soldes des tiers"
+      },
+      "rates": {
+        "set_daily": "Fixer les taux du jour"
+      },
+      "profit": {
+        "view": "Voir le bénéfice et le prix d’achat"
+      },
+      "transfers": {
+        "create": "Créer un transfert",
+        "credit": "Activer le crédit",
+        "deliver": "Livrer un transfert",
+        "cancel": "Annuler un transfert",
+        "manage_code": "Débloquer un code, livrer sans code",
+        "edit_rate": "Modifier le montant ou le taux d’un transfert"
+      },
+      "balance": {
+        "view": "Voir le bilan et le tableau de bord",
+        "manage": "Enregistrer le bilan, saisir le capital"
+      },
+      "audit": {
+        "view": "Lire le journal d’audit"
+      }
+    },
+    "partyScope": {
+      "all": "Tous les tiers",
+      "limited": "Liste limitée",
+      "allowed": "Tiers autorisés",
+      "count_zero": "{{count}} tiers autorisé(s). Ce compte ne verra que ceux-là ; ceux qu’il crée s’ajoutent seuls.",
+      "count_one": "{{count}} tiers autorisé(s). Ce compte ne verra que ceux-là ; ceux qu’il crée s’ajoutent seuls.",
+      "count_two": "{{count}} tiers autorisé(s). Ce compte ne verra que ceux-là ; ceux qu’il crée s’ajoutent seuls.",
+      "count_few": "{{count}} tiers autorisé(s). Ce compte ne verra que ceux-là ; ceux qu’il crée s’ajoutent seuls.",
+      "count_many": "{{count}} tiers autorisé(s). Ce compte ne verra que ceux-là ; ceux qu’il crée s’ajoutent seuls.",
+      "count_other": "{{count}} tiers autorisé(s). Ce compte ne verra que ceux-là ; ceux qu’il crée s’ajoutent seuls.",
+      "add": "Ajouter un tiers",
+      "remove": "Retirer {{name}}",
+      "save": "Enregistrer",
+      "saved": "Tiers autorisés enregistrés : effet immédiat.",
+      "supervisorSeesAll": "Un Superviseur voit toujours tous les tiers."
+    },
+    "limits": {
+      "hint": "Dans la devise de l’agence du compte. Vide = pas de limite. Un dépassement est refusé, avec le montant encore possible.",
+      "perTransfer": "Plafond par transfert",
+      "perDay": "Plafond par jour (transferts enregistrés)",
+      "creditPerDay": "Plafond de crédit par jour",
+      "none": "pas de limite",
+      "save": "Enregistrer les plafonds",
+      "saved": "Plafonds enregistrés.",
+      "supervisorHasNone": "Un Superviseur n’a jamais de plafond.",
+      "noAgency": "Ce compte n’a pas d’agence : pas de plafond."
+    },
+    "sessions": {
+      "none": "Aucune session ouverte.",
+      "unknownDevice": "Appareil inconnu",
+      "current": "cet appareil",
+      "times": "Ouverte le {{started}} · dernière activité {{used}}",
+      "close": "Fermer la session"
+    }
+  },
+  "audit": {
+    "system": "Le système",
+    "reason": "Motif : {{reason}}",
+    "changes": "Changements",
+    "becomes": "devient",
+    "device": "Appareil",
+    "permissionGranted": "a accordé « {{name}} »",
+    "permissionRemoved": "a retiré « {{name}} »",
+    "filters": "Filtres du journal",
+    "period": "Période",
+    "presets": {
+      "today": "Aujourd’hui",
+      "last7": "7 derniers jours",
+      "last30": "30 derniers jours"
+    },
+    "from": "Du",
+    "to": "Au",
+    "family": "Actions",
+    "allFamilies": "Toutes les actions",
+    "count_zero": "{{count}} action(s)",
+    "count_one": "{{count}} action",
+    "count_two": "{{count}} action(s)",
+    "count_few": "{{count}} action(s)",
+    "count_many": "{{count}} action(s)",
+    "count_other": "{{count}} actions",
+    "empty": "Aucune action enregistrée sur cette période.",
+    "pagination": "Pages du journal",
+    "entities": {
+      "UserAccount": "un compte",
+      "Party": "un tiers",
+      "Transfer": "un transfert",
+      "Agency": "une agence",
+      "TreasuryAccount": "un compte de trésorerie"
+    },
+    "values": {
+      "none": "—",
+      "set": "renseigné",
+      "changed": "changé",
+      "true": "oui",
+      "false": "non"
+    },
+    "fields": {
+      "fullName": "Nom",
+      "email": "Email",
+      "phone": "Téléphone",
+      "role": "Rôle",
+      "agency": "Agence",
+      "status": "Statut",
+      "name": "Nom",
+      "type": "Type",
+      "nni": "NNI",
+      "address": "Adresse",
+      "note": "Note",
+      "inBalanceSheet": "Dans le bilan",
+      "isArchived": "Archivé",
+      "openingBalance": "Solde initial",
+      "creditLimit": "Plafond de crédit",
+      "perTransfer": "Plafond par transfert",
+      "perDay": "Plafond par jour",
+      "creditPerDay": "Plafond de crédit par jour",
+      "limited": "Liste de tiers limitée",
+      "adjustment": "Ajustement",
+      "saleRate": "Prix de vente",
+      "purchaseRate": "Prix d’achat",
+      "date": "Date",
+      "initialCapital": "Capital initial",
+      "color": "Couleur"
+    },
+    "actions": {
+      "Identity": {
+        "Account": {
+          "Created": "{{actor}} a créé le compte {{entity}}",
+          "ProfileUpdated": "{{actor}} a modifié le profil de {{entity}}",
+          "RoleChanged": "{{actor}} a changé le rôle de {{entity}}",
+          "AgencyChanged": "{{actor}} a changé l’agence de {{entity}}",
+          "Blocked": "{{actor}} a bloqué le compte {{entity}}",
+          "Unblocked": "{{actor}} a débloqué le compte {{entity}}",
+          "PasswordReset": "{{actor}} a réinitialisé le mot de passe de {{entity}}",
+          "PermissionsChanged": "{{actor}} a changé les permissions de {{entity}}",
+          "LimitsChanged": "{{actor}} a changé les plafonds de {{entity}}"
+        },
+        "Session": {
+          "Revoked": "{{actor}} a fermé une session de {{entity}}"
+        }
+      },
+      "Parties": {
+        "AccountScope": {
+          "Changed": "{{actor}} a changé les tiers autorisés de {{entity}}"
+        },
+        "Party": {
+          "Created": "{{actor}} a créé le tiers {{entity}}",
+          "Updated": "{{actor}} a modifié la fiche du tiers {{entity}}",
+          "OpeningBalanceChanged": "{{actor}} a changé le solde initial de {{entity}}",
+          "CreditLimitChanged": "{{actor}} a changé le plafond de crédit de {{entity}}",
+          "Archived": "{{actor}} a archivé le tiers {{entity}}",
+          "Unarchived": "{{actor}} a désarchivé le tiers {{entity}}"
+        }
+      },
+      "Cash": {
+        "Movement": {
+          "Cancelled": "{{actor}} a annulé un mouvement de caisse"
+        },
+        "Adjustment": {
+          "Created": "{{actor}} a ajusté le solde de {{entity}}"
+        }
+      },
+      "Transfers": {
+        "Transfer": {
+          "Cancelled": "{{actor}} a annulé un transfert",
+          "AmountsEdited": "{{actor}} a modifié le montant ou le taux d’un transfert",
+          "DeliveredWithoutCode": "{{actor}} a livré un transfert sans code",
+          "CodeUnlocked": "{{actor}} a débloqué le code d’un transfert",
+          "CodeReplaced": "{{actor}} a donné un nouveau code à un transfert"
+        }
+      },
+      "Rates": {
+        "DailyRate": {
+          "Set": "{{actor}} a fixé le taux du jour"
+        }
+      },
+      "Balance": {
+        "Capital": {
+          "Set": "{{actor}} a saisi le capital initial d’une caisse"
+        }
+      },
+      "Organization": {
+        "Agency": {
+          "ColorChanged": "{{actor}} a changé la couleur d’une agence"
+        }
+      }
+    },
+    "families": {
+      "Identity": {
+        "Account": "Comptes",
+        "Session": "Sessions"
+      },
+      "Parties": "Tiers",
+      "Transfers": "Transferts",
+      "Cash": "Caisse",
+      "Rates": "Taux du jour",
+      "Balance": "Bilan",
+      "Organization": "Agences"
+    }
+  },
+  "me": {
+    "sessions": {
+      "hint": "Les appareils connectés à votre compte. Fermez une session que vous ne reconnaissez pas (téléphone perdu…).",
+      "offline": "Pas de réseau : fermer une session exige le réseau.",
+      "currentHint": "Pour cet appareil, utilisez « Se déconnecter »."
+    }
+  },
+  "realtime": {
+    "reconnecting": "Mises à jour en direct interrompues : reconnexion en cours…",
+    "disconnected": "Mises à jour en direct coupées : les nouveautés de l’autre agence n’arrivent plus d’elles-mêmes. Nouvel essai bientôt."
   }
 }

@@ -67,7 +67,7 @@ public sealed class GetPartyStatementQueryHandler(
             s.To,
             s.OpeningBalance,
             [.. s.Lines.Select(l => new PartyStatementLine(
-                l.OperationDate, l.RecordedAt, l.Label, l.Reason, l.IsReversal, l.Debit, l.Credit, l.BalanceAfter))],
+                l.OperationDate, l.RecordedAt, l.EntryType, l.Label, l.Reason, l.IsReversal, l.Debit, l.Credit, l.BalanceAfter))],
             s.ClosingBalance);
     }
 }

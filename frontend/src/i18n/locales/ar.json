@@ -152,6 +152,51 @@
         "Invalid": "انتهت جلستك. سجّل الدخول من جديد.",
         "Expired": "انتهت صلاحية جلستك. سجّل الدخول من جديد.",
         "Revoked": "تم إغلاق جلستك. سجّل الدخول من جديد."
+      },
+      "Account": {
+        "NotFound": "الحساب غير موجود.",
+        "EmailTaken": "هذا البريد مستعمل في حساب آخر.",
+        "PhoneTaken": "هذا الرقم مستعمل في حساب آخر.",
+        "FullNameEmpty": "الاسم إلزامي.",
+        "FullNameTooLong": "الاسم طويل جدًا.",
+        "RoleInvalid": "دور غير معروف.",
+        "StatusInvalid": "حالة غير معروفة.",
+        "AgencyRequired": "اختر فرع الحساب.",
+        "AgencyNotFound": "هذا الفرع غير موجود.",
+        "AgencyNotAllowedForSupervisor": "المشرف ليس له فرع.",
+        "AlreadyBlocked": "هذا الحساب محظور من قبل.",
+        "NotBlocked": "هذا الحساب غير محظور.",
+        "CannotBlockSelf": "لا يمكنك حظر حسابك.",
+        "CannotChangeOwnRole": "لا يمكنك تغيير دورك.",
+        "CannotResetOwnPassword": "غيّر كلمة مرورك من حسابك.",
+        "LastActiveSupervisor": "غير ممكن: إنه آخر مشرف نشط. أنشئ أو ارفع الحظر عن مشرف آخر أولًا.",
+        "SupervisorOnly": "هذا الإجراء للمشرف فقط.",
+        "OtherAgency": "لا تدير إلا حسابات فرعك.",
+        "Blocked": "هذا الحساب محظور."
+      },
+      "Email": {
+        "Empty": "البريد الإلكتروني إلزامي.",
+        "Invalid": "بريد إلكتروني غير صالح.",
+        "TooLong": "البريد الإلكتروني طويل جدًا."
+      },
+      "Phone": {
+        "Empty": "الهاتف فارغ.",
+        "Invalid": "يجب أن يكون الرقم بالصيغة الدولية (مثال +222 22 12 34 56)."
+      },
+      "Permissions": {
+        "Required": "أرسل قائمة الصلاحيات.",
+        "Unknown": "صلاحية غير معروفة.",
+        "SupervisorOnly": "المشرف وحده يمنح أو يسحب الصلاحيات.",
+        "SupervisorHasAll": "المشرف يحتفظ بكل الصلاحيات."
+      },
+      "Limits": {
+        "AgencyRequired": "هذا الحساب ليس له فرع.",
+        "Negative": "لا يمكن أن يكون السقف سالبًا.",
+        "TooPrecise": "أرقام عشرية كثيرة بالنسبة لعملة الفرع.",
+        "SupervisorHasNone": "المشرف ليس له سقف."
+      },
+      "Session": {
+        "NotFound": "الجلسة غير موجودة أو مغلقة."
       }
     },
     "Rates": {
@@ -245,10 +290,38 @@
         "TypeInvalid": "نوع طرف غير معروف.",
         "PhoneTaken": "هذا الرقم لطرف آخر: ابحث عنه في القائمة.",
         "NniTaken": "رقم التعريف هذا لطرف آخر.",
-        "NotFound": "الطرف غير موجود."
+        "NotFound": "الطرف غير موجود.",
+        "NniTooLong": "الرقم الوطني يتجاوز 20 حرفًا.",
+        "AddressTooLong": "العنوان يتجاوز 200 حرف.",
+        "NoteTooLong": "الملاحظة تتجاوز 500 حرف.",
+        "AgencyAccountNotFound": "ليس لهذا الطرف حساب في هذا الفرع.",
+        "Archived": "هذا الطرف مؤرشف: ألغِ أرشفته أولًا.",
+        "AlreadyArchived": "هذا الطرف مؤرشف من قبل.",
+        "NotArchived": "هذا الطرف غير مؤرشف.",
+        "BalanceNotZero": "يجب أن يكون الرصيد صفرًا في الفرعين لأرشفة هذا الطرف.",
+        "CreditLimitNegative": "سقف الدين موجب أو صفر.",
+        "AmountRequired": "المبلغ إلزامي.",
+        "InBalanceSheetRequired": "حدِّد هل الطرف داخل الميزانية."
       },
       "Phone": {
         "Invalid": "يجب أن يكون الرقم بالصيغة الدولية، مثال +222 22 12 34 56 أو +221 77 123 45 67."
+      },
+      "List": {
+        "AgencyRequiredForBalanceFilter": "اختر فرعًا للتصفية حسب الرصيد.",
+        "BalanceFilterInvalid": "تصفية الرصيد غير معروفة.",
+        "BalanceNotVisible": "لا يمكن لحسابك رؤية أرصدة الأطراف.",
+        "BalanceSheetFilterInvalid": "تصفية «الميزانية» غير معروفة."
+      },
+      "Statement": {
+        "AgencyRequired": "اختر فرع كشف الحساب.",
+        "NotVisible": "لا يمكن لحسابك قراءة كشف حساب هذا الطرف."
+      },
+      "Scope": {
+        "SupervisorOnly": "المشرف وحده يحدد الأطراف المسموحة لحساب.",
+        "AccountNotFound": "الحساب غير موجود.",
+        "SupervisorSeesAll": "المشرف يرى دائمًا كل الأطراف.",
+        "LimitedRequired": "حدِّد هل الحساب محدود.",
+        "PartyNotFound": "أحد الأطراف المختارة غير موجود."
       }
     },
     "Money": {
@@ -261,6 +334,85 @@
       },
       "Mru": {
         "TooManyDecimals": "المبلغ بالأوقية الجديدة بثلاثة أرقام عشرية على الأكثر."
+      }
+    },
+    "Treasury": {
+      "Account": {
+        "NotFound": "حساب الخزينة غير موجود.",
+        "NameEmpty": "اسم الحساب إلزامي.",
+        "NameTooLong": "اسم الحساب يتجاوز 50 حرفًا.",
+        "NameTaken": "يوجد حساب بهذا الاسم في هذا الفرع.",
+        "TypeInvalid": "نوع الحساب غير معروف.",
+        "AgencyRequired": "اختر فرعًا.",
+        "AgencyNotFound": "هذا الفرع غير موجود.",
+        "AlreadyInactive": "هذا الحساب معطّل من قبل.",
+        "AlreadyActive": "هذا الحساب نشط من قبل.",
+        "BalanceNotZero": "يجب أن يكون الرصيد صفرًا لتعطيل الحساب: حوّل المبلغ المتبقي أولًا."
+      },
+      "Statement": {
+        "NotVisible": "لا يمكن لحسابك قراءة حركات حساب الخزينة هذا."
+      }
+    },
+    "Ledger": {
+      "Entry": {
+        "FutureDate": "لا يمكن أن يكون تاريخ العملية في المستقبل."
+      },
+      "Statement": {
+        "PeriodInvalid": "يجب أن يكون تاريخ البداية قبل تاريخ النهاية."
+      }
+    },
+    "Cash": {
+      "Movement": {
+        "NotFound": "حركة الصندوق غير موجودة.",
+        "TypeInvalid": "نوع العملية غير معروف.",
+        "AmountInvalid": "يجب أن يكون المبلغ أكبر من صفر.",
+        "UnitInvalid": "وحدة غير معروفة.",
+        "PartyRequired": "الطرف إلزامي للقبض أو الصرف.",
+        "PartyNotAllowed": "هذه العملية تتم بدون طرف.",
+        "PartyNotFound": "الطرف غير موجود.",
+        "PartyArchived": "هذا الطرف مؤرشف: لا يمكن أي عملية.",
+        "DestinationRequired": "اختر الحساب المستقبِل.",
+        "DestinationNotAllowed": "التحويل الداخلي وحده له حساب مستقبِل.",
+        "SameAccount": "يجب أن يكون الحساب المستقبِل مختلفًا.",
+        "AccountNotAllowed": "حساب غير معروف أو معطّل أو من فرع آخر.",
+        "AgencyNotAllowed": "حسابك لا يعمل إلا على صندوق فرعه.",
+        "AgencyRequired": "اختر الفرع.",
+        "FutureDate": "لا يمكن أن يكون التاريخ في المستقبل.",
+        "NoteTooLong": "الملاحظة تتجاوز 500 حرف.",
+        "AlreadyCancelled": "هذه الحركة ملغاة من قبل.",
+        "ReasonRequired": "السبب إلزامي.",
+        "ReasonTooLong": "السبب يتجاوز 500 حرف.",
+        "IdempotencyKeyRequired": "إرسال غير مكتمل: أعد المحاولة."
+      },
+      "Filter": {
+        "PageInvalid": "صفحة غير صالحة.",
+        "PeriodInvalid": "يجب أن يكون تاريخ البداية قبل تاريخ النهاية."
+      },
+      "Adjustment": {
+        "TargetInvalid": "هدف غير معروف.",
+        "TargetNotFound": "حساب أو طرف غير موجود أو معطّل أو مؤرشف أو من فرع آخر.",
+        "AmountInvalid": "يجب أن يكون مبلغ التسوية غير صفر.",
+        "ReasonRequired": "السبب إلزامي.",
+        "ReasonTooLong": "السبب يتجاوز 500 حرف."
+      }
+    },
+    "Profit": {
+      "Filter": {
+        "AgencyNotFound": "هذا الفرع غير موجود.",
+        "PeriodInvalid": "يجب أن يكون تاريخ البداية قبل تاريخ النهاية."
+      }
+    },
+    "Balance": {
+      "Agency": {
+        "Required": "اختر الصندوق.",
+        "NotFound": "صندوق غير معروف."
+      },
+      "Capital": {
+        "AmountInvalid": "رأس المال موجب: رقمان عشريان على الأكثر بالأوقية، والفرنك عدد صحيح.",
+        "ReasonTooLong": "السبب يتجاوز 500 حرف."
+      },
+      "Filter": {
+        "PeriodInvalid": "يجب أن يكون تاريخ البداية قبل تاريخ النهاية."
       }
     }
   },
@@ -665,7 +817,868 @@
       "phone": "الهاتف (اختياري، مع رمز البلد)",
       "nameRequired": "الاسم إلزامي.",
       "submit": "إنشاء الطرف",
-      "creating": "جارٍ الإنشاء…"
+      "creating": "جارٍ الإنشاء…",
+      "open": "طرف جديد"
+    },
+    "balance": {
+      "red": "عليه",
+      "green": "له",
+      "zero": "مسدَّد"
+    },
+    "inBalanceSheet": "داخل الميزانية",
+    "outOfBalanceSheet": "خارج الميزانية",
+    "archived": "مؤرشف",
+    "offline": "لا توجد شبكة: إنشاء طرف أو تعديله يتطلب الشبكة.",
+    "count_zero": "{{count}} / {{total}} طرفًا",
+    "count_one": "{{count}} / {{total}} طرفًا",
+    "count_two": "{{count}} / {{total}} طرفًا",
+    "count_few": "{{count}} / {{total}} طرفًا",
+    "count_many": "{{count}} / {{total}} طرفًا",
+    "count_other": "{{count}} / {{total}} طرفًا",
+    "totals": {
+      "red": "عليهم لنا",
+      "green": "لهم علينا",
+      "net": "الصافي",
+      "netState": {
+        "red": "لنا",
+        "green": "علينا",
+        "zero": "متوازن"
+      }
+    },
+    "filters": {
+      "label": "تصفية",
+      "search": "البحث عن طرف",
+      "searchPlaceholder": "الاسم أو الهاتف أو الرقم الوطني",
+      "type": "النوع",
+      "allTypes": "كل الأنواع",
+      "balanceSheet": "الميزانية",
+      "all": "الكل",
+      "in": "داخل الميزانية",
+      "out": "خارج الميزانية",
+      "balance": "الرصيد",
+      "red": "أحمر · عليهم لنا",
+      "green": "أخضر · لهم علينا",
+      "archived": "إظهار المؤرشفين",
+      "reset_zero": "إعادة الضبط ({{count}})",
+      "reset_one": "إعادة الضبط ({{count}})",
+      "reset_two": "إعادة الضبط ({{count}})",
+      "reset_few": "إعادة الضبط ({{count}})",
+      "reset_many": "إعادة الضبط ({{count}})",
+      "reset_other": "إعادة الضبط ({{count}})"
+    },
+    "empty": {
+      "title": "لم يتم العثور على أي طرف.",
+      "reset": "إعادة ضبط التصفية"
+    },
+    "credit": {
+      "limit": "سقف الدين",
+      "used": "الجزء المستعمل من السقف",
+      "noLimit": "لا يوجد سقف للدين.",
+      "noCredit": "لا يُسمح بأي دين (السقف صفر).",
+      "usage": "مستعمل {{percent}} % · يبقى {{amount}}",
+      "over": "تم تجاوز السقف بـ {{amount}}: سيُرفض كل دين جديد."
+    },
+    "detail": {
+      "title": "بطاقة الطرف",
+      "backToList": "العودة إلى قائمة الأطراف",
+      "accountCode": "الحساب {{code}}",
+      "phone": "الهاتف",
+      "nni": "الرقم الوطني",
+      "address": "العنوان",
+      "note": "ملاحظة",
+      "balances": "الرصيد وسقف الدين لكل فرع",
+      "statement": "عرض كشف الحساب"
+    },
+    "statement": {
+      "title": "كشف الحساب",
+      "backToParty": "العودة إلى البطاقة",
+      "legend": "«+» يزيد ما عليه، «−» يزيد ما له."
+    },
+    "manage": {
+      "label": "إجراءات المشرف",
+      "offline": "لا توجد شبكة: التعديل أو الأرشفة أو تغيير الرصيد الافتتاحي أو السقف يتطلب الشبكة.",
+      "edit": "تعديل البطاقة",
+      "editTitle": "تعديل بطاقة الطرف",
+      "nni": "الرقم الوطني (20 حرفًا على الأكثر)",
+      "inBalanceSheet": "داخل الميزانية (يُحسب في ميزانية الصندوق)",
+      "save": "حفظ البطاقة",
+      "saving": "جارٍ الحفظ…",
+      "back": "رجوع",
+      "archive": "أرشفة",
+      "unarchive": "إلغاء الأرشفة",
+      "archiveTitle": "أرشفة «{{name}}»؟",
+      "unarchiveTitle": "إلغاء أرشفة «{{name}}»؟",
+      "archiveText": "يختفي الطرف من القائمة ولا يمكن استعماله لدين أو حركة صندوق. لا يُحذف: يمكن إلغاء أرشفته.",
+      "unarchiveText": "يعود الطرف إلى القائمة ويمكن استعماله من جديد لدين أو حركة صندوق.",
+      "archiveBlocked": "لأرشفة هذا الطرف يجب أن يكون رصيده صفرًا في الفرعين.",
+      "opening": "الرصيد الافتتاحي",
+      "openingFor": "الرصيد الافتتاحي · {{agency}}",
+      "openingTitle": "الرصيد الافتتاحي · {{agency}}",
+      "openingHint": "يسجل الخادم قيدًا افتتاحيًا بالفرق مع الرصيد الافتتاحي الحالي.",
+      "currentOpening": "الرصيد الافتتاحي الحالي",
+      "currentBalance": "الرصيد الحالي (كل العمليات)",
+      "direction": "اتجاه الرصيد الافتتاحي",
+      "newOpening": "الرصيد الافتتاحي الجديد",
+      "openingDate": "تاريخ القيد الافتتاحي",
+      "difference": "القيد الافتتاحي: {{amount}}",
+      "noChange": "لا تغيير: لن يُسجَّل شيء.",
+      "saveOpening": "حفظ الرصيد الافتتاحي",
+      "limit": "السقف",
+      "limitFor": "سقف الدين · {{agency}}",
+      "limitTitle": "سقف الدين · {{agency}}",
+      "currentLimit": "السقف الحالي: {{amount}}.",
+      "limitMode": {
+        "none": "بدون سقف",
+        "limit": "تحديد سقف"
+      },
+      "limitHint": "0 = لا يُسمح بأي دين. السقف يمنع الجميع، بما فيهم المشرف.",
+      "saveLimit": "حفظ السقف"
+    },
+    "amount": {
+      "unit": "وحدة الإدخال",
+      "empty": "أدخل مبلغًا (0 مسموح).",
+      "invalid": "أدخل رقمًا (مثال 150000 أو 1250,50).",
+      "tooPreciseMRO": "رقمان عشريان على الأكثر بـ MRO.",
+      "tooPreciseMRU": "ثلاثة أرقام عشرية على الأكثر بـ MRU.",
+      "tooPreciseXOF": "الفرنك الإفريقي دائمًا عدد صحيح."
+    },
+    "entryTypes": {
+      "Parties": {
+        "OpeningBalance": "الرصيد الافتتاحي"
+      },
+      "Transfers": {
+        "Created": "دين على حوالة",
+        "Edited": "دين حوالة معدَّلة",
+        "Delivered": "تسليم حوالة"
+      },
+      "Cash": {
+        "Receipt": "قبض",
+        "Payment": "صرف",
+        "Adjustment": "تسوية رصيد"
+      }
     }
+  },
+  "treasury": {
+    "types": {
+      "Cash": "صندوق نقدي",
+      "Bank": "بنك",
+      "Wallet": "محفظة"
+    },
+    "groups": {
+      "cash": "الصناديق",
+      "banks": "البنوك والمحافظ"
+    },
+    "active": "نشط",
+    "inactive": "معطّل",
+    "balance": "الرصيد",
+    "activeTotal": "مجموع الحسابات النشطة",
+    "empty": "لا يوجد بعد أي حساب خزينة لهذا الفرع.",
+    "offline": "لا توجد شبكة: إنشاء حساب أو تغيير اسمه أو تعطيله أو إعادة تفعيله يتطلب الشبكة.",
+    "create": {
+      "open": "حساب جديد",
+      "title": "حساب خزينة جديد",
+      "hint": "صندوق أو بنك أو محفظة. العملة هي عملة الفرع.",
+      "name": "الاسم (50 حرفًا على الأكثر)",
+      "type": "النوع",
+      "agency": "الفرع",
+      "agencyFixed": "الفرع: {{agency}}",
+      "nameRequired": "الاسم إلزامي.",
+      "openingBalanceNote": "يبدأ الحساب برصيد صفر.",
+      "submit": "إنشاء الحساب",
+      "creating": "جارٍ الإنشاء…"
+    },
+    "actions": {
+      "name": "اسم الحساب",
+      "rename": "تغيير الاسم",
+      "saving": "جارٍ الحفظ…",
+      "deactivate": "تعطيل هذا الحساب",
+      "deactivating": "جارٍ التعطيل…",
+      "reactivate": "إعادة تفعيل هذا الحساب",
+      "reactivating": "جارٍ إعادة التفعيل…",
+      "back": "رجوع",
+      "confirmTitle": "تعطيل «{{name}}»؟",
+      "confirmText": "لن يظهر الحساب في اختيارات الدفع أو التسليم. يبقى ظاهرًا هنا ويمكن إعادة تفعيله.",
+      "balanceNotZero": "لتعطيل هذا الحساب يجب أن يكون رصيده صفرًا: حوّل المبلغ المتبقي أولًا."
+    },
+    "detail": {
+      "title": "حساب الخزينة",
+      "backToList": "العودة إلى حسابات الخزينة",
+      "manage": "تغيير الاسم أو التعطيل أو إعادة التفعيل",
+      "statement": "حركات الحساب",
+      "legend": "«+»: مال دخل إلى الحساب؛ «−»: مال خرج منه.",
+      "noStatement": "لا يمكن لحسابك رؤية أرصدة وحركات حسابات الخزينة."
+    },
+    "entryTypes": {
+      "Transfers": {
+        "Created": "دفع حوالة",
+        "Edited": "تعديل حوالة",
+        "Delivered": "تسليم حوالة"
+      },
+      "Cash": {
+        "Receipt": "قبض",
+        "Payment": "صرف",
+        "OwnerContribution": "تزويد الصندوق",
+        "OwnerWithdrawal": "سحب المالك",
+        "InternalTransfer": "تحويل داخلي",
+        "Adjustment": "تسوية رصيد"
+      }
+    }
+  },
+  "statement": {
+    "title": "كشف الحساب",
+    "period": "فترة الكشف",
+    "from": "من",
+    "to": "إلى",
+    "opening": "رصيد البداية · {{date}}",
+    "closing": "رصيد النهاية · {{date}}",
+    "after": "الرصيد بعد",
+    "reversal": "عملية عكسية",
+    "empty": "لا توجد عمليات في هذه الفترة."
+  },
+  "money": {
+    "unit": "وحدة الإدخال"
+  },
+  "cash": {
+    "types": {
+      "Receipt": "قبض",
+      "Payment": "صرف",
+      "OwnerContribution": "تزويد الصندوق",
+      "OwnerWithdrawal": "سحب المالك",
+      "InternalTransfer": "تحويل داخلي"
+    },
+    "ownerContribution": "مساهمات المالك",
+    "cancelled": "ملغاة",
+    "cancellationReason": "السبب: {{reason}}",
+    "agencyChoice": "صندوق:",
+    "new": "حركة جديدة",
+    "offline": "لا توجد شبكة: تسجيل حركة صندوق يتطلب الشبكة حاليًا.",
+    "count_zero": "{{count}} / {{total}} حركة",
+    "count_one": "{{count}} / {{total}} حركة",
+    "count_two": "{{count}} / {{total}} حركة",
+    "count_few": "{{count}} / {{total}} حركة",
+    "count_many": "{{count}} / {{total}} حركة",
+    "count_other": "{{count}} / {{total}} حركة",
+    "empty": "لا توجد حركات في هذه الفترة.",
+    "pagination": "صفحات الحركات",
+    "previous": "السابقة",
+    "next": "التالية",
+    "page": "الصفحة {{page}} من {{last}}",
+    "totals": {
+      "incoming": "الواردات",
+      "outgoing": "الصادرات",
+      "net": "الصافي",
+      "internal_zero": "تحويلات داخلية: {{count}} · {{amount}}",
+      "internal_one": "تحويلات داخلية: {{count}} · {{amount}}",
+      "internal_two": "تحويلات داخلية: {{count}} · {{amount}}",
+      "internal_few": "تحويلات داخلية: {{count}} · {{amount}}",
+      "internal_many": "تحويلات داخلية: {{count}} · {{amount}}",
+      "internal_other": "تحويلات داخلية: {{count}} · {{amount}}"
+    },
+    "filters": {
+      "label": "تصفية الصندوق",
+      "search": "البحث في الملاحظات",
+      "searchPlaceholder": "نص الملاحظة",
+      "from": "من",
+      "to": "إلى",
+      "type": "النوع",
+      "allTypes": "كل الأنواع",
+      "account": "الحساب",
+      "allAccounts": "كل الحسابات"
+    },
+    "form": {
+      "title": "حركة صندوق جديدة",
+      "back": "العودة إلى الصندوق",
+      "type": "العملية",
+      "typeHint": {
+        "Receipt": "يدخل المال من طرف",
+        "Payment": "يخرج المال إلى طرف",
+        "OwnerContribution": "المالك يضيف مالًا",
+        "OwnerWithdrawal": "المالك يسحب مالًا",
+        "InternalTransfer": "من حساب إلى آخر في الفرع"
+      },
+      "agency": "الفرع",
+      "account": "حساب الخزينة",
+      "fromAccount": "من الحساب",
+      "toAccount": "إلى الحساب",
+      "chooseAccount": "اختر حسابًا",
+      "party": "الطرف (إلزامي)",
+      "amount": "المبلغ",
+      "note": "ملاحظة (اختيارية)",
+      "operationAt": "تاريخ ووقت العملية",
+      "now": "تاريخ العملية: الآن.",
+      "changeDate": "تغيير التاريخ",
+      "overdraft": "سيصبح الحساب «{{account}}» سالبًا: {{amount}}. يمكنك المتابعة.",
+      "effect": {
+        "in": "يدخل المال إلى الحساب المختار.",
+        "out": "يخرج المال من الحساب المختار.",
+        "internal": "سطران: خروج من الحساب الأول ودخول إلى الثاني. صافي الصندوق لا يتغير."
+      },
+      "save": "حفظ",
+      "saving": "جارٍ الحفظ…",
+      "errors": {
+        "accountRequired": "اختر حساب خزينة.",
+        "destinationRequired": "اختر الحساب المستقبِل.",
+        "sameAccount": "يجب أن يكون الحساب المستقبِل مختلفًا.",
+        "partyRequired": "الطرف إلزامي للقبض أو الصرف.",
+        "amount": {
+          "empty": "أدخل مبلغًا.",
+          "invalid": "أدخل رقمًا (مثال 150000 أو 1250,50).",
+          "notPositive": "يجب أن يكون المبلغ أكبر من صفر."
+        },
+        "tooPreciseMRO": "رقمان عشريان على الأكثر بـ MRO.",
+        "tooPreciseMRU": "ثلاثة أرقام عشرية على الأكثر بـ MRU.",
+        "tooPreciseXOF": "الفرنك الإفريقي دائمًا عدد صحيح.",
+        "dateInvalid": "تاريخ غير صالح.",
+        "futureDate": "لا يمكن أن يكون التاريخ في المستقبل."
+      }
+    },
+    "cancel": {
+      "button": "إلغاء",
+      "open": "إلغاء: {{type}} · {{who}}",
+      "title": "إلغاء هذه الحركة؟",
+      "hint": "تبقى الحركة في القائمة مشطوبة ولا تُحسب في المجاميع. يُعكس القيد اليوم.",
+      "reason": "السبب (إلزامي)",
+      "reasonRequired": "السبب إلزامي.",
+      "confirm": "إلغاء الحركة",
+      "cancelling": "جارٍ الإلغاء…"
+    },
+    "adjustment": {
+      "open": "تسوية رصيد",
+      "title": "تسوية رصيد · {{agency}}",
+      "hint": "تصحيح الرصيد بالفرق مقابل «الفروقات والتسويات». مسجَّل في سجل التدقيق ومُنبَّه عنه في فحص الاتساق.",
+      "target": "الرصيد المراد تصحيحه",
+      "targets": {
+        "TreasuryAccount": "حساب خزينة",
+        "Party": "طرف"
+      },
+      "party": "الطرف",
+      "direction": "اتجاه التصحيح",
+      "directions": {
+        "TreasuryAccount": {
+          "up": "زيادة الرصيد (مال أكثر في الحساب)",
+          "down": "إنقاص الرصيد (مال أقل في الحساب)"
+        },
+        "Party": {
+          "up": "زيادة ما عليه",
+          "down": "إنقاص ما عليه (أو زيادة ما له)"
+        }
+      },
+      "amount": "مبلغ التصحيح",
+      "after": "الرصيد الجديد لـ «{{account}}»: {{amount}}.",
+      "reason": "السبب (إلزامي)",
+      "save": "حفظ التسوية",
+      "listTitle": "تسويات الرصيد في الفترة",
+      "errors": {
+        "partyRequired": "اختر الطرف.",
+        "reasonRequired": "السبب إلزامي."
+      },
+      "account": "الحساب المراد تصحيحه"
+    }
+  },
+  "budget": {
+    "agencyChoice": "ميزانية:",
+    "total": "ميزانية الصندوق (مباشرة)",
+    "formula": "نقد + بنوك + أرصدة مدينة − أرصدة دائنة − تحويلات غير مسلَّمة",
+    "showDetail": "عرض التفاصيل",
+    "offline": "لا توجد شبكة: تسجيل الميزانية يتطلب الشبكة (تُحسب على الخادم).",
+    "lines": {
+      "cash": "نقدًا",
+      "banks": "البنوك والمحافظ",
+      "debtors": "أرصدة مدينة (عليهم لنا)",
+      "creditors": "أرصدة دائنة (لهم علينا)",
+      "undelivered": "تحويلات غير مسلَّمة"
+    },
+    "coherence": {
+      "title": "فحص الاتساق",
+      "since": "العمليات المسجلة منذ آخر ميزانية ({{date}}). التنبيهات لا تمنع التسجيل.",
+      "none": "لا شيء يُذكر منذ آخر ميزانية مسجَّلة.",
+      "reason": "السبب: {{reason}}",
+      "kinds": {
+        "UnusualRate": "سعر صرف غير معتاد (فرق أكثر من 5 %)",
+        "BalanceAdjustment": "تسويات الرصيد",
+        "OpeningBalanceChanged": "تغيير الرصيد الافتتاحي لطرف",
+        "CashMovementCancelled": "حركات صندوق ملغاة",
+        "TransferCancelled": "تحويلات ملغاة",
+        "DeliveredWithoutCode": "تسليمات بدون رمز",
+        "NegativeBalance": "حسابات سالبة"
+      }
+    },
+    "save": {
+      "open": "تسجيل ميزانية اليوم",
+      "title": "تسجيل ميزانية اليوم؟",
+      "hint": "تصبح هذه الصورة المؤرخة أساس فحص الاتساق القادم.",
+      "budget": "الميزانية",
+      "alerts": "التنبيهات",
+      "alertCount_zero": "{{count}} للمراجعة",
+      "alertCount_one": "{{count}} للمراجعة",
+      "alertCount_two": "{{count}} للمراجعة",
+      "alertCount_few": "{{count}} للمراجعة",
+      "alertCount_many": "{{count}} للمراجعة",
+      "alertCount_other": "{{count}} للمراجعة",
+      "alreadyToday": "ميزانية اليوم مسجلة على الساعة {{time}}: تسجيلها من جديد يستبدلها.",
+      "replaces": "ستُستبدل الميزانية المسجلة اليوم.",
+      "confirm": "أؤكد",
+      "confirmAnyway": "التسجيل رغم ذلك",
+      "back": "مراجعة",
+      "saving": "جارٍ التسجيل…",
+      "done": "سُجِّلت الميزانية ({{time}}): {{amount}}."
+    },
+    "history": {
+      "title": "الميزانيات المسجلة (آخر 30 يومًا)",
+      "empty": "لا توجد ميزانية مسجلة في هذه الفترة.",
+      "savedAt": "سُجِّلت على الساعة {{time}}",
+      "alerts_zero": "{{count}} تنبيه",
+      "alerts_one": "{{count}} تنبيه",
+      "alerts_two": "{{count}} تنبيه",
+      "alerts_few": "{{count}} تنبيه",
+      "alerts_many": "{{count}} تنبيه",
+      "alerts_other": "{{count}} تنبيه"
+    }
+  },
+  "profit": {
+    "period": "الفترة",
+    "presets": {
+      "today": "اليوم",
+      "last7": "آخر 7 أيام",
+      "last30": "آخر 30 يومًا",
+      "month": "الشهر الحالي"
+    },
+    "from": "من",
+    "to": "إلى",
+    "bothAgencies": "الفرعان (الربح العام)",
+    "total_zero": "ربح الفترة · {{count}} يوم",
+    "total_one": "ربح الفترة · {{count}} يوم",
+    "total_two": "ربح الفترة · {{count}} يوم",
+    "total_few": "ربح الفترة · {{count}} يوم",
+    "total_many": "ربح الفترة · {{count}} يوم",
+    "total_other": "ربح الفترة · {{count}} يوم",
+    "counted_zero": "{{count}} تحويل، مسلَّم أو لا، دون الملغاة",
+    "counted_one": "{{count}} تحويل، مسلَّم أو لا، دون الملغاة",
+    "counted_two": "{{count}} تحويل، مسلَّم أو لا، دون الملغاة",
+    "counted_few": "{{count}} تحويل، مسلَّم أو لا، دون الملغاة",
+    "counted_many": "{{count}} تحويل، مسلَّم أو لا، دون الملغاة",
+    "counted_other": "{{count}} تحويل، مسلَّم أو لا، دون الملغاة",
+    "byDay": "حسب اليوم",
+    "today": "اليوم",
+    "transfers_zero": "{{count}} تحويل",
+    "transfers_one": "{{count}} تحويل",
+    "transfers_two": "{{count}} تحويل",
+    "transfers_few": "{{count}} تحويل",
+    "transfers_many": "{{count}} تحويل",
+    "transfers_other": "{{count}} تحويل",
+    "purchaseRate": "سعر الشراء {{rate}}",
+    "severalRates": "عدة أسعار شراء",
+    "saved": "مسجَّل: {{amount}} ({{time}})",
+    "loss": "خسارة",
+    "empty": "لا توجد تحويلات في هذه الفترة.",
+    "offline": "لا توجد شبكة: تسجيل ربح اليوم يتطلب الشبكة.",
+    "detail": {
+      "title": "تحويلات {{date}}",
+      "amountXof": "المبلغ المرسل",
+      "saleRate": "سعر البيع",
+      "amountMro": "المبلغ بالأوقية (العميل)",
+      "cost": "الكلفة بسعر الشراء ({{rate}})",
+      "profit": "الربح"
+    },
+    "save": {
+      "open": "تسجيل ربح اليوم",
+      "title": "تسجيل ربح {{date}}؟",
+      "hint": "صورة لربح اليوم (بما فيه التحويلات غير المسلَّمة)، للفرع المعروض أو للفرعين.",
+      "count": "التحويلات المحسوبة",
+      "rate": "سعر الشراء",
+      "profit": "الربح",
+      "notInPeriod": "اليوم الحالي ليس ضمن الفترة المعروضة: الخادم يحسب ربح اليوم.",
+      "replaces": "مسجَّل من قبل ({{time}}): تسجيله من جديد يستبدله.",
+      "confirm": "أؤكد",
+      "back": "إلغاء",
+      "saving": "جارٍ التسجيل…",
+      "done": "سُجِّل ربح اليوم ({{time}}): {{amount}}."
+    }
+  },
+  "balance": {
+    "asOf": "الحصيلة بتاريخ {{date}}",
+    "refresh": "تحديث",
+    "offline": "لا توجد شبكة: الأرقام غير محدَّثة؛ تسجيل الحصيلة أو رأس المال يتطلب الشبكة.",
+    "caisse": "صندوق {{name}}",
+    "budget": "ميزانية الصندوق",
+    "initialCapital": "رأس المال الأولي",
+    "notSet": "غير مُدخل",
+    "ownerContributions": "صافي مساهمات المالك",
+    "capitalUsed": "رأس المال المعتمد",
+    "netResult": "صافي النتيجة",
+    "percent": "النسبة إلى رأس المال",
+    "noCapital": "أدخل رأس المال الأولي لهذا الصندوق لحساب صافي نتيجته.",
+    "savedProfits": "الأرباح المحفوظة",
+    "savedProfitsHint": "مجموع أرباح الأيام المسجلة لهذا الصندوق (بالأوقية)، للعلم فقط: لا يُضاف إلى النتيجة.",
+    "saving": "جارٍ التسجيل…",
+    "save": {
+      "open": "تسجيل الحصيلة",
+      "title": "تسجيل حصيلة {{name}}؟",
+      "hint": "صورة مؤرخة لحصيلة هذا الصندوق مع رأس المال المستعمل.",
+      "separately": "حصيلة الصندوق الآخر تُسجَّل على حدة.",
+      "replaces": "ستُستبدل الحصيلة المسجلة اليوم لهذا الصندوق.",
+      "confirm": "أؤكد",
+      "back": "إلغاء",
+      "done": "سُجِّلت حصيلة {{name}} ({{time}})."
+    },
+    "capital": {
+      "open": "رأس المال الأولي",
+      "title": "رأس المال الأولي · {{name}}",
+      "hint": "بعملة الصندوق. كل إدخال محفوظ ومسجَّل؛ الأحدث هو المعتمد.",
+      "none": "لم يُدخل أي رأس مال أولي لهذا الصندوق.",
+      "current": "رأس المال الأولي الحالي: {{amount}}.",
+      "amount": "رأس المال الأولي الجديد",
+      "reason": "السبب (اختياري)",
+      "save": "حفظ رأس المال",
+      "history": "الإدخالات السابقة"
+    },
+    "history": {
+      "title": "الحصائل المسجلة (آخر 30 يومًا)",
+      "empty": "لا توجد حصيلة مسجلة."
+    }
+  },
+  "users": {
+    "detailTitle": "بطاقة الحساب",
+    "backToList": "العودة إلى الحسابات",
+    "offline": "لا توجد شبكة: إنشاء حساب أو حظره أو تعديله يتطلب الشبكة.",
+    "empty": "لا يوجد حساب يطابق هذه التصفية.",
+    "saving": "جارٍ الحفظ…",
+    "back": "إلغاء",
+    "never": "أبدًا",
+    "actions": "إجراءات على الحساب",
+    "statuses": {
+      "Active": "نشط",
+      "Blocked": "محظور"
+    },
+    "marks": {
+      "active": "نشط",
+      "blocked": "محظور",
+      "temporaryPassword": "كلمة مرور مؤقتة",
+      "locked": "مقفل",
+      "lockedUntil": "مقفل حتى {{time}}"
+    },
+    "fields": {
+      "fullName": "الاسم الكامل",
+      "email": "البريد الإلكتروني (للدخول)",
+      "phone": "الهاتف",
+      "phoneOptional": "الهاتف (اختياري، مع رمز الدولة؛ فارغ = حذف)",
+      "role": "الدور",
+      "agency": "الفرع",
+      "status": "الحالة",
+      "lastLogin": "آخر دخول"
+    },
+    "filters": {
+      "label": "تصفية الحسابات",
+      "search": "البحث عن حساب",
+      "searchPlaceholder": "الاسم أو البريد أو الهاتف",
+      "allAgencies": "كل الفروع",
+      "allRoles": "كل الأدوار",
+      "allStatuses": "كل الحالات",
+      "reset": "مسح التصفية"
+    },
+    "create": {
+      "open": "حساب جديد",
+      "title": "حساب جديد",
+      "hint": "ستُنشأ كلمة مرور مؤقتة؛ يجب تغييرها عند أول دخول.",
+      "passwordNote": "ستُعرض كلمة المرور المؤقتة مرة واحدة فقط، بعد الإنشاء مباشرة.",
+      "nameRequired": "الاسم إلزامي.",
+      "emailRequired": "البريد الإلكتروني إلزامي.",
+      "submit": "إنشاء الحساب",
+      "done": "تم إنشاء الحساب"
+    },
+    "password": {
+      "title": "كلمة المرور المؤقتة",
+      "copy": "نسخ",
+      "copied": "تم النسخ",
+      "once": "لن تُعرض مرة أخرى. أرسلها إلى صاحب الحساب: عليه تغييرها عند أول دخول.",
+      "done": "أرسلت كلمة المرور"
+    },
+    "profile": {
+      "open": "تعديل الاسم والبريد والهاتف",
+      "title": "تعديل الملف",
+      "hint": "الجلسات المفتوحة تبقى.",
+      "save": "حفظ الملف"
+    },
+    "role": {
+      "open": "تغيير الدور أو الفرع",
+      "title": "الدور والفرع",
+      "hint": "المشرف ليس له فرع: يرى الفرعين.",
+      "reset": "تغيير الدور أو الفرع يمحو الصلاحيات المعدلة وسقوف هذا الحساب.",
+      "save": "حفظ"
+    },
+    "block": {
+      "open": "حظر الحساب",
+      "title": "حظر «{{name}}»؟",
+      "text": "تُغلق كل جلساته فورًا؛ لا يمكنه الدخول حتى رفع الحظر.",
+      "confirm": "حظر الحساب"
+    },
+    "unblock": {
+      "open": "رفع الحظر",
+      "title": "رفع الحظر عن «{{name}}»؟",
+      "text": "لن تعمل كلمة المرور القديمة: ستُعرض كلمة مرور مؤقتة جديدة مرة واحدة.",
+      "confirm": "رفع الحظر"
+    },
+    "reset": {
+      "open": "كلمة مرور مؤقتة جديدة",
+      "title": "إعادة تعيين كلمة مرور «{{name}}»؟",
+      "text": "ستُعرض كلمة مرور مؤقتة جديدة مرة واحدة؛ يُرفع القفل وتُغلق كل جلساته. الحساب المحظور يبقى محظورًا.",
+      "confirm": "إعادة التعيين"
+    },
+    "tabs": {
+      "label": "إعدادات الحساب",
+      "permissions": "الصلاحيات",
+      "partyScope": "الأطراف المسموحة",
+      "limits": "السقوف",
+      "sessions": "الجلسات"
+    },
+    "permissions": {
+      "template": "قالب الدور: {{role}}",
+      "supervisorHasAll": "المشرف له دائمًا كل الصلاحيات: لتقليص حقوقه غيّر دوره.",
+      "sources": {
+        "Role": "من الدور",
+        "Added": "مضافة",
+        "Removed": "مسحوبة",
+        "None": "غير ممنوحة"
+      },
+      "pending": "معدَّلة · بانتظار الحفظ",
+      "granted": "ممنوحة",
+      "notGranted": "غير ممنوحة",
+      "save": "حفظ الصلاحيات",
+      "saved": "حُفظت الصلاحيات: أثر فوري."
+    },
+    "permissionNames": {
+      "users": {
+        "manage": "إدارة الحسابات"
+      },
+      "agencies": {
+        "manage": "إدارة الفروع (اللون)"
+      },
+      "treasury": {
+        "manage": "إدارة حسابات الخزينة"
+      },
+      "cash": {
+        "budget": {
+          "read": "قراءة ميزانية الصندوق والأرصدة",
+          "save": "تسجيل ميزانية الصندوق"
+        },
+        "create": "تسجيل حركة صندوق",
+        "manage": "إلغاء حركة وتسوية رصيد"
+      },
+      "parties": {
+        "create": "إنشاء طرف",
+        "manage": "تعديل طرف",
+        "view_balance": "رؤية أرصدة الأطراف"
+      },
+      "rates": {
+        "set_daily": "تحديد أسعار اليوم"
+      },
+      "profit": {
+        "view": "رؤية الربح وسعر الشراء"
+      },
+      "transfers": {
+        "create": "إنشاء تحويل",
+        "credit": "تفعيل الدين",
+        "deliver": "تسليم تحويل",
+        "cancel": "إلغاء تحويل",
+        "manage_code": "فك قفل الرمز والتسليم بدون رمز",
+        "edit_rate": "تعديل مبلغ أو سعر تحويل"
+      },
+      "balance": {
+        "view": "رؤية الحصيلة ولوحة المتابعة",
+        "manage": "تسجيل الحصيلة وإدخال رأس المال"
+      },
+      "audit": {
+        "view": "قراءة سجل التدقيق"
+      }
+    },
+    "partyScope": {
+      "all": "كل الأطراف",
+      "limited": "قائمة محدودة",
+      "allowed": "الأطراف المسموحة",
+      "count_zero": "{{count}} طرف مسموح. لن يرى هذا الحساب غيرها؛ ما ينشئه يُضاف تلقائيًا.",
+      "count_one": "{{count}} طرف مسموح. لن يرى هذا الحساب غيرها؛ ما ينشئه يُضاف تلقائيًا.",
+      "count_two": "{{count}} طرف مسموح. لن يرى هذا الحساب غيرها؛ ما ينشئه يُضاف تلقائيًا.",
+      "count_few": "{{count}} طرف مسموح. لن يرى هذا الحساب غيرها؛ ما ينشئه يُضاف تلقائيًا.",
+      "count_many": "{{count}} طرف مسموح. لن يرى هذا الحساب غيرها؛ ما ينشئه يُضاف تلقائيًا.",
+      "count_other": "{{count}} طرف مسموح. لن يرى هذا الحساب غيرها؛ ما ينشئه يُضاف تلقائيًا.",
+      "add": "إضافة طرف",
+      "remove": "إزالة {{name}}",
+      "save": "حفظ",
+      "saved": "حُفظت الأطراف المسموحة: أثر فوري.",
+      "supervisorSeesAll": "المشرف يرى دائمًا كل الأطراف."
+    },
+    "limits": {
+      "hint": "بعملة فرع الحساب. فارغ = بدون حد. التجاوز مرفوض مع ذكر المبلغ الممكن.",
+      "perTransfer": "سقف كل تحويل",
+      "perDay": "السقف اليومي (التحويلات المسجلة)",
+      "creditPerDay": "سقف الدين اليومي",
+      "none": "بدون حد",
+      "save": "حفظ السقوف",
+      "saved": "حُفظت السقوف.",
+      "supervisorHasNone": "المشرف ليس له سقف أبدًا.",
+      "noAgency": "هذا الحساب ليس له فرع: بدون سقف."
+    },
+    "sessions": {
+      "none": "لا توجد جلسة مفتوحة.",
+      "unknownDevice": "جهاز غير معروف",
+      "current": "هذا الجهاز",
+      "times": "فُتحت {{started}} · آخر نشاط {{used}}",
+      "close": "إغلاق الجلسة"
+    }
+  },
+  "audit": {
+    "system": "النظام",
+    "reason": "السبب: {{reason}}",
+    "changes": "التغييرات",
+    "becomes": "يصبح",
+    "device": "الجهاز",
+    "permissionGranted": "منح «{{name}}»",
+    "permissionRemoved": "سحب «{{name}}»",
+    "filters": "تصفية السجل",
+    "period": "الفترة",
+    "presets": {
+      "today": "اليوم",
+      "last7": "آخر 7 أيام",
+      "last30": "آخر 30 يومًا"
+    },
+    "from": "من",
+    "to": "إلى",
+    "family": "الإجراءات",
+    "allFamilies": "كل الإجراءات",
+    "count_zero": "{{count}} إجراء",
+    "count_one": "{{count}} إجراء",
+    "count_two": "{{count}} إجراء",
+    "count_few": "{{count}} إجراء",
+    "count_many": "{{count}} إجراء",
+    "count_other": "{{count}} إجراء",
+    "empty": "لا توجد إجراءات مسجلة في هذه الفترة.",
+    "pagination": "صفحات السجل",
+    "entities": {
+      "UserAccount": "حساب",
+      "Party": "طرف",
+      "Transfer": "تحويل",
+      "Agency": "فرع",
+      "TreasuryAccount": "حساب خزينة"
+    },
+    "values": {
+      "none": "—",
+      "set": "مُدخل",
+      "changed": "مُغيَّر",
+      "true": "نعم",
+      "false": "لا"
+    },
+    "fields": {
+      "fullName": "الاسم",
+      "email": "البريد",
+      "phone": "الهاتف",
+      "role": "الدور",
+      "agency": "الفرع",
+      "status": "الحالة",
+      "name": "الاسم",
+      "type": "النوع",
+      "nni": "الرقم الوطني",
+      "address": "العنوان",
+      "note": "ملاحظة",
+      "inBalanceSheet": "داخل الميزانية",
+      "isArchived": "مؤرشف",
+      "openingBalance": "الرصيد الافتتاحي",
+      "creditLimit": "سقف الدين",
+      "perTransfer": "سقف كل تحويل",
+      "perDay": "السقف اليومي",
+      "creditPerDay": "سقف الدين اليومي",
+      "limited": "قائمة أطراف محدودة",
+      "adjustment": "التسوية",
+      "saleRate": "سعر البيع",
+      "purchaseRate": "سعر الشراء",
+      "date": "التاريخ",
+      "initialCapital": "رأس المال الأولي",
+      "color": "اللون"
+    },
+    "actions": {
+      "Identity": {
+        "Account": {
+          "Created": "أنشأ {{actor}} الحساب {{entity}}",
+          "ProfileUpdated": "عدّل {{actor}} ملف {{entity}}",
+          "RoleChanged": "غيّر {{actor}} دور {{entity}}",
+          "AgencyChanged": "غيّر {{actor}} فرع {{entity}}",
+          "Blocked": "حظر {{actor}} الحساب {{entity}}",
+          "Unblocked": "رفع {{actor}} الحظر عن الحساب {{entity}}",
+          "PasswordReset": "أعاد {{actor}} تعيين كلمة مرور {{entity}}",
+          "PermissionsChanged": "غيّر {{actor}} صلاحيات {{entity}}",
+          "LimitsChanged": "غيّر {{actor}} سقوف {{entity}}"
+        },
+        "Session": {
+          "Revoked": "أغلق {{actor}} جلسة لـ {{entity}}"
+        }
+      },
+      "Parties": {
+        "AccountScope": {
+          "Changed": "غيّر {{actor}} الأطراف المسموحة لـ {{entity}}"
+        },
+        "Party": {
+          "Created": "أنشأ {{actor}} الطرف {{entity}}",
+          "Updated": "عدّل {{actor}} بطاقة الطرف {{entity}}",
+          "OpeningBalanceChanged": "غيّر {{actor}} الرصيد الافتتاحي لـ {{entity}}",
+          "CreditLimitChanged": "غيّر {{actor}} سقف دين {{entity}}",
+          "Archived": "أرشف {{actor}} الطرف {{entity}}",
+          "Unarchived": "ألغى {{actor}} أرشفة الطرف {{entity}}"
+        }
+      },
+      "Cash": {
+        "Movement": {
+          "Cancelled": "ألغى {{actor}} حركة صندوق"
+        },
+        "Adjustment": {
+          "Created": "سوّى {{actor}} رصيد {{entity}}"
+        }
+      },
+      "Transfers": {
+        "Transfer": {
+          "Cancelled": "ألغى {{actor}} تحويلًا",
+          "AmountsEdited": "عدّل {{actor}} مبلغ أو سعر تحويل",
+          "DeliveredWithoutCode": "سلّم {{actor}} تحويلًا بدون رمز",
+          "CodeUnlocked": "فكّ {{actor}} قفل رمز تحويل",
+          "CodeReplaced": "أعطى {{actor}} رمزًا جديدًا لتحويل"
+        }
+      },
+      "Rates": {
+        "DailyRate": {
+          "Set": "حدّد {{actor}} سعر اليوم"
+        }
+      },
+      "Balance": {
+        "Capital": {
+          "Set": "أدخل {{actor}} رأس المال الأولي لصندوق"
+        }
+      },
+      "Organization": {
+        "Agency": {
+          "ColorChanged": "غيّر {{actor}} لون فرع"
+        }
+      }
+    },
+    "families": {
+      "Identity": {
+        "Account": "الحسابات",
+        "Session": "الجلسات"
+      },
+      "Parties": "الأطراف",
+      "Transfers": "التحويلات",
+      "Cash": "الصندوق",
+      "Rates": "سعر اليوم",
+      "Balance": "الحصيلة",
+      "Organization": "الفروع"
+    }
+  },
+  "me": {
+    "sessions": {
+      "hint": "الأجهزة المتصلة بحسابك. أغلق أي جلسة لا تعرفها (هاتف مفقود…).",
+      "offline": "لا توجد شبكة: إغلاق جلسة يتطلب الشبكة.",
+      "currentHint": "لهذا الجهاز، استعمل «تسجيل الخروج»."
+    }
+  },
+  "realtime": {
+    "reconnecting": "انقطعت التحديثات المباشرة: جارٍ إعادة الاتصال…",
+    "disconnected": "التحديثات المباشرة متوقفة: مستجدات الفرع الآخر لم تعد تصل تلقائيًا. محاولة جديدة قريبًا."
   }
 }

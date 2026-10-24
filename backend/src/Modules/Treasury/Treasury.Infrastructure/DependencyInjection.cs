@@ -12,6 +12,7 @@ using Treasury.Application.Features.Accounts.DeactivateTreasuryAccount;
 using Treasury.Application.Features.Accounts.ReactivateTreasuryAccount;
 using Treasury.Application.Features.Accounts.RenameTreasuryAccount;
 using Treasury.Application.Features.Accounts.GetTreasuryAccount;
+using Treasury.Application.Features.Accounts.GetTreasuryAccountStatement;
 using Treasury.Application.Features.Accounts.ListTreasuryAccounts;
 using Treasury.Infrastructure.Persistence;
 using Treasury.Infrastructure.Persistence.Repositories;
@@ -45,6 +46,7 @@ public static class DependencyInjection
 
         services.AddScoped<IQueryHandler<ListTreasuryAccountsQuery, IReadOnlyList<TreasuryAccountSummary>>, ListTreasuryAccountsQueryHandler>();
         services.AddScoped<IQueryHandler<GetTreasuryAccountQuery, TreasuryAccountSummary>, GetTreasuryAccountQueryHandler>();
+        services.AddScoped<IQueryHandler<GetTreasuryAccountStatementQuery, TreasuryAccountStatement>, GetTreasuryAccountStatementQueryHandler>();
 
         // Une seule table, un seul enregistrement : pas de transaction explicite.
         services.AddScoped<ICommandHandler<RenameTreasuryAccountCommand>, RenameTreasuryAccountCommandHandler>();

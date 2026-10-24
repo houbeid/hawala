@@ -5,16 +5,21 @@ import {
   lazyRouteComponent,
   type RouterHistory,
 } from '@tanstack/react-router';
+import { parseAuditSearch } from '@/features/audit/auditText';
 import { ChangePasswordPage } from '@/features/auth/pages/ChangePasswordPage';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
+import { parseCashSearch, parseNewMovementSearch } from '@/features/cash/cashRules';
+import { parsePartySearch, parseStatementSearch } from '@/features/parties/partyRules';
+import { parseProfitSearch } from '@/features/profit/profitRules';
 import { parseTransferSearch } from '@/features/transfers/search';
+import { parseUserSearch } from '@/features/users/usersRules';
+import { parsePeriodSearch } from '@/features/treasury/treasurySearch';
 import { isIsoDay } from '@/shared/format/dates';
 import { NotFoundPage } from './NotFoundPage';
 import { RootLayout } from './RootLayout';
 import { AppShell } from './shell/AppShell';
 import { HomeRedirect } from './shell/HomeRedirect';
 import { MorePage } from './shell/MorePage';
-import { PlaceholderPage } from './shell/PlaceholderPage';
 
 // Routes déclarées dans le code (pas de génération de fichiers). Mêmes routes sur mobile et sur bureau.
 // staticData : titre de l'en-tête et permission exigée (voir AppShell) ; le serveur revérifie toujours.
@@ -57,6 +62,125 @@ const ratesRoute = createRoute({
   staticData: { titleKey: 'nav.rates' },
   validateSearch: (search: Record<string, unknown>): { date?: string } => (isIsoDay(search.date) ? { date: search.date } : {}),
   component: lazyRouteComponent(() => import('@/features/rates/pages/RatesPage'), 'RatesPage'),
+});
+
+/** Tiers : filtres dans l'adresse (search, type, balanceSheet, balance, archived). */
+const partiesRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/parties',
+  staticData: { titleKey: 'nav.parties' },
+  validateSearch: parsePartySearch,
+  component: lazyRouteComponent(() => import('@/features/parties/pages/PartiesPage'), 'PartiesPage'),
+});
+
+const partyDetailRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/parties/$partyId',
+  staticData: { titleKey: 'parties.detail.title' },
+  component: lazyRouteComponent(() => import('@/features/parties/pages/PartyDetailPage'), 'PartyDetailPage'),
+});
+
+/** Relevé d'un tiers dans une agence (agencyId, from, to dans l'adresse). */
+const partyStatementRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/parties/$partyId/statement',
+  staticData: { titleKey: 'parties.statement.title', permission: 'parties.view_balance' },
+  validateSearch: parseStatementSearch,
+  component: lazyRouteComponent(() => import('@/features/parties/pages/PartyStatementPage'), 'PartyStatementPage'),
+});
+
+const treasuryRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/treasury',
+  staticData: { titleKey: 'nav.treasury' },
+  component: lazyRouteComponent(() => import('@/features/treasury/pages/TreasuryPage'), 'TreasuryPage'),
+});
+
+/** Fiche d'un compte de trésorerie et son relevé (période dans l'adresse : from, to). */
+const treasuryAccountRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/treasury/$accountId',
+  staticData: { titleKey: 'treasury.detail.title' },
+  validateSearch: parsePeriodSearch,
+  component: lazyRouteComponent(() => import('@/features/treasury/pages/TreasuryAccountPage'), 'TreasuryAccountPage'),
+});
+
+/** Journal d'audit (audit.view) : période et famille d'actions dans l'adresse. */
+const auditRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/audit',
+  staticData: { titleKey: 'nav.audit', permission: 'audit.view' },
+  validateSearch: parseAuditSearch,
+  component: lazyRouteComponent(() => import('@/features/audit/pages/AuditPage'), 'AuditPage'),
+});
+
+/** Mes appareils : tout compte connecté. */
+const mySessionsRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/me/sessions',
+  staticData: { titleKey: 'nav.sessions' },
+  component: lazyRouteComponent(() => import('@/features/auth/pages/MySessionsPage'), 'MySessionsPage'),
+});
+
+/** Comptes (users.manage) : filtres dans l'adresse (agencyId, role, status, search). */
+const usersRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/users',
+  staticData: { titleKey: 'nav.users', permission: 'users.manage' },
+  validateSearch: parseUserSearch,
+  component: lazyRouteComponent(() => import('@/features/users/pages/UsersPage'), 'UsersPage'),
+});
+
+const userDetailRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/users/$userId',
+  staticData: { titleKey: 'users.detailTitle', permission: 'users.manage' },
+  component: lazyRouteComponent(() => import('@/features/users/pages/UserDetailPage'), 'UserDetailPage'),
+});
+
+/** Bilan par caisse (balance.view) : calcul lourd, seulement sur cet écran. */
+const balanceRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/balance',
+  staticData: { titleKey: 'nav.balance', permission: 'balance.view' },
+  component: lazyRouteComponent(() => import('@/features/balance/pages/BalancePage'), 'BalancePage'),
+});
+
+/** Bénéfice (profit.view) : période dans l'adresse (from, to), agence de l'en-tête. */
+const profitRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/profit',
+  staticData: { titleKey: 'nav.profit', permission: 'profit.view' },
+  validateSearch: parseProfitSearch,
+  component: lazyRouteComponent(() => import('@/features/profit/pages/ProfitPage'), 'ProfitPage'),
+});
+
+/** Budget de la caisse (cash.budget.read) ; agence choisie par le Superviseur dans l'adresse. */
+const budgetRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/budget',
+  staticData: { titleKey: 'nav.budget', permission: 'cash.budget.read' },
+  validateSearch: (search: Record<string, unknown>): { agencyId?: string } =>
+    typeof search.agencyId === 'string' && search.agencyId ? { agencyId: search.agencyId } : {},
+  component: lazyRouteComponent(() => import('@/features/budget/pages/BudgetPage'), 'BudgetPage'),
+});
+
+/** Caisse : filtres dans l'adresse (agencyId, from, to, type, account, search, page). */
+const cashRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/cash',
+  staticData: { titleKey: 'nav.cash', permission: 'cash.budget.read' },
+  validateSearch: parseCashSearch,
+  component: lazyRouteComponent(() => import('@/features/cash/pages/CashPage'), 'CashPage'),
+});
+
+/** Nouveau mouvement de caisse (cash.create) ; type et agence proposés par l'adresse. */
+const createCashMovementRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/cash/new',
+  staticData: { titleKey: 'cash.form.title', permission: 'cash.create' },
+  validateSearch: parseNewMovementSearch,
+  component: lazyRouteComponent(() => import('@/features/cash/pages/CreateCashMovementPage'), 'CreateCashMovementPage'),
 });
 
 /** Liste des transferts : filtres dans l'adresse (from, to, status, direction, search, page). */
@@ -120,16 +244,6 @@ const dashboardRoute = createRoute({
   component: lazyRouteComponent(() => import('@/features/transfers/pages/DashboardPage'), 'DashboardPage'),
 });
 
-// POINT OUVERT : écrans provisoires, remplacés un par un aux tours suivants.
-function placeholder<const TPath extends string>(path: TPath, titleKey: string, permission?: string) {
-  return createRoute({
-    getParentRoute: () => shellRoute,
-    path,
-    staticData: { titleKey, permission },
-    component: PlaceholderPage,
-  });
-}
-
 const shellChildren = [
   indexRoute,
   moreRoute,
@@ -139,17 +253,22 @@ const shellChildren = [
   editAmountsRoute,
   deliverRoute,
   deliverWithoutCodeRoute,
-  placeholder('/parties', 'nav.parties'),
-  placeholder('/cash', 'nav.cash', 'cash.budget.read'),
-  placeholder('/budget', 'nav.budget', 'cash.budget.read'),
+  partiesRoute,
+  partyDetailRoute,
+  partyStatementRoute,
+  cashRoute,
+  createCashMovementRoute,
+  budgetRoute,
   ratesRoute,
-  placeholder('/profit', 'nav.profit', 'profit.view'),
-  placeholder('/balance', 'nav.balance', 'balance.view'),
+  profitRoute,
+  balanceRoute,
   dashboardRoute,
-  placeholder('/users', 'nav.users', 'users.manage'),
-  placeholder('/treasury', 'nav.treasury'),
-  placeholder('/audit', 'nav.audit', 'audit.view'),
-  placeholder('/me/sessions', 'nav.sessions'),
+  usersRoute,
+  userDetailRoute,
+  treasuryRoute,
+  treasuryAccountRoute,
+  auditRoute,
+  mySessionsRoute,
 ] as const;
 
 const routeTree = rootRoute.addChildren([loginRoute, changePasswordRoute, shellRoute.addChildren(shellChildren)]);

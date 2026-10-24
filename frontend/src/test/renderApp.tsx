@@ -6,16 +6,18 @@ import { App } from '@/app/App';
 import { createAppRouter } from '@/app/router';
 import { SessionManager } from '@/shared/auth/session';
 import type { CurrentAccount } from '@/shared/auth/types';
+import { createFakeHub } from './fakeHub';
 import { dkr, nkc, tokens } from './fixtures';
 import { apiUrl, server } from './server';
 
-/** Toute l'application, à une adresse donnée (historique en mémoire). */
+/** Toute l'application, à une adresse donnée (historique en mémoire), branchée sur un faux hub temps réel. */
 export function renderApp(path = '/') {
   const session = new SessionManager();
   const router = createAppRouter(createMemoryHistory({ initialEntries: [path] }));
   const user = userEvent.setup();
-  render(<App session={session} router={router} />);
-  return { session, router, user };
+  const hub = createFakeHub();
+  render(<App session={session} router={router} realtime={hub.factory} />);
+  return { session, router, user, hub };
 }
 
 /** Session déjà ouverte (cookie valable) pour ce compte, et les deux agences. */

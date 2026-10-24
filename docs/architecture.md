@@ -211,11 +211,16 @@ Couleur d'agence : modifiable par le Superviseur (permission `agencies.manage`) 
 
 Décisions validées : caisses, banques et wallets par agence (types Cash, Bank, Wallet), chacun avec son compte au grand livre ouvert dans la même transaction. Seul le Superviseur les gère (`treasury.manage`). Un agent voit les comptes de son agence, et leurs soldes seulement avec `cash.budget.read`. Plusieurs caisses par agence, nom unique par agence. Désactivation seulement à solde nul, réactivation possible. Pas d'unité d'affichage par compte : tout s'affiche en MRO à Nouakchott (FCFA à Dakar) ; le MRU ne sert qu'à la saisie, convertie en MRO × 10. Solde de départ à la mise en service : écriture d'ouverture contre « Soldes d'ouverture ».
 
+Décisions du 22 octobre 2026 :
+
+- **Solde de départ** : route `PUT /treasury-accounts/{id}/opening-balance` (`treasury.manage`), écriture d'ouverture de la différence contre « Soldes d'ouverture », date choisie, audit et alerte de cohérence, comme le solde initial d'un tiers. Jamais par un ajustement (« Écarts et ajustements » sert aux corrections). Au plus tard avant la migration (phase 8).
+- **Relevé d'un compte** : route `GET /treasury-accounts/{id}/statement?from=&to=` (`cash.budget.read`), lue au grand livre, complète (transferts, livraisons, caisse, ajustements, annulations), mêmes règles que le relevé d'un tiers. Faite le 24 octobre 2026 avec la fiche du compte (`/treasury/:id`), sur le composant de relevé partagé avec les tiers.
+
 Le périmètre par agence est appliqué par un filtre global EF Core, à partir d'un `IAgencyScope` (Identity.Contracts) : l'agence du compte connecté, ou toutes pour un Superviseur.
 
 ## Tiers
 
-Décisions validées : un tiers est commun aux deux agences (une fiche), avec un solde par agence (un compte au grand livre par agence) ; un agent ne voit que le solde de son agence, et seulement avec `parties.view_balance`. Type = compte comptable : Client (41), Fournisseur (40), Personnel (42), Autre. Obligatoires : nom (30 caractères) et type ; téléphone (E.164) et NNI facultatifs mais uniques ; nom non unique ; pas de champ Homme / Femme (le « genre » de l'app actuelle désignait banque / non banque). « Considéré comme banque » supprimé (les banques sont des comptes de trésorerie). Plafond de crédit par tiers et par agence, fixé par le Superviseur, bloquant (appliqué en phase 3). Un agent peut créer un tiers (`parties.create`) ; seul le Superviseur le modifie (`parties.manage` : fiche, solde initial, plafond, « dans le bilan », archivage). Le solde initial n'est jamais saisi à la création : toujours par l'écriture d'ouverture de la différence. Téléphone et NNI chiffrés au repos depuis la phase 6 (AES-GCM + empreinte HMAC pour l'unicité). Pas de suppression : archivage à solde nul dans les deux agences. « Dans le bilan » vrai par défaut, modifiable par le Superviseur.
+Décisions validées : un tiers est commun aux deux agences (une fiche), avec un solde par agence (un compte au grand livre par agence) ; un agent ne voit que le solde de son agence, et seulement avec `parties.view_balance`. Type = compte comptable : Client (41), Fournisseur (40), Personnel (42), Autre. Obligatoires : nom (30 caractères) et type ; téléphone (E.164) et NNI facultatifs mais uniques ; nom non unique ; pas de champ Homme / Femme (le « genre » de l'app actuelle désignait banque / non banque). « Considéré comme banque » supprimé (les banques sont des comptes de trésorerie). Plafond de crédit par tiers et par agence, fixé par le Superviseur, bloquant (appliqué en phase 3). Un agent peut créer un tiers (`parties.create`) ; seul le Superviseur le modifie (`parties.manage` : fiche, solde initial, plafond, « dans le bilan », archivage). Le solde initial n'est jamais saisi à la création : toujours par l'écriture d'ouverture de la différence. La fiche renvoie le solde initial actuel de chaque agence (`openingBalance`), affiché avec la différence avant toute modification (22 octobre 2026). Téléphone et NNI chiffrés au repos depuis la phase 6 (AES-GCM + empreinte HMAC pour l'unicité). Pas de suppression : archivage à solde nul dans les deux agences. « Dans le bilan » vrai par défaut, modifiable par le Superviseur.
 
 ## Budget de la caisse
 
@@ -449,7 +454,7 @@ Mêmes routes sur mobile et sur bureau : les écrans « Bureau » des maquettes 
 | `/budget` | Budget de la caisse | `cash.budget.read` |
 | `/profit` | Bénéfice | `profit.view` |
 | `/balance`, `/dashboard` | Bilan, tableau de bord | `balance.view` |
-| `/treasury` | Comptes de trésorerie | connecté ; gestion `treasury.manage` |
+| `/treasury`, `/treasury/:id` | Comptes de trésorerie, fiche et relevé d'un compte | connecté ; relevé `cash.budget.read` ; gestion `treasury.manage` |
 | `/users`, `/users/:id` | Comptes | `users.manage` |
 | `/audit` | Journal d'audit | `audit.view` |
 | `/me/sessions` | Mes appareils | connecté |

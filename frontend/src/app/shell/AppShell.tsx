@@ -1,4 +1,5 @@
 import { Link, Outlet, useMatches } from '@tanstack/react-router';
+import { RealtimeNotice } from '@/shared/realtime/RealtimeNotice';
 import { useTranslation } from 'react-i18next';
 import { useCurrentAccount, useSessionManager } from '@/shared/auth/hooks';
 import { Icon } from '@/shared/ui/Icon';
@@ -60,6 +61,7 @@ export function AppShell() {
             </div>
           )}
           <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-4 pb-24 lg:px-6 lg:pb-8">
+            <RealtimeNotice />
             {allowed ? <Outlet /> : <ForbiddenNotice />}
           </main>
         </div>

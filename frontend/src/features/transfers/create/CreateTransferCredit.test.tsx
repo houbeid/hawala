@@ -26,7 +26,7 @@ function party(balance: number, creditLimit: number | null): PartySummary {
     note: null,
     inBalanceSheet: true,
     isArchived: false,
-    balances: [{ agencyId: nkc.id, currency: 'MRO', balance, creditLimit }],
+    balances: [{ agencyId: nkc.id, currency: 'MRO', balance, creditLimit, openingBalance: 0 }],
   };
 }
 

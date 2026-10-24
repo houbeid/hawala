@@ -40,4 +40,11 @@ public static class TreasuryErrors
                 "Treasury.Account.BalanceNotZero",
                 "Le solde doit être nul pour désactiver le compte : transférer d'abord l'argent restant.");
     }
+
+    public static class Statement
+    {
+        // Un relevé montre des montants : même règle que les soldes (cash.budget.read, règle validée).
+        public static readonly Error NotVisible =
+            Error.Forbidden("Treasury.Statement.NotVisible", "Le relevé d'un compte de trésorerie demande la permission de lire le budget de la caisse.");
+    }
 }

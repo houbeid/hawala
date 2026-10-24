@@ -9,6 +9,7 @@ using Treasury.Application.Features.Accounts.DeactivateTreasuryAccount;
 using Treasury.Application.Features.Accounts.ReactivateTreasuryAccount;
 using Treasury.Application.Features.Accounts.RenameTreasuryAccount;
 using Treasury.Application.Features.Accounts.GetTreasuryAccount;
+using Treasury.Application.Features.Accounts.GetTreasuryAccountStatement;
 using Treasury.Application.Features.Accounts.ListTreasuryAccounts;
 
 namespace Hawala.Api.Endpoints.Treasury;
@@ -29,6 +30,9 @@ public static class TreasuryEndpoints
         // Les soldes ne sont renseignés qu'avec cash.budget.read.
         group.MapGet("", ListTreasuryAccounts).RequireAuthorization();
         group.MapGet("/{id:guid}", GetTreasuryAccount).RequireAuthorization();
+
+        // Relevé (décision du 22 octobre 2026) : montre des montants, donc cash.budget.read, vérifiée par le handler.
+        group.MapGet("/{id:guid}/statement", GetTreasuryAccountStatement).RequireAuthorization();
 
         // Règle validée : seul le Superviseur crée, renomme, désactive ou réactive un compte de trésorerie.
         group.MapPost("", CreateTreasuryAccount).RequirePermission(Permissions.TreasuryManage);
@@ -98,6 +102,24 @@ public static class TreasuryEndpoints
         }
 
         var result = await handler.Handle(new GetTreasuryAccountQuery(actorId, id), cancellationToken);
+
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> GetTreasuryAccountStatement(
+        Guid id,
+        DateOnly? from,
+        DateOnly? to,
+        ClaimsPrincipal user,
+        IQueryHandler<GetTreasuryAccountStatementQuery, TreasuryAccountStatement> handler,
+        CancellationToken cancellationToken)
+    {
+        if (!user.TryGetAccountId(out var actorId))
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        var result = await handler.Handle(new GetTreasuryAccountStatementQuery(actorId, id, from, to), cancellationToken);
 
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.Error.ToProblem();
     }

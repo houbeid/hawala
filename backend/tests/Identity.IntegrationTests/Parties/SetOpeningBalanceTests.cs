@@ -100,6 +100,24 @@ public sealed class SetOpeningBalanceTests(ApiFixture fixture)
     }
 
     [Fact]
+    public async Task The_party_card_gives_the_current_opening_balance_apart_from_the_balance()
+    {
+        var (factory, client, token, partyId, nouakchott, _) = await ArrangeAsync();
+        using var opened = await client.SetOpeningBalanceAsync(token, partyId, nouakchott, new { amount = 10_000m });
+        Assert.Equal(HttpStatusCode.NoContent, opened.StatusCode);
+
+        // Une autre écriture sur le tiers (ajustement) change le solde, pas le solde initial.
+        using var adjusted = await client.CreateBalanceAdjustmentAsync(
+            token, new { agencyId = nouakchott, target = "Party", targetId = partyId, amount = 2_500m, reason = "Test" });
+        Assert.True(adjusted.IsSuccessStatusCode, await adjusted.Content.ReadAsStringAsync());
+
+        using var read = await client.GetPartyAsync(token, partyId, $"agencyId={nouakchott}");
+        var balance = (await read.ReadJsonAsync()).GetProperty("balances").EnumerateArray().Single();
+        Assert.Equal(12_500m, balance.GetProperty("balance").GetDecimal());
+        Assert.Equal(10_000m, balance.GetProperty("openingBalance").GetDecimal());
+    }
+
+    [Fact]
     public async Task Agent_cannot_set_an_opening_balance()
     {
         var (factory, client, _, partyId, nouakchott, _) = await ArrangeAsync();

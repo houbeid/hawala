@@ -42,3 +42,10 @@ export function formatDayLong(day: string, language: string): string {
 export function formatDayShort(day: string): string {
   return `${day.slice(8, 10)}/${day.slice(5, 7)}`;
 }
+
+/** « 24/10 · 15:20 » : instant ISO lu en UTC (Nouakchott et Dakar sont en UTC+0), chiffres occidentaux. */
+export function formatDayTimeShort(iso: string): string {
+  const date = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(date.getUTCDate())}/${pad(date.getUTCMonth() + 1)} · ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
+}

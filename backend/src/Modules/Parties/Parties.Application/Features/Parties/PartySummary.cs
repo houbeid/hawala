@@ -24,7 +24,12 @@ public sealed record PartySummary(
 
 /// <param name="Currency">MRO à Nouakchott, XOF à Dakar.</param>
 /// <param name="CreditLimit">Plafond de crédit dans cette agence ; 0 = aucun crédit ; null = pas de plafond.</param>
-public sealed record PartyAgencyBalance(Guid AgencyId, Currency Currency, decimal Balance, decimal? CreditLimit);
+/// <param name="OpeningBalance">
+/// Solde initial retenu dans cette agence (même sens que le solde). Renvoyé pour que le Superviseur voie la valeur
+/// actuelle avant de la changer : la modification envoie la nouvelle valeur et le serveur écrit la différence
+/// (décision A du 22 octobre 2026). Même visibilité que le solde.
+/// </param>
+public sealed record PartyAgencyBalance(Guid AgencyId, Currency Currency, decimal Balance, decimal? CreditLimit, decimal OpeningBalance);
 
 /// <summary>La liste, avec ce que l'écran de l'app actuelle affiche en tête : « 12 / 73 » et les totaux.</summary>
 /// <param name="Count">Nombre de tiers renvoyés (après filtres).</param>

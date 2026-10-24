@@ -28,11 +28,16 @@ public sealed record PartyStatement(
     IReadOnlyList<PartyStatementLine> Lines,
     decimal ClosingBalance);
 
+/// <param name="EntryType">
+/// Type d'écriture stable (Parties.OpeningBalance, Transfers.Created, Cash.Receipt…), pour que l'interface le traduise
+/// (24 octobre 2026) ; le libellé reste écrit en français par le serveur.
+/// </param>
 /// <param name="Debit">Augmente ce qu'il nous doit (rouge).</param>
 /// <param name="Credit">Augmente ce qu'on lui doit (vert).</param>
 public sealed record PartyStatementLine(
     DateOnly OperationDate,
     DateTimeOffset RecordedAt,
+    string EntryType,
     string Label,
     string? Reason,
     bool IsReversal,
