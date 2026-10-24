@@ -5,6 +5,8 @@ import { useAgencies } from '@/features/organization/queries';
 import { errorMessage } from '@/shared/api/errorMessage';
 import { usePermission } from '@/shared/auth/hooks';
 import { scopedAgencyId, useAgencyScope } from '@/shared/agency/agencyScope';
+import { ExportButton } from '@/shared/files/ExportButton';
+import { compactDay, todayIso } from '@/shared/format/dates';
 import { formatAmount } from '@/shared/format/money';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
@@ -14,6 +16,7 @@ import { CreatePartyDialog } from '../components/CreatePartyDialog';
 import { PartyFilters } from '../components/PartyFilters';
 import { PartyRow } from '../components/PartyRow';
 import { activeFilterCount, parsePartySearch, type PartySearch } from '../partyRules';
+import { exportParties } from '../api';
 import { useParties } from '../queries';
 import type { PartyTotals } from '../types';
 
@@ -85,6 +88,25 @@ export function PartiesPage() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
       {data?.totals && data.totals.length > 0 && <Totals totals={data.totals} />}
+      {data && (
+        <ExportButton
+          fileName={`Tiers-${compactDay(todayIso())}.xlsx`}
+          fetchFile={(http, lang) =>
+            exportParties(
+              http,
+              {
+                agencyId,
+                search: filters.search,
+                type: filters.type,
+                balanceSheet: filters.balanceSheet,
+                balance: balanceFilter ? filters.balance : undefined,
+                includeArchived: filters.archived,
+              },
+              lang,
+            )
+          }
+        />
+      )}
 
       {canCreate &&
         (online ? (

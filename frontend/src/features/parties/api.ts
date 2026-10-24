@@ -15,6 +15,11 @@ export function listParties(http: HttpClient, params: PartyListParams = {}): Pro
   return http.get<PartyList>('/parties', { query: params });
 }
 
+/** Export Excel (export) : mêmes filtres et mêmes soldes visibles que la liste ; `lang` : langue des en-têtes. */
+export function exportParties(http: HttpClient, params: PartyListParams, lang: 'fr' | 'ar'): Promise<Blob> {
+  return http.blob('/parties/export', { query: { ...params, lang } });
+}
+
 /** Création (parties.create) : un compte au grand livre est ouvert dans chaque agence. 201 { id }. */
 export function createParty(http: HttpClient, request: CreatePartyRequest): Promise<{ id: string }> {
   return http.post<{ id: string }>('/parties', request);

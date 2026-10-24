@@ -53,6 +53,9 @@ public static class PartyEndpoints
         // Lecture : tout compte connecté (un tiers est commun aux deux agences).
         // Les soldes ne sont renseignés qu'avec parties.view_balance, et seulement pour les agences du périmètre.
         group.MapGet("", ListParties).RequireAuthorization();
+
+        // Export Excel : mêmes filtres, périmètre et soldes visibles que la liste.
+        group.MapGet("/export", PartyExport.ExportAsync).RequirePermission(Permissions.Export);
         group.MapGet("/{id:guid}", GetParty).RequireAuthorization();
 
         // Le relevé montre des montants : parties.view_balance est vérifiée par le handler (code d'erreur précis).

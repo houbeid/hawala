@@ -6,7 +6,8 @@ import { errorMessage } from '@/shared/api/errorMessage';
 import { usePermission } from '@/shared/auth/hooks';
 import { AgencyChoice } from '@/shared/agency/AgencyChoice';
 import { useAgencyScope, type AgencyRef } from '@/shared/agency/agencyScope';
-import { isIsoDay, todayIso } from '@/shared/format/dates';
+import { ExportButton } from '@/shared/files/ExportButton';
+import { compactDay, isIsoDay, todayIso } from '@/shared/format/dates';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
 import { Notice } from '@/shared/ui/Notice';
@@ -17,6 +18,7 @@ import { AdjustmentSheet } from '../components/AdjustmentSheet';
 import { CancelMovementSheet } from '../components/CancelMovementSheet';
 import { CashMovementRow } from '../components/CashMovementRow';
 import { CashTotals } from '../components/CashTotals';
+import { exportCashMovements } from '../api';
 import { useBalanceAdjustments, useCashMovements } from '../queries';
 import { CASH_MOVEMENT_TYPES, type CashMovement, type CashMovementType } from '../types';
 
@@ -90,6 +92,18 @@ export function CashPage() {
       )}
 
       {data && agency?.currency && <CashTotals list={data} currency={agency.currency} />}
+      {data && agency && (
+        <ExportButton
+          fileName={`Caisse-${compactDay(filters.from ?? today)}-${compactDay(filters.to ?? today)}.xlsx`}
+          fetchFile={(http, lang) =>
+            exportCashMovements(
+              http,
+              { agencyId: agency.id, from: filters.from, to: filters.to, type: filters.type, treasuryAccountId: filters.account, search: filters.search },
+              lang,
+            )
+          }
+        />
+      )}
 
       {canCreate &&
         (online ? (

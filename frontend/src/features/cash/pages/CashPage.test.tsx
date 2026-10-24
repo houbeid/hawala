@@ -4,6 +4,8 @@ import type { PartySummary } from '@/features/parties';
 import type { TreasuryAccount } from '@/features/treasury/types';
 import { agentAccount, dkr, nkc, supervisorAccount } from '@/test/fixtures';
 import { renderApp, signedInAs } from '@/test/renderApp';
+import { stubDownloads } from '@/test/downloads';
+import { exportServer } from '@/test/exportServer';
 import { apiUrl, server } from '@/test/server';
 import type { CashMovement, CashMovementList } from '../types';
 
@@ -156,6 +158,21 @@ describe('Caisse — Superviseur sur les deux agences', () => {
     await user.click(screen.getByRole('button', { name: 'DKR' }));
     await waitFor(() => expect(queries.at(-1)?.get('agencyId')).toBe(dkr.id));
     expect(screen.getByRole('button', { name: 'DKR' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('exporte la caisse affichée en Excel, avec ses filtres', async () => {
+    signedInAs(supervisorAccount);
+    cashServer();
+    const exports = exportServer('/cash-movements/export');
+    const downloads = stubDownloads();
+    const { user } = renderApp('/cash?from=2026-10-01&to=2026-10-24&type=Receipt');
+
+    await user.click(await screen.findByRole('button', { name: 'Exporter' }));
+
+    expect(await screen.findByText('Fichier Excel téléchargé.')).toBeInTheDocument();
+    expect(exports).toEqual([{ agencyId: nkc.id, from: '2026-10-01', to: '2026-10-24', type: 'Receipt', lang: 'fr' }]);
+    expect(downloads.files).toEqual(['Caisse-20261001-20261024.xlsx']);
+    downloads.restore();
   });
 });
 

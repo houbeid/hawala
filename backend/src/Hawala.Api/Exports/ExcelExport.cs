@@ -59,6 +59,7 @@ public static class ExcelExport
     public static string Pick(this ExportLanguage language, string french, string arabic) =>
         language == ExportLanguage.Arabic ? arabic : french;
 
+    /// <summary>Classeur d'une seule feuille.</summary>
     public static byte[] Build<T>(
         ExportLanguage language,
         string sheetFrench,
@@ -66,12 +67,41 @@ public static class ExcelExport
         IReadOnlyList<ExportColumn<T>> columns,
         IEnumerable<T> rows)
     {
+        using var workbook = NewWorkbook(language, sheetFrench, sheetArabic);
+        AddSheet(workbook, language, sheetFrench, sheetArabic, columns, rows);
+        return Save(workbook);
+    }
+
+    /// <summary>Classeur vide (titre et auteur posés) : on y ajoute ses feuilles avec <see cref="AddSheet"/>.</summary>
+    public static XLWorkbook NewWorkbook(ExportLanguage language, string titleFrench, string titleArabic)
+    {
+        var workbook = new XLWorkbook();
+        workbook.Properties.Title = language.Pick(titleFrench, titleArabic);
+        workbook.Properties.Author = "ETS EL-VETH";
+        return workbook;
+    }
+
+    public static byte[] Save(XLWorkbook workbook)
+    {
+        ArgumentNullException.ThrowIfNull(workbook);
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        return stream.ToArray();
+    }
+
+    /// <summary>Une feuille : en-tête en gras, figé, avec filtres ; une ligne par élément.</summary>
+    public static void AddSheet<T>(
+        XLWorkbook workbook,
+        ExportLanguage language,
+        string sheetFrench,
+        string sheetArabic,
+        IReadOnlyList<ExportColumn<T>> columns,
+        IEnumerable<T> rows)
+    {
+        ArgumentNullException.ThrowIfNull(workbook);
         ArgumentNullException.ThrowIfNull(columns);
         ArgumentNullException.ThrowIfNull(rows);
 
-        using var workbook = new XLWorkbook();
-        workbook.Properties.Title = language.Pick(sheetFrench, sheetArabic);
-        workbook.Properties.Author = "ETS EL-VETH";
         var sheet = workbook.Worksheets.Add(language.Pick(sheetFrench, sheetArabic));
         sheet.RightToLeft = language == ExportLanguage.Arabic;
 
@@ -96,11 +126,25 @@ public static class ExcelExport
 
         sheet.SheetView.FreezeRows(1);
         sheet.Range(1, 1, Math.Max(row - 1, 1), Math.Max(columns.Count, 1)).SetAutoFilter();
-
-        using var stream = new MemoryStream();
-        workbook.SaveAs(stream);
-        return stream.ToArray();
     }
+
+    /// <summary>« Nouakchott » / « نواكشوط » à partir du code de l'agence (le code ne change jamais).</summary>
+    public static string City(this ExportLanguage language, string code, string name) => code switch
+    {
+        "NKC" => language.Pick("Nouakchott", "نواكشوط"),
+        "DKR" => language.Pick("Dakar", "داكار"),
+        _ => name,
+    };
+
+    /// <summary>« 20261001-20261024 » pour le nom du fichier ; aujourd'hui (UTC) par défaut.</summary>
+    public static string Period(DateOnly? from, DateOnly? to, DateTimeOffset now)
+    {
+        var today = DateOnly.FromDateTime(now.UtcDateTime);
+        return $"{(from ?? today).ToString("yyyyMMdd", System.Globalization.CultureInfo.InvariantCulture)}-{(to ?? today).ToString("yyyyMMdd", System.Globalization.CultureInfo.InvariantCulture)}";
+    }
+
+    public static string Unit(Hawala.SharedKernel.Money.Currency currency) =>
+        currency == Hawala.SharedKernel.Money.Currency.XOF ? "FCFA" : "MRO";
 
     /// <summary>Réponse du fichier : jamais gardée en cache (données de l'agence).</summary>
     public static IResult File(byte[] content, string fileName) =>

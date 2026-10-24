@@ -22,7 +22,9 @@ public sealed class ArchivePartyTests(ApiFixture fixture)
         using var archive = await client.ArchivePartyAsync(token, partyId);
 
         Assert.Equal(HttpStatusCode.NoContent, archive.StatusCode);
-        Assert.Equal(0, await CountAsync(client, token, $"search={tag}"));
+        // Échec intermittent (21 et 24 octobre 2026) : le tiers restait visible juste après l'archivage. Le message dit lequel.
+        var stillVisible = await VisibleAsync(client, token, $"search={tag}");
+        Assert.True(stillVisible.Count == 0, $"Encore visibles après l'archivage : {string.Join(" ; ", stillVisible)}");
         Assert.Equal(1, await CountAsync(client, token, $"search={tag}&includeArchived=true"));
         Assert.All(await LedgerAccountsActiveAsync(factory, partyId), Assert.False);
 
@@ -100,6 +102,15 @@ public sealed class ArchivePartyTests(ApiFixture fixture)
         var nouakchott = await TestAccounts.GetAgencyIdAsync(scope.ServiceProvider, "NKC");
         var dakar = await TestAccounts.GetAgencyIdAsync(scope.ServiceProvider, "DKR");
         return (factory, client, token, partyId, tag, nouakchott, dakar);
+    }
+
+    /// <summary>« nom (id, archivé : oui/non) » de chaque tiers renvoyé par la liste.</summary>
+    private static async Task<List<string>> VisibleAsync(HttpClient client, string token, string queryString)
+    {
+        using var response = await client.ListPartiesAsync(token, queryString);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        return [.. (await response.ReadJsonAsync()).GetProperty("items").EnumerateArray().Select(p =>
+            $"{p.GetProperty("name").GetString()} ({p.GetProperty("id").GetGuid()}, archivé : {p.GetProperty("isArchived").GetBoolean()})")];
     }
 
     private static async Task<int> CountAsync(HttpClient client, string token, string queryString)

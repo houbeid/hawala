@@ -187,6 +187,11 @@ public static class ApiClient
     public static Task<HttpResponseMessage> NewTransferCodeAsync(this HttpClient client, string? accessToken, Guid id) =>
         client.SendAsync(HttpMethod.Post, $"/api/v1/transfers/{id}/new-code", accessToken: accessToken);
 
+    /// <summary>Export Excel d'une liste (« cash-movements », « parties », « profit »).</summary>
+    /// <param name="queryString">Filtres déjà encodés, sans « ? ».</param>
+    public static Task<HttpResponseMessage> ExportAsync(this HttpClient client, string? accessToken, string list, string queryString) =>
+        client.SendAsync(HttpMethod.Get, $"/api/v1/{list}/export?{queryString}", accessToken: accessToken);
+
     /// <param name="queryString">Filtres déjà encodés, sans « ? ».</param>
     public static Task<HttpResponseMessage> ExportTransfersAsync(this HttpClient client, string? accessToken, string queryString) =>
         client.SendAsync(HttpMethod.Get, $"/api/v1/transfers/export?{queryString}", accessToken: accessToken);

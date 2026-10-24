@@ -2,6 +2,9 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { agentAccount, cashierAccount, dkr, nkc, supervisorAccount } from '@/test/fixtures';
 import { renderApp, signedInAs } from '@/test/renderApp';
+import { stubDownloads } from '@/test/downloads';
+import { compactDay, todayIso } from '@/shared/format/dates';
+import { exportServer } from '@/test/exportServer';
 import { apiUrl, server } from '@/test/server';
 import type { PartyList, PartyStatement, PartySummary } from '../types';
 
@@ -165,6 +168,32 @@ describe('Tiers — liste, Superviseur sur les deux agences', () => {
     expect(screen.queryByLabelText('Solde')).not.toBeInTheDocument();
     expect(screen.getAllByText('Net')).toHaveLength(2);
     expect(queries[0]?.has('agencyId')).toBe(false);
+  });
+
+  it('exporte la liste en Excel, avec ses filtres', async () => {
+    signedInAs(supervisorAccount);
+    partiesServer([wafa, sahel]);
+    const exports = exportServer('/parties/export');
+    const downloads = stubDownloads();
+    const { user } = renderApp('/parties?type=Supplier');
+
+    await user.click(await screen.findByRole('button', { name: 'Exporter' }));
+
+    expect(await screen.findByText('Fichier Excel téléchargé.')).toBeInTheDocument();
+    expect(exports).toEqual([{ type: 'Supplier', lang: 'fr' }]);
+    expect(downloads.files).toEqual([`Tiers-${compactDay(todayIso())}.xlsx`]);
+    downloads.restore();
+  });
+});
+
+describe('Tiers — export, Agent', () => {
+  it('pas de bouton « Exporter » sans la permission export', async () => {
+    signedInAs(agentAccount);
+    partiesServer([wafa]);
+    renderApp('/parties');
+
+    await screen.findByText(wafa.name);
+    expect(screen.queryByRole('button', { name: 'Exporter' })).not.toBeInTheDocument();
   });
 });
 

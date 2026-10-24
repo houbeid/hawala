@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { useAgencies } from '@/features/organization/queries';
 import { errorMessage } from '@/shared/api/errorMessage';
 import { scopedAgencyId, useAgencyScope } from '@/shared/agency/agencyScope';
-import { formatDayShort, formatDayTimeShort, isIsoDay, todayIso } from '@/shared/format/dates';
+import { ExportButton } from '@/shared/files/ExportButton';
+import { compactDay, formatDayShort, formatDayTimeShort, isIsoDay, todayIso } from '@/shared/format/dates';
 import { formatAmount, formatRate } from '@/shared/format/money';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
@@ -13,6 +14,7 @@ import { Sheet } from '@/shared/ui/Sheet';
 import { useOnlineStatus } from '@/shared/useOnlineStatus';
 import { ProfitDayRow, ProfitValue } from '../components/ProfitDayRow';
 import { parseProfitSearch, periodDays, presets, type ProfitSearch } from '../profitRules';
+import { exportProfit } from '../api';
 import { useProfitReport, useSaveProfit } from '../queries';
 import type { ProfitSnapshot } from '../types';
 
@@ -121,6 +123,10 @@ export function ProfitPage() {
 
       {data && (
         <>
+          <ExportButton
+            fileName={`Benefice-${compactDay(from)}-${compactDay(to)}.xlsx`}
+            fetchFile={(http, lang) => exportProfit(http, { agencyId, from: search.from, to: search.to }, lang)}
+          />
           <section
             className={`flex flex-col gap-1 rounded-2xl border border-border bg-surface p-4 ${report.isPlaceholderData ? 'opacity-60' : ''}`}
             aria-label={t('profit.total', { count: periodDays(data.from, data.to) })}

@@ -66,13 +66,10 @@ public static class TransferExport
         }
 
         var language = ExcelExport.ParseLanguage(lang);
-        var cities = (await agencies.GetAllAsync(cancellationToken)).ToDictionary(a => a.Id, a => City(language, a));
+        var cities = (await agencies.GetAllAsync(cancellationToken)).ToDictionary(a => a.Id, a => language.City(a.Code, a.Name));
         var content = ExcelExport.Build(language, "Transferts", "الحوالات", Columns(language, cities, items), items);
 
-        var today = DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
-        var first = (from ?? today).ToString("yyyyMMdd", CultureInfo.InvariantCulture);
-        var last = (to ?? today).ToString("yyyyMMdd", CultureInfo.InvariantCulture);
-        return ExcelExport.File(content, $"Transferts-{first}-{last}.xlsx");
+        return ExcelExport.File(content, $"Transferts-{ExcelExport.Period(from, to, clock.UtcNow)}.xlsx");
     }
 
     private static List<ExportColumn<TransferView>> Columns(
@@ -130,7 +127,7 @@ public static class TransferExport
         payments is null
             ? null
             : string.Join(" ; ", payments.Select(p =>
-                $"{p.TreasuryAccountName ?? "?"} : {p.Amount.ToString("0.##", CultureInfo.InvariantCulture)} {(p.Currency == Hawala.SharedKernel.Money.Currency.XOF ? "FCFA" : "MRO")}"));
+                $"{p.TreasuryAccountName ?? "?"} : {p.Amount.ToString("0.##", CultureInfo.InvariantCulture)} {ExcelExport.Unit(p.Currency)}"));
 
     private static string Status(ExportLanguage language, TransferStatus status) => status switch
     {
@@ -144,12 +141,5 @@ public static class TransferExport
         TransferDirection.Sent => language.Pick("Envoyé", "مرسلة"),
         TransferDirection.Received => language.Pick("Reçu", "مستلمة"),
         _ => null,
-    };
-
-    private static string City(ExportLanguage language, AgencySummary agency) => agency.Code switch
-    {
-        "NKC" => language.Pick("Nouakchott", "نواكشوط"),
-        "DKR" => language.Pick("Dakar", "داكار"),
-        _ => agency.Name,
     };
 }

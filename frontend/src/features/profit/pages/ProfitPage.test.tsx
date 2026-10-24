@@ -3,6 +3,8 @@ import { http, HttpResponse } from 'msw';
 import { addDays, todayIso } from '@/shared/format/dates';
 import { agentAccount, dkr, nkc, supervisorAccount } from '@/test/fixtures';
 import { renderApp, signedInAs } from '@/test/renderApp';
+import { stubDownloads } from '@/test/downloads';
+import { exportServer } from '@/test/exportServer';
 import { apiUrl, server } from '@/test/server';
 import type { ProfitDayDetail, ProfitReport } from '../types';
 
@@ -124,6 +126,20 @@ describe('Bénéfice — Superviseur', () => {
     await waitFor(() => expect(queries.at(-1)?.get('from')).toBe(addDays(today, -6)));
     expect(router.state.location.search).toEqual({ from: addDays(today, -6) });
     expect(screen.getByRole('button', { name: '7 derniers jours' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('exporte la période en Excel', async () => {
+    profitServer();
+    const exports = exportServer('/profit/export');
+    const downloads = stubDownloads();
+    const { user } = renderApp('/profit?from=2026-10-01&to=2026-10-24');
+
+    await user.click(await screen.findByRole('button', { name: 'Exporter' }));
+
+    expect(await screen.findByText('Fichier Excel téléchargé.')).toBeInTheDocument();
+    expect(exports).toEqual([{ from: '2026-10-01', to: '2026-10-24', lang: 'fr' }]);
+    expect(downloads.files).toEqual(['Benefice-20261001-20261024.xlsx']);
+    downloads.restore();
   });
 
   it('enregistre le bénéfice du jour après confirmation (les deux agences)', async () => {

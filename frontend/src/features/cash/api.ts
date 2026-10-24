@@ -15,6 +15,11 @@ export function listCashMovements(http: HttpClient, params: CashListParams): Pro
   return http.get<CashMovementList>('/cash-movements', { query: params });
 }
 
+/** Export Excel (export + cash.budget.read) : mêmes filtres que la liste, sans la page ; `lang` : langue des en-têtes. */
+export function exportCashMovements(http: HttpClient, params: Omit<CashListParams, 'page'>, lang: 'fr' | 'ar'): Promise<Blob> {
+  return http.blob('/cash-movements/export', { query: { ...params, lang } });
+}
+
 /** Création (cash.create) ; la même clé renvoie le mouvement déjà créé (200, replayed) au lieu d'en créer un second. */
 export function createCashMovement(http: HttpClient, request: CreateCashMovementRequest, idempotencyKey: string): Promise<CreatedCashMovement> {
   return http.post<CreatedCashMovement>('/cash-movements', request, { headers: { [IDEMPOTENCY_HEADER]: idempotencyKey } });

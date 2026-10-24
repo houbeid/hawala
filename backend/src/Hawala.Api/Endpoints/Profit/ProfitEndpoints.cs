@@ -17,6 +17,9 @@ public static class ProfitEndpoints
         group.MapGet("", GetProfitReport).RequirePermission(Permissions.ProfitView);
         group.MapGet("/days/{date}", GetProfitDay).RequirePermission(Permissions.ProfitView);
 
+        // Export Excel (permission export en plus de profit.view) : une feuille par jour, une par transfert.
+        group.MapGet("/export", ProfitExport.ExportAsync).RequirePermission(Permissions.Export).RequirePermission(Permissions.ProfitView);
+
         // « Enregistrer le bénéfice du jour » et l'historique des photos.
         group.MapPost("/snapshots", SaveProfitSnapshot).RequirePermission(Permissions.ProfitView);
         group.MapGet("/snapshots", ListProfitSnapshots).RequirePermission(Permissions.ProfitView);

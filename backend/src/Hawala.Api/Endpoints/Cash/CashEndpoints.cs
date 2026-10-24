@@ -43,6 +43,9 @@ public static class CashEndpoints
 
         // Lecture des mouvements : comme les soldes de caisse, avec cash.budget.read.
         group.MapGet("", ListCashMovements).RequirePermission(Permissions.CashBudgetRead);
+
+        // Export Excel (permission export en plus de la lecture) : mêmes filtres et même périmètre que la liste.
+        group.MapGet("/export", CashExport.ExportAsync).RequirePermission(Permissions.Export).RequirePermission(Permissions.CashBudgetRead);
         group.MapGet("/{id:guid}", GetCashMovement).RequirePermission(Permissions.CashBudgetRead);
 
         group.MapPost("", CreateCashMovement).RequirePermission(Permissions.CashCreate);
