@@ -12,6 +12,7 @@ import { Notice } from '@/shared/ui/Notice';
 import { StatementBody, StatementPeriod } from '@/shared/ui/Statement';
 import { useOnlineStatus } from '@/shared/useOnlineStatus';
 import { AccountActionsSheet } from '../components/AccountActionsSheet';
+import { OpeningBalanceSheet } from '../components/OpeningBalanceSheet';
 import { useTreasuryAccount, useTreasuryStatement } from '../queries';
 import { parsePeriodSearch, type PeriodSearch } from '../treasurySearch';
 
@@ -35,6 +36,7 @@ export function TreasuryAccountPage() {
   const agencies = useAgencies();
   const agency = useMemo(() => agencies.data?.find((a) => a.id === account.data?.agencyId), [agencies.data, account.data]);
   const [managing, setManaging] = useState(false);
+  const [opening, setOpening] = useState(false);
 
   if (account.isPending) {
     return (
@@ -56,6 +58,8 @@ export function TreasuryAccountPage() {
   }
 
   const data = account.data;
+  // Solde de départ : seulement sur la fiche et avec la lecture des soldes (null sinon).
+  const openingBalance = data?.openingBalance ?? null;
   const setPeriod = (patch: Partial<PeriodSearch>) =>
     void navigate({ to: '/treasury/$accountId', params: { accountId }, search: { ...search, ...patch }, replace: true });
   const lines = statement.data;
@@ -90,13 +94,26 @@ export function TreasuryAccountPage() {
             <span className={`amount text-2xl ${data.balance < 0 ? 'text-red' : ''}`}>{formatAmount(data.balance, data.currency)}</span>
           </div>
         )}
+        {openingBalance !== null && (
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <span className="text-sm text-muted">{t('treasury.opening.current')}</span>
+            <span className="amount">{formatAmount(openingBalance, data.currency)}</span>
+          </div>
+        )}
       </section>
 
       {canManage &&
         (online ? (
-          <Button icon={<Icon name="pencil" />} onClick={() => setManaging(true)}>
-            {t('treasury.detail.manage')}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button icon={<Icon name="pencil" />} onClick={() => setManaging(true)}>
+              {t('treasury.detail.manage')}
+            </Button>
+            {data.isActive && openingBalance !== null && (
+              <Button icon={<Icon name="cash" />} onClick={() => setOpening(true)}>
+                {t('treasury.opening.open')}
+              </Button>
+            )}
+          </div>
         ) : (
           <Notice tone="info">{t('treasury.offline')}</Notice>
         ))}
@@ -153,6 +170,9 @@ export function TreasuryAccountPage() {
       )}
 
       {managing && <AccountActionsSheet key={data.id} account={data} onClose={() => setManaging(false)} />}
+      {opening && openingBalance !== null && (
+        <OpeningBalanceSheet account={{ ...data, openingBalance }} onClose={() => setOpening(false)} />
+      )}
     </div>
   );
 }

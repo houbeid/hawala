@@ -31,6 +31,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { id: 'users', to: '/users', labelKey: 'nav.users', icon: 'user', group: 'administration', permission: 'users.manage' },
   { id: 'treasury', to: '/treasury', labelKey: 'nav.treasury', icon: 'bank', group: 'administration' },
   { id: 'audit', to: '/audit', labelKey: 'nav.audit', icon: 'shield', group: 'administration', permission: 'audit.view' },
+  { id: 'setup', to: '/setup', labelKey: 'nav.setup', icon: 'download', group: 'administration', permission: 'parties.manage' },
   { id: 'sessions', to: '/me/sessions', labelKey: 'nav.sessions', icon: 'devices', group: 'account' },
 ];
 

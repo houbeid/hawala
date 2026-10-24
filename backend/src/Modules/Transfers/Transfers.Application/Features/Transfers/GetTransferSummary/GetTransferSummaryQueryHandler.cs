@@ -92,7 +92,8 @@ public sealed class GetTransferSummaryQueryHandler(
             SentByOther: full ? Sum(sentByOther, other[0].Currency) : null,
             DeliveredByOther: full ? Sum(sentByAgency.Where(t => t.Status == TransferStatus.Delivered), other[0].Currency) : null,
             NotDelivered: Sum(sentByOther.Where(t => t.Status == TransferStatus.NotDelivered), agency.Currency),
-            ProfitMro: full ? active.Sum(t => t.ProfitMro) : null,
+            // Repris de l'ancienne app : bénéfice déjà compté là-bas (décision du 24 octobre 2026).
+            ProfitMro: full ? active.Where(t => !t.IsResumed).Sum(t => t.ProfitMro) : null,
             SaleRate: rate?.SaleRate.MroPer5000Xof,
             PurchaseRate: full ? rate?.PurchaseRate.MroPer5000Xof : null);
     }

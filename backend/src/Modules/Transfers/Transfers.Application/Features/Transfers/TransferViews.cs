@@ -75,6 +75,7 @@ public sealed class TransferViews(
             seesProfit ? t.PurchaseRate.MroPer5000Xof : null,
             seesProfit ? t.ProfitMro : null,
             t.SenderInfo, t.BeneficiaryInfo, t.Note, t.OperationAt, t.CreatedAt,
-            payments, credit, t.DeliveryOperationAt, t.IsCodeLocked, t.DeliveredWithoutCode, t.CancellationOperationAt, t.CancellationReason, t.Version);
+            payments, credit, t.DeliveryOperationAt, t.IsCodeLocked, t.DeliveredWithoutCode, t.CancellationOperationAt, t.CancellationReason, t.Version,
+            t.IsResumed);
     }
 }

@@ -226,7 +226,8 @@ public sealed class ListPartiesTests(ApiFixture fixture)
         var factory = await fixture.GetFactoryAsync();
         var client = factory.CreateApiClient();
         var token = await LoginAsSupervisorAsync(factory, client);
-        var tag = Guid.NewGuid().ToString("N")[..10];
+        // Lettres seulement : la recherche compare aussi les chiffres du texte aux téléphones des autres tests.
+        var tag = new string([.. Guid.NewGuid().ToString("N")[..10].Select(c => (char)('g' + Convert.ToInt32(c.ToString(), 16)))]);
         var localNumber = "70" + Random.Shared.Next(1_000_000, 9_999_999).ToString(CultureInfo.InvariantCulture);
 
         var a = await CreateAsync(client, token, $"A {tag}", "Client", phone: null);

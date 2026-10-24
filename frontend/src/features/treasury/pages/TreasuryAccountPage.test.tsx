@@ -68,11 +68,20 @@ function accountServer(options: { hideBalances?: boolean } = {}) {
     http.get(apiUrl('/treasury-accounts/:id'), ({ params }) => {
       const found = find(params.id);
       if (!found) return HttpResponse.json({ code: 'Treasury.Account.NotFound' }, { status: 404 });
-      return HttpResponse.json(options.hideBalances ? { ...found, balance: null } : found);
+      // La fiche renvoie aussi le solde de départ, avec la même visibilité que le solde.
+      return HttpResponse.json(
+        options.hideBalances ? { ...found, balance: null, openingBalance: null } : { ...found, openingBalance: found.openingBalance ?? 50_000 },
+      );
     }),
     http.get(apiUrl('/treasury-accounts/:id/statement'), ({ params, request }) => {
       statementQueries.push(new URL(request.url).searchParams);
       return HttpResponse.json(statementOf(find(params.id)!));
+    }),
+    http.put(apiUrl('/treasury-accounts/:id/opening-balance'), async ({ params, request }) => {
+      const body = (await request.json()) as { amount: number };
+      calls.push({ path: `opening:${params.id as string}`, body });
+      find(params.id)!.openingBalance = body.amount;
+      return new HttpResponse(null, { status: 204 });
     }),
     http.put(apiUrl('/treasury-accounts/:id'), async ({ params, request }) => {
       const body = (await request.json()) as { name: string };
@@ -131,6 +140,25 @@ describe('Fiche d’un compte de trésorerie — Superviseur', () => {
     expect(await screen.findByRole('heading', { name: 'Caisse du guichet' })).toBeInTheDocument();
   });
 
+  it('fixe le solde initial : actuel et différence montrés avant l’envoi, rien d’envoyé pour la même valeur', async () => {
+    const { calls } = accountServer();
+    const { user } = renderApp('/treasury/nkc-cash');
+
+    expect(await screen.findByText('Solde initial actuel')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Solde initial' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Solde initial · Caisse principale' });
+    expect(within(dialog).getByText('Même valeur : rien ne sera écrit.')).toBeInTheDocument();
+
+    const field = within(dialog).getByLabelText('Nouveau solde initial');
+    await user.clear(field);
+    await user.type(field, '2400000');
+    expect(within(dialog).getByText(/Différence écrite : \+\s2\s350\s000\sMRO/)).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: 'Enregistrer le solde initial' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(calls).toEqual([{ path: 'opening:nkc-cash', body: { amount: 2_400_000, operationDate: null } }]);
+  });
+
   it('n’offre pas de désactiver un compte dont le solde n’est pas nul', async () => {
     const { calls } = accountServer();
     const { user } = renderApp('/treasury/nkc-cash');
@@ -173,6 +201,15 @@ describe('Fiche d’un compte de trésorerie — Superviseur', () => {
 });
 
 describe('Fiche d’un compte de trésorerie — autres comptes', () => {
+  it('un agent voit le solde initial, sans pouvoir le changer', async () => {
+    signedInAs(agentAccount);
+    accountServer();
+    renderApp('/treasury/nkc-cash');
+
+    expect(await screen.findByText('Solde initial actuel')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Solde initial' })).not.toBeInTheDocument();
+  });
+
   it('un agent lit le relevé, sans action de gestion', async () => {
     signedInAs(agentAccount);
     accountServer();

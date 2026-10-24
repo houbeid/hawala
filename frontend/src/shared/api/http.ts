@@ -19,6 +19,8 @@ export interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   /** Corps envoyé en JSON. */
   body?: unknown;
+  /** Formulaire envoyé tel quel (fichier) ; le navigateur pose lui-même le Content-Type multipart. */
+  form?: FormData;
   /** Paramètres d'URL ; null et undefined sont omis. */
   query?: Record<string, string | number | boolean | null | undefined>;
   headers?: Record<string, string>;
@@ -59,7 +61,7 @@ export function createHttpClient(options: HttpClientOptions = {}): HttpClient {
 
   async function send(path: string, request: RequestOptions, token: string | null): Promise<Response> {
     const headers: Record<string, string> = { Accept: 'application/json', ...request.headers };
-    if (request.body !== undefined) headers['Content-Type'] = 'application/json';
+    if (request.body !== undefined && !request.form) headers['Content-Type'] = 'application/json';
     if (token) headers.Authorization = `Bearer ${token}`;
 
     // URL absolue résolue sur la page : identique dans le navigateur, et nécessaire au fetch de Node (tests).
@@ -68,7 +70,7 @@ export function createHttpClient(options: HttpClientOptions = {}): HttpClient {
       return await doFetch(url, {
         method: request.method ?? 'GET',
         headers,
-        body: request.body === undefined ? undefined : JSON.stringify(request.body),
+        body: request.form ?? (request.body === undefined ? undefined : JSON.stringify(request.body)),
         // Même origine : le cookie hawala_refresh part vers /api/v1/auth, jamais ailleurs (chemin du cookie).
         credentials: 'same-origin',
         signal: request.signal,

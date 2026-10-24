@@ -1,7 +1,9 @@
 using Hawala.SharedInfrastructure.Persistence;
 using Hawala.SharedKernel.Time;
 using Ledger.Application.Abstractions;
+using Hawala.SharedKernel.Messaging;
 using Ledger.Application.Ledger;
+using Ledger.Application.StartDate;
 using Ledger.Contracts;
 using Ledger.Infrastructure.Persistence;
 using Ledger.Infrastructure.Persistence.Repositories;
@@ -39,6 +41,11 @@ public static class DependencyInjection
         services.AddScoped<ILedgerAccountRepository, LedgerAccountRepository>();
         services.AddScoped<IJournalEntryRepository, JournalEntryRepository>();
         services.AddScoped<ILedger, LedgerService>();
+
+        // Date de démarrage (mise en service, phase 8).
+        services.AddScoped<ILedgerSettingsRepository, LedgerSettingsRepository>();
+        services.AddScoped<IQueryHandler<GetStartDateQuery, StartDateView>, GetStartDateQueryHandler>();
+        services.AddSharedTransactional<SetStartDateCommand, StartDateView, SetStartDateCommandHandler>();
 
         return services;
     }

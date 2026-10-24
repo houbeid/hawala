@@ -251,6 +251,14 @@ public static class ApiClient
     public static Task<HttpResponseMessage> SendGetAsync(this HttpClient client, string? accessToken, string url) =>
         client.SendAsync(HttpMethod.Get, url, accessToken: accessToken);
 
+    /// <param name="startDate">aaaa-mm-jj.</param>
+    public static Task<HttpResponseMessage> SetStartDateAsync(this HttpClient client, string? accessToken, string startDate) =>
+        client.SendAsync(HttpMethod.Put, "/api/v1/setup/start-date", body: new { startDate }, accessToken: accessToken);
+
+    /// <param name="body">Objet anonyme : amount, operationDate.</param>
+    public static Task<HttpResponseMessage> SetTreasuryOpeningBalanceAsync(this HttpClient client, string? accessToken, Guid id, object body) =>
+        client.SendAsync(HttpMethod.Put, $"/api/v1/treasury-accounts/{id}/opening-balance", body: body, accessToken: accessToken);
+
     /// <param name="body">Objet anonyme : code, operationAt, payments [{ treasuryAccountId, amount }], note.</param>
     public static Task<HttpResponseMessage> DeliverTransferAsync(this HttpClient client, string? accessToken, Guid id, object body) =>
         client.SendAsync(HttpMethod.Post, $"/api/v1/transfers/{id}/deliver", body: body, accessToken: accessToken);

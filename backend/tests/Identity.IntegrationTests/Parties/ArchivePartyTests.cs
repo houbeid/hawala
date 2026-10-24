@@ -92,7 +92,9 @@ public sealed class ArchivePartyTests(ApiFixture fixture)
         var client = factory.CreateApiClient();
         var supervisor = await TestAccounts.CreateAsync(factory, RoleTemplate.Supervisor);
         var (token, _) = await client.LoginOkAsync(supervisor.Email, supervisor.Password);
-        var tag = Guid.NewGuid().ToString("N")[..10];
+        // Lettres seulement : la recherche compare aussi les chiffres du texte aux téléphones, et un marqueur avec des
+        // chiffres trouvait parfois le téléphone d'un autre test (cause des échecs intermittents des 21 et 24 octobre).
+        var tag = new string([.. Guid.NewGuid().ToString("N")[..10].Select(c => (char)('g' + Convert.ToInt32(c.ToString(), 16)))]);
 
         using var created = await client.CreatePartyAsync(token, new { name = $"Archive {tag}", type = "Client" });
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);

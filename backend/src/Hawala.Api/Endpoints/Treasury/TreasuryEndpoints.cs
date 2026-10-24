@@ -8,6 +8,7 @@ using Treasury.Application.Features.Accounts.CreateTreasuryAccount;
 using Treasury.Application.Features.Accounts.DeactivateTreasuryAccount;
 using Treasury.Application.Features.Accounts.ReactivateTreasuryAccount;
 using Treasury.Application.Features.Accounts.RenameTreasuryAccount;
+using Treasury.Application.Features.Accounts.SetTreasuryOpeningBalance;
 using Treasury.Application.Features.Accounts.GetTreasuryAccount;
 using Treasury.Application.Features.Accounts.GetTreasuryAccountStatement;
 using Treasury.Application.Features.Accounts.ListTreasuryAccounts;
@@ -40,6 +41,9 @@ public static class TreasuryEndpoints
         group.MapPost("/{id:guid}/deactivate", DeactivateTreasuryAccount).RequirePermission(Permissions.TreasuryManage);
         group.MapPost("/{id:guid}/reactivate", ReactivateTreasuryAccount).RequirePermission(Permissions.TreasuryManage);
 
+        // Solde de départ (mise en service, décision du 22 octobre 2026) : écriture d'ouverture de la différence.
+        group.MapPut("/{id:guid}/opening-balance", SetOpeningBalance).RequirePermission(Permissions.TreasuryManage);
+
         return app;
     }
 
@@ -59,6 +63,28 @@ public static class TreasuryEndpoints
         CancellationToken cancellationToken)
     {
         var result = await handler.Handle(new DeactivateTreasuryAccountCommand(id), cancellationToken);
+        return result.IsSuccess ? TypedResults.NoContent() : result.Error.ToProblem();
+    }
+
+    /// <param name="Amount">Solde de départ voulu, dans la devise du compte.</param>
+    /// <param name="OperationDate">Date de l'écriture d'ouverture (jour de mise en service) ; aujourd'hui si absente.</param>
+    public sealed record SetOpeningBalanceRequest(decimal? Amount, DateOnly? OperationDate);
+
+    /// <summary>204 : solde de départ fixé (rien n'est écrit s'il ne change pas). Compte désactivé : 409.</summary>
+    private static async Task<IResult> SetOpeningBalance(
+        Guid id,
+        SetOpeningBalanceRequest request,
+        ClaimsPrincipal user,
+        ICommandHandler<SetTreasuryOpeningBalanceCommand> handler,
+        CancellationToken cancellationToken)
+    {
+        if (!user.TryGetAccountId(out var actorId))
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        var result = await handler.Handle(
+            new SetTreasuryOpeningBalanceCommand(actorId, id, request.Amount, request.OperationDate), cancellationToken);
         return result.IsSuccess ? TypedResults.NoContent() : result.Error.ToProblem();
     }
 

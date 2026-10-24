@@ -14,7 +14,8 @@ public sealed class TransferProfits(ITransferRepository transfers) : ITransferPr
             new TransferFilter(from, toExclusive, SourceAgencyId: sourceAgencyId), cancellationToken);
 
         return [.. found
-            .Where(t => t.Status != TransferStatus.Cancelled)
+            // Annulés exclus ; repris de l'ancienne app exclus (bénéfice déjà compté là-bas, décision du 24 octobre 2026).
+            .Where(t => t.Status != TransferStatus.Cancelled && !t.IsResumed)
             .OrderBy(t => t.OperationAt)
             .Select(t => new TransferProfitLine(
                 t.Id, t.Reference, t.SourceAgencyId, t.DestinationAgencyId, t.OperationAt,

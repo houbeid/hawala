@@ -3,6 +3,7 @@ import type {
   CreateTreasuryAccountRequest,
   CreatedTreasuryAccount,
   RenameTreasuryAccountRequest,
+  SetTreasuryOpeningBalanceRequest,
   TreasuryAccount,
   TreasuryAccountStatement,
 } from './types';
@@ -25,6 +26,11 @@ export function renameTreasuryAccount(http: HttpClient, id: string, request: Ren
 }
 
 /** Solde nul seulement (Treasury.Account.BalanceNotZero sinon) ; ferme aussi le compte au grand livre. */
+/** Solde de départ (mise en service) : le serveur écrit la différence en écriture d'ouverture ; 204. */
+export function setTreasuryOpeningBalance(http: HttpClient, id: string, request: SetTreasuryOpeningBalanceRequest): Promise<void> {
+  return http.put<void>(`/treasury-accounts/${id}/opening-balance`, request);
+}
+
 export function deactivateTreasuryAccount(http: HttpClient, id: string): Promise<void> {
   return http.post<void>(`/treasury-accounts/${id}/deactivate`);
 }

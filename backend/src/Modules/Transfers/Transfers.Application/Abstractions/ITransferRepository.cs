@@ -7,6 +7,9 @@ public interface ITransferRepository
 {
     void Add(Transfer transfer);
 
+    /// <summary>Une référence déjà prise, tous périmètres confondus (reprise de l'ancienne app).</summary>
+    Task<bool> ReferenceExistsAsync(string reference, CancellationToken cancellationToken);
+
     /// <summary>Transfert déjà créé par ce compte avec cette clé (double clic, resynchronisation hors ligne).</summary>
     Task<Transfer?> FindByIdempotencyKeyAsync(Guid createdBy, string idempotencyKey, CancellationToken cancellationToken);
 

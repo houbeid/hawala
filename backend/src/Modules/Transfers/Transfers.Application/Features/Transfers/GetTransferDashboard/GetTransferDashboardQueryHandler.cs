@@ -29,7 +29,8 @@ public sealed class GetTransferDashboardQueryHandler(ITransferRepository transfe
         }
 
         var active = (await transfers.ListAllAsync(new TransferFilter(Start(from), Start(to.AddDays(1))), cancellationToken))
-            .Where(t => t.Status != TransferStatus.Cancelled)
+            // Annulés exclus ; repris de l'ancienne app exclus (envoyés avant la mise en service, décision du 24 octobre 2026).
+            .Where(t => t.Status != TransferStatus.Cancelled && !t.IsResumed)
             .ToList();
 
         var caisses = (await agencies.GetAllAsync(cancellationToken))

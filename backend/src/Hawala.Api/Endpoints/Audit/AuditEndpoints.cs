@@ -6,6 +6,7 @@ using Hawala.Api.Errors;
 using Hawala.SharedKernel.Messaging;
 using Identity.Contracts;
 using Parties.Contracts;
+using Treasury.Contracts;
 
 namespace Hawala.Api.Endpoints.Audit;
 
@@ -60,6 +61,7 @@ public static class AuditEndpoints
         IAccountDirectory accounts,
         IPartyDirectory parties,
         IAgencyDirectory agencies,
+        ITreasuryDirectory treasury,
         CancellationToken cancellationToken)
     {
         // Hors Superviseur : son agence seulement (une autre agence demandée = liste vide).
@@ -106,6 +108,12 @@ public static class AuditEndpoints
             ? (await agencies.GetAllAsync(cancellationToken)).ToDictionary(a => a.Id, a => a.Name)
             : new Dictionary<Guid, string>();
 
+        var treasuryIds = items.Where(i => i.EntityType == "TreasuryAccount").Select(i => i.EntityId).OfType<Guid>().Distinct().ToList();
+        foreach (var account in treasuryIds.Count == 0 ? [] : await treasury.GetByIdsAsync(treasuryIds, cancellationToken))
+        {
+            agencyNames[account.Id] = account.Name;
+        }
+
         var lines = items.Select(i => new AuditLine(
                 i.Id,
                 i.OccurredAt,
@@ -135,7 +143,7 @@ public static class AuditEndpoints
             {
                 "UserAccount" => accounts.GetValueOrDefault(id),
                 "Party" => parties.GetValueOrDefault(id),
-                "Agency" => agencies.GetValueOrDefault(id),
+                "Agency" or "TreasuryAccount" => agencies.GetValueOrDefault(id),
                 _ => null,
             };
 }

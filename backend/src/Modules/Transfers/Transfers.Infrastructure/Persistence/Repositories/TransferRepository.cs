@@ -43,6 +43,9 @@ internal sealed class TransferRepository(TransfersDbContext db) : ITransferRepos
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(t => t.CreatedBy == createdBy && t.IdempotencyKey == idempotencyKey, cancellationToken);
 
+    public Task<bool> ReferenceExistsAsync(string reference, CancellationToken cancellationToken) =>
+        db.Transfers.IgnoreQueryFilters().AnyAsync(t => t.Reference == reference, cancellationToken);
+
     public Task<Transfer?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
         db.Transfers.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
 

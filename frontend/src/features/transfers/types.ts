@@ -58,6 +58,8 @@ export interface Transfer {
   cancellationOperationAt: string | null;
   cancellationReason: string | null;
   version: number;
+  /** Repris de l'ancienne app à la mise en service : montant non modifiable, exclu du bénéfice (absent = faux). */
+  isResumed?: boolean;
 }
 
 export interface TransferList {
@@ -168,7 +170,8 @@ export type TransferEventType =
   | 'Cancelled'
   | 'CodeUnlocked'
   | 'CodeReplaced'
-  | 'WrongCode';
+  | 'WrongCode'
+  | 'Resumed';
 
 /**
  * Champ changé (TransferFieldChange). Noms en PascalCase (nameof côté serveur) ; valeurs en texte invariant :

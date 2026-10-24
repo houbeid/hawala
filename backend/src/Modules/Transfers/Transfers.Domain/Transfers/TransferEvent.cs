@@ -13,6 +13,9 @@ public enum TransferEventType
     CodeUnlocked,
     CodeReplaced,
     WrongCode,
+
+    /// <summary>Repris de l'ancienne app à la mise en service (phase 8) : non livré, sans paiement dans cette app.</summary>
+    Resumed,
 }
 
 /// <summary>Un champ changé : valeurs avant et après, en texte (invariant).</summary>

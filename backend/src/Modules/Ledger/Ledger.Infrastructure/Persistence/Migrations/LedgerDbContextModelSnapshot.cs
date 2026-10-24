@@ -162,6 +162,25 @@ namespace Ledger.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Ledger.Domain.Settings.LedgerSettings", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateTimeOffset>("StartDateSetAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("StartDateSetBy")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("settings", "ledger");
+                });
+
             modelBuilder.Entity("Ledger.Domain.Entries.JournalEntry", b =>
                 {
                     b.HasOne("Ledger.Domain.Entries.JournalEntry", null)

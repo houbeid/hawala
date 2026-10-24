@@ -76,6 +76,15 @@ describe('actions de la fiche selon le compte', () => {
   });
 });
 
+describe('transfert repris de l’ancienne app', () => {
+  it('son montant ne se modifie pas, le reste des actions demeure', () => {
+    const actions = availableActions({ ...transfer, isResumed: true }, supervisorAccount);
+    expect(actions.editAmounts).toBe(false);
+    expect(actions.deliverWithoutCode).toBe(true);
+    expect(actions.newCode).toBe(true);
+  });
+});
+
 describe("lecture de l'historique", () => {
   const event = (type: TransferEvent['type'], changes: TransferEvent['changes'] = []): TransferEvent => ({
     type,
@@ -88,6 +97,7 @@ describe("lecture de l'historique", () => {
 
   it("donne l'auteur de la création et le numéro d'un code faux", () => {
     expect(creatorName([event('Created'), event('Edited')])).toBe('Agent Test');
+    expect(creatorName([event('Resumed')])).toBe('Agent Test');
     expect(wrongCodeAttempt(event('WrongCode', [{ field: 'FailedCodeAttempts', before: '1', after: '2' }]))).toBe(2);
   });
 

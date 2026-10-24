@@ -9,6 +9,7 @@ using Parties.Application.Abstractions;
 using Hawala.SharedKernel.Messaging;
 using Parties.Application.Features.Parties;
 using Parties.Application.Features.Parties.ArchiveParty;
+using Parties.Application.Features.Import;
 using Parties.Application.Features.Parties.CreateParty;
 using Parties.Application.Features.Parties.GetParty;
 using Parties.Application.Features.Parties.GetPartyStatement;
@@ -63,6 +64,11 @@ public static class DependencyInjection
         services.AddSharedTransactional<SetOpeningBalanceCommand, SetOpeningBalanceCommandHandler>();
         services.AddSharedTransactional<ArchivePartyCommand, ArchivePartyCommandHandler>();
         services.AddSharedTransactional<UnarchivePartyCommand, UnarchivePartyCommandHandler>();
+
+        // Import Excel de mise en service (phase 8) : vérifier (lecture seule) puis importer, tout ou rien.
+        services.AddScoped<PartyImportValidator>();
+        services.AddScoped<IQueryHandler<CheckPartyImportQuery, PartyImportReport>, CheckPartyImportQueryHandler>();
+        services.AddSharedTransactional<ImportPartiesCommand, PartyImportResult, ImportPartiesCommandHandler>();
 
         // « Limiter les tiers » : la règle et sa ligne d'audit dans la même transaction.
         services.AddSharedTransactional<SetAccountPartyScopeCommand, AccountPartyScopeView, AccountPartyScopeHandlers>();

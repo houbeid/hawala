@@ -46,6 +46,13 @@ public interface ILedger
     Task<IReadOnlyList<RecordedEntry>> ListRecordedEntriesAsync(
         string entryType, Guid agencyId, DateTimeOffset recordedSince, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Somme (débit − crédit) des lignes d'un compte dans les écritures d'un type, contre-passations comprises (elles
+    /// gardent le type de l'écriture d'origine). Sert à lire un solde d'ouverture tenu seulement au grand livre
+    /// (ex. « Treasury.OpeningBalance » d'un compte de trésorerie).
+    /// </summary>
+    Task<decimal> SumEntriesAsync(Guid accountId, string entryType, CancellationToken cancellationToken);
+
     /// <summary>Enregistre une écriture équilibrée par devise. Renvoie son id.</summary>
     Task<Result<Guid>> PostAsync(PostEntryRequest request, CancellationToken cancellationToken);
 

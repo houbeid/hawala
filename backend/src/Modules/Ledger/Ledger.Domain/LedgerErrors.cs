@@ -93,4 +93,30 @@ public static class LedgerErrors
                 "Ledger.Reversal.CannotReverseAReversal",
                 "Une contre-passation ne peut pas être contre-passée : ressaisir l'opération.");
     }
+
+    /// <summary>Date de démarrage (mise en service, phase 8).</summary>
+    public static class StartDate
+    {
+        public static readonly Error Required =
+            Error.Validation("Ledger.StartDate.Required", "Indiquer la date de démarrage.");
+
+        public static readonly Error Future =
+            Error.Validation("Ledger.StartDate.Future", "La date de démarrage ne peut pas être dans le futur.");
+
+        public static readonly Error AlreadySet =
+            Error.Conflict("Ledger.StartDate.AlreadySet", "La date de démarrage est déjà fixée.");
+
+        public static Error EntriesBefore(int count) =>
+            Error.Conflict("Ledger.StartDate.EntriesBefore", "Des écritures sont déjà datées avant cette date.") with
+            {
+                Details = new Dictionary<string, object?> { ["count"] = count },
+            };
+
+        /// <summary>Opération datée avant la date de démarrage : la période de l'ancienne app est fermée.</summary>
+        public static Error EntryBefore(DateOnly startDate) =>
+            Error.Validation("Ledger.Entry.BeforeStartDate", "Opération datée avant la date de démarrage de l'app.") with
+            {
+                Details = new Dictionary<string, object?> { ["startDate"] = startDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) },
+            };
+    }
 }

@@ -22,6 +22,7 @@ using Transfers.Application.Features.Transfers.GetTransferReceipt;
 using Transfers.Application.Features.Transfers.GetTransferDashboard;
 using Transfers.Application.Features.Transfers.GetTransferSummary;
 using Transfers.Application.Features.Transfers.ListTransfers;
+using Transfers.Application.Features.Transfers.ResumeTransfers;
 using Transfers.Infrastructure.Messaging;
 using Transfers.Infrastructure.Persistence;
 using Transfers.Infrastructure.Persistence.Repositories;
@@ -90,6 +91,11 @@ public static class DependencyInjection
         services.AddPublishingTransactional<EditTransferAmountsCommand, EditTransferAmountsCommandHandler>();
         services.AddPublishingTransactional<NewCodeCommand, NewWithdrawalCode, NewCodeCommandHandler>();
         services.AddPublishingTransactional<DeliverWithoutCodeCommand, DeliveredTransfer, DeliverWithoutCodeCommandHandler>();
+
+        // Mise en service (phase 8) : reprise des transferts non livrés de l'ancienne app, tout ou rien, puis temps réel.
+        services.AddScoped<ResumedTransferValidator>();
+        services.AddScoped<IQueryHandler<CheckResumedTransfersQuery, ResumedTransferReport>, CheckResumedTransfersQueryHandler>();
+        services.AddPublishingTransactional<ImportResumedTransfersCommand, ResumedTransferResult, ImportResumedTransfersCommandHandler>();
 
         return services;
     }

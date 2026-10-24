@@ -11,6 +11,10 @@ namespace Treasury.Application.Features.Accounts;
 /// Solde (débit − crédit) lu au grand livre. Null si le compte connecté n'a pas la permission cash.budget.read :
 /// règle validée, un agent voit les comptes de son agence mais pas leurs soldes.
 /// </param>
+/// <param name="OpeningBalance">
+/// Solde de départ retenu (somme des écritures d'ouverture, lue au grand livre), même visibilité que le solde, et
+/// seulement sur la fiche (null dans la liste) : le Superviseur voit la valeur actuelle avant de la changer.
+/// </param>
 public sealed record TreasuryAccountSummary(
     Guid Id,
     string Name,
@@ -18,7 +22,8 @@ public sealed record TreasuryAccountSummary(
     Guid AgencyId,
     Currency Currency,
     bool IsActive,
-    decimal? Balance);
+    decimal? Balance,
+    decimal? OpeningBalance = null);
 
 internal static class TreasuryAccountSummaryMapper
 {

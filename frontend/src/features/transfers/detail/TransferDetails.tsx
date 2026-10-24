@@ -43,6 +43,7 @@ export function TransferDetails({ transfer, agencies, createdBy }: { transfer: T
         </Notice>
       )}
       {transfer.isCodeLocked && transfer.status === 'NotDelivered' && <Notice tone="error">{t('transfers.detail.codeLocked')}</Notice>}
+      {transfer.isResumed && <Notice tone="info">{t('transfers.detail.resumed')}</Notice>}
 
       <section className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
         <span className="amount font-mono text-sm font-medium">{transfer.reference}</span>

@@ -32,6 +32,9 @@ public sealed class CoherenceChecker(
     /// <summary>Type d'écriture du solde initial d'un tiers (module Tiers).</summary>
     public const string OpeningBalanceEntryType = "Parties.OpeningBalance";
 
+    /// <summary>Type d'écriture du solde de départ d'un compte de trésorerie (module Trésorerie, phase 8).</summary>
+    public const string TreasuryOpeningBalanceEntryType = "Treasury.OpeningBalance";
+
     /// <summary>Début par défaut : l'heure d'enregistrement du dernier budget d'un jour passé, sinon minuit aujourd'hui (UTC).</summary>
     public async Task<DateTimeOffset> DefaultSinceAsync(Guid agencyId, CancellationToken cancellationToken)
     {
@@ -69,7 +72,10 @@ public sealed class CoherenceChecker(
                 $"Ajustement ({adjustment.Target})", adjustment.Amount, adjustment.Reason));
         }
 
-        foreach (var entry in await ledger.ListRecordedEntriesAsync(OpeningBalanceEntryType, agency.Id, since, cancellationToken))
+        var openings = (await ledger.ListRecordedEntriesAsync(OpeningBalanceEntryType, agency.Id, since, cancellationToken))
+            .Concat(await ledger.ListRecordedEntriesAsync(TreasuryOpeningBalanceEntryType, agency.Id, since, cancellationToken))
+            .OrderBy(e => e.RecordedAt);
+        foreach (var entry in openings)
         {
             alerts.Add(new CoherenceAlert(
                 CoherenceAlertKind.OpeningBalanceChanged, entry.RecordedAt, entry.SourceId, entry.Label, entry.Amount, null));

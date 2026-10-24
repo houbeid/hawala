@@ -17,10 +17,23 @@ namespace Ledger.Application.Ledger;
 public sealed class LedgerService(
     ILedgerAccountRepository accounts,
     IJournalEntryRepository entries,
+    ILedgerSettingsRepository settings,
     IUnitOfWork unitOfWork,
     IClock clock)
     : ILedger
 {
+    /// <summary>
+    /// Date de démarrage (phase 8, décision du 24 octobre 2026) : une écriture (ou une contre-passation) datée avant est
+    /// refusée, quel que soit le module qui l'envoie. Sans date fixée : aucune limite (avant la mise en service).
+    /// </summary>
+    private async Task<Result> EnsureAfterStartAsync(DateOnly operationDate, CancellationToken cancellationToken)
+    {
+        var current = await settings.GetAsync(cancellationToken);
+        return current is not null && operationDate < current.StartDate
+            ? LedgerErrors.StartDate.EntryBefore(current.StartDate)
+            : Result.Success();
+    }
+
     public async Task<Result<Guid>> OpenAccountAsync(
         LedgerAccountKind kind,
         Guid ownerId,
@@ -84,6 +97,9 @@ public sealed class LedgerService(
             e.Lines.Where(l => l.Side == EntrySide.Debit).Sum(l => l.Amount)))];
     }
 
+    public Task<decimal> SumEntriesAsync(Guid accountId, string entryType, CancellationToken cancellationToken) =>
+        entries.SumByEntryTypeAsync(accountId, entryType, cancellationToken);
+
     public async Task<Guid?> FindSystemAccountAsync(SystemAccountRole role, Guid agencyId, CancellationToken cancellationToken) =>
         (await accounts.GetSystemAccountAsync(role, agencyId, cancellationToken))?.Id;
 
@@ -91,6 +107,12 @@ public sealed class LedgerService(
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(request.Lines);
+
+        var started = await EnsureAfterStartAsync(request.OperationDate, cancellationToken);
+        if (started.IsFailure)
+        {
+            return started.Error;
+        }
 
         // Tous les comptes de l'écriture en une seule lecture.
         var accountIds = request.Lines.Select(l => l.AccountId).Distinct().ToList();
@@ -134,6 +156,12 @@ public sealed class LedgerService(
         if (original is null)
         {
             return LedgerErrors.Entry.NotFound;
+        }
+
+        var started = await EnsureAfterStartAsync(operationDate, cancellationToken);
+        if (started.IsFailure)
+        {
+            return started.Error;
         }
 
         // Une écriture immuable ne se marque pas « contre-passée » : on cherche sa contre-passation.

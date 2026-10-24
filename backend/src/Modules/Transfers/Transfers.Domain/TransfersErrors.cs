@@ -53,6 +53,11 @@ public static class TransfersErrors
         public static readonly Error NotEditable =
             Error.Conflict("Transfers.Transfer.NotEditable", "Seul un transfert non livré se modifie.");
 
+        public static readonly Error ResumedAmountsLocked =
+            Error.Conflict(
+                "Transfers.Transfer.ResumedAmountsLocked",
+                "Transfert repris de l'ancienne app : son montant ne se modifie pas ici.");
+
         public static readonly Error ReasonTooLong =
             Error.Validation("Transfers.Transfer.ReasonTooLong", "Motif de la modification : 500 caractères au plus.");
 

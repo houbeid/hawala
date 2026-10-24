@@ -49,6 +49,7 @@ describe('« Plus » et barre latérale', () => {
       'users',
       'treasury',
       'audit',
+      'setup',
       'sessions',
     ]);
   });

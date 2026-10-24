@@ -38,7 +38,8 @@
       "administration": "Administration",
       "account": "Mon compte",
       "preferences": "Préférences"
-    }
+    },
+    "setup": "Mise en service"
   },
   "shell": {
     "mainNav": "Navigation principale",
@@ -239,7 +240,8 @@
         "VersionConflict": "Ce transfert vient d'être modifié par un autre utilisateur. Rechargez-le avant de continuer : votre modification n'a pas été enregistrée.",
         "VersionRequired": "Rechargez le transfert puis réessayez.",
         "ReasonRequired": "Le motif est obligatoire.",
-        "ReasonTooLong": "Motif trop long (500 caractères au plus)."
+        "ReasonTooLong": "Motif trop long (500 caractères au plus).",
+        "ResumedAmountsLocked": "Transfert repris de l’ancienne app : son montant ne se modifie pas ici."
       },
       "Payment": {
         "AccountDuplicated": "Un compte apparaît deux fois dans la répartition.",
@@ -291,6 +293,22 @@
         "NotCodeHolder": "Seul le compte qui a obtenu le code peut l’écrire sur le reçu. Demandez le duplicata sans code.",
         "WrongCode": "Ce code n’est pas celui du transfert.",
         "CodeNotUsable": "Transfert livré ou annulé : le reçu se donne sans code."
+      },
+      "Resume": {
+        "Empty": "Le fichier ne contient aucun transfert.",
+        "TooManyRows": "Plus de 2 000 transferts : découpez le fichier.",
+        "ReferenceRequired": "La référence est obligatoire.",
+        "ReferenceTooLong": "Référence trop longue (60 caractères au plus).",
+        "ReferenceDuplicateInFile": "Cette référence est déjà sur une autre ligne du fichier.",
+        "ReferenceTaken": "Cette référence existe déjà dans l’app (déjà reprise ?).",
+        "DateInvalid": "Date illisible (jj/mm/aaaa hh:mm).",
+        "AgencyUnknown": "Agence inconnue : NKC ou DKR.",
+        "AmountInvalid": "Montant illisible, nul ou trop précis (FCFA entier, MRO à 2 décimales).",
+        "RateInvalid": "Prix de vente illisible (2 décimales au plus).",
+        "FileUnreadable": "Fichier illisible : envoyez le modèle Excel (.xlsx) rempli.",
+        "Invalid": "Le fichier contient des erreurs : rien n’a été repris.",
+        "RowFailed": "Une ligne a été refusée : rien n’a été repris.",
+        "OpeningDateInvalid": "Date de mise en service illisible."
       }
     },
     "Parties": {
@@ -332,6 +350,22 @@
         "SupervisorSeesAll": "Un Superviseur voit toujours tous les tiers.",
         "LimitedRequired": "Indiquez si le compte est limité.",
         "PartyNotFound": "Un des tiers choisis n’existe pas."
+      },
+      "Import": {
+        "Empty": "Le fichier ne contient aucun tiers.",
+        "TooManyRows": "Plus de 2 000 tiers : découpez le fichier.",
+        "TypeUnknown": "Type inconnu : Client, Fournisseur, Personnel ou Autre.",
+        "YesNoUnknown": "Écrire Oui ou Non.",
+        "AmountInvalid": "Montant illisible.",
+        "AmountTooPrecise": "Trop de décimales (FCFA entier, MRO à 2 décimales).",
+        "DirectionRequired": "Indiquer le sens : « Il nous doit » ou « On lui doit ».",
+        "DirectionUnknown": "Sens inconnu : « Il nous doit » ou « On lui doit ».",
+        "PhoneDuplicateInFile": "Ce téléphone est déjà sur une autre ligne du fichier.",
+        "NniDuplicateInFile": "Ce NNI est déjà sur une autre ligne du fichier.",
+        "FileUnreadable": "Fichier illisible : envoyez le modèle Excel (.xlsx) rempli.",
+        "Invalid": "Le fichier contient des erreurs : rien n’a été importé.",
+        "RowFailed": "Une ligne a été refusée : rien n’a été importé.",
+        "DateInvalid": "Date de mise en service illisible."
       }
     },
     "Money": {
@@ -357,7 +391,9 @@
         "AgencyNotFound": "Cette agence n'existe pas.",
         "AlreadyInactive": "Ce compte est déjà désactivé.",
         "AlreadyActive": "Ce compte est déjà actif.",
-        "BalanceNotZero": "Le solde doit être à zéro pour désactiver le compte : transférez d'abord l'argent restant."
+        "BalanceNotZero": "Le solde doit être à zéro pour désactiver le compte : transférez d'abord l'argent restant.",
+        "OpeningBalanceRequired": "Indiquez le solde de départ du compte.",
+        "Inactive": "Compte désactivé : réactivez-le avant de changer son solde initial."
       },
       "Statement": {
         "NotVisible": "Votre compte ne peut pas lire les mouvements de ce compte de trésorerie."
@@ -365,10 +401,17 @@
     },
     "Ledger": {
       "Entry": {
-        "FutureDate": "La date d'une opération ne peut pas être dans le futur."
+        "FutureDate": "La date d'une opération ne peut pas être dans le futur.",
+        "BeforeStartDate": "Opération datée avant la date de démarrage ({{startDate}}) : refusée."
       },
       "Statement": {
         "PeriodInvalid": "La date de début doit être avant la date de fin."
+      },
+      "StartDate": {
+        "Required": "Indiquez la date de démarrage.",
+        "Future": "La date de démarrage ne peut pas être dans le futur.",
+        "AlreadySet": "La date de démarrage est déjà fixée.",
+        "EntriesBefore": "{{count}} opération(s) déjà datée(s) avant cette date : choisissez un jour plus ancien."
       }
     },
     "Cash": {
@@ -682,7 +725,8 @@
         "editAmounts": "Modifier montant ou taux",
         "deliver": "Livrer",
         "deliverWithoutCode": "Livrer sans code"
-      }
+      },
+      "resumed": "Repris de l’ancienne app à la mise en service : son ancien code est inconnu. L’agence d’envoi peut donner un nouveau code à l’expéditeur, ou le Superviseur peut livrer sans code. Exclu du bénéfice."
     },
     "history": {
       "empty": "Aucun événement.",
@@ -700,7 +744,8 @@
         "Cancelled": "Annulé",
         "CodeUnlocked": "Code débloqué",
         "CodeReplaced": "Nouveau code",
-        "WrongCode": "Code faux"
+        "WrongCode": "Code faux",
+        "Resumed": "Repris de l’ancienne app"
       },
       "fields": {
         "SenderInfo": "Expéditeur",
@@ -1019,6 +1064,29 @@
         "OwnerWithdrawal": "Retrait du patron",
         "InternalTransfer": "Virement interne",
         "Adjustment": "Ajustement de solde"
+      },
+      "Treasury": {
+        "OpeningBalance": "Solde initial"
+      }
+    },
+    "opening": {
+      "open": "Solde initial",
+      "title": "Solde initial · {{name}}",
+      "hint": "Solde du compte à la mise en service (relevé de l’ancienne app, ou espèces comptées). Seule la différence avec le solde initial actuel est écrite.",
+      "current": "Solde initial actuel",
+      "new": "Nouveau solde initial",
+      "negative": "Solde négatif (découvert)",
+      "date": "Date du solde initial",
+      "noChange": "Même valeur : rien ne sera écrit.",
+      "difference": "Différence écrite : {{amount}}",
+      "save": "Enregistrer le solde initial",
+      "saving": "Enregistrement…",
+      "amount": {
+        "empty": "Indiquez le montant.",
+        "invalid": "Montant illisible.",
+        "tooPreciseMRO": "Deux décimales au plus.",
+        "tooPreciseMRU": "Trois décimales au plus en MRU.",
+        "tooPreciseXOF": "Le FCFA est toujours entier."
       }
     }
   },
@@ -1628,6 +1696,11 @@
         "Agency": {
           "ColorChanged": "{{actor}} a changé la couleur d’une agence"
         }
+      },
+      "Treasury": {
+        "Account": {
+          "OpeningBalanceChanged": "{{actor}} a changé le solde initial du compte {{entity}}"
+        }
       }
     },
     "families": {
@@ -1640,7 +1713,8 @@
       "Cash": "Caisse",
       "Rates": "Taux du jour",
       "Balance": "Bilan",
-      "Organization": "Agences"
+      "Organization": "Agences",
+      "Treasury": "Trésorerie"
     }
   },
   "me": {
@@ -1705,5 +1779,95 @@
     "rejectedCount_one": "{{count}} opération rejetée",
     "rejectedCount_other": "{{count}} opérations rejetées",
     "see": "Voir"
+  },
+  "setup": {
+    "intro": "Chargement des données de l’ancienne app, une seule fois, le soir de la bascule.",
+    "offline": "Pas de réseau : la mise en service se fait en ligne.",
+    "busy": "Un instant…",
+    "rowFailed": "Ligne {{row}} refusée : {{reason}} Rien n’a été importé.",
+    "parties": {
+      "title": "Tiers et soldes initiaux",
+      "step1": "Téléchargez le modèle Excel et remplissez-le à partir de l’ancienne app.",
+      "file": "Fichier Excel rempli",
+      "date": "Date de mise en service",
+      "check": "Vérifier le fichier",
+      "report": "Rapport de vérification",
+      "summary": "{{rows}} tiers lus, {{valid}} prêts à importer, {{issues}} problème(s).",
+      "total": "Total des soldes initiaux · {{agency}}",
+      "import": "Importer {{count}} tiers",
+      "confirmTitle": "Importer {{count}} tiers ?",
+      "confirmHint": "Tous les tiers seront créés en une fois, avec leurs soldes initiaux datés du {{date}} (écritures d’ouverture tracées dans l’audit). À faire une seule fois.",
+      "imported": "{{count}} tiers importés."
+    },
+    "columns": {
+      "name": "Nom",
+      "type": "Type",
+      "phone": "Téléphone",
+      "nni": "NNI",
+      "address": "Adresse",
+      "note": "Note",
+      "inBalanceSheet": "Dans le bilan",
+      "balance": "Solde",
+      "direction": "Sens",
+      "creditLimit": "Plafond"
+    },
+    "template": "Télécharger le modèle",
+    "step2": "Choisissez le fichier rempli et la date de mise en service.",
+    "noIssue": "Aucun problème : le fichier peut être importé.",
+    "issues": "Problèmes à corriger dans le fichier",
+    "row": "Ligne {{row}}",
+    "cancel": "Annuler",
+    "transfers": {
+      "title": "Transferts non livrés repris",
+      "step1": "Téléchargez le modèle et listez les transferts NON LIVRÉS de l’ancienne app, tels qu’ils y sont.",
+      "file": "Fichier Excel des non livrés",
+      "date": "Date de mise en service (date des écritures d’ouverture)",
+      "check": "Vérifier le fichier",
+      "report": "Rapport de vérification des transferts",
+      "summary": "{{rows}} transferts lus, {{valid}} prêts à reprendre, {{issues}} problème(s).",
+      "total": "À livrer à {{agency}}",
+      "import": "Reprendre {{count}} transferts",
+      "confirmTitle": "Reprendre {{count}} transferts ?",
+      "confirmHint": "Ils seront créés « Non livré », sans toucher aux caisses (écritures d’ouverture datées du {{date}}), exclus du bénéfice. L’ancien code étant inconnu, l’agence d’envoi donnera un nouveau code, ou le Superviseur livrera sans code. À faire une seule fois.",
+      "imported": "{{count}} transferts repris."
+    },
+    "transferColumns": {
+      "reference": "Référence",
+      "operationAt": "Date",
+      "sourceAgency": "Agence d’envoi",
+      "amountXof": "Montant FCFA",
+      "amountMro": "Montant MRO",
+      "saleRate": "Prix de vente",
+      "senderInfo": "Expéditeur",
+      "beneficiaryInfo": "Bénéficiaire",
+      "note": "Note"
+    },
+    "startDate": {
+      "title": "Date de démarrage",
+      "hint": "À fixer en premier, une seule fois : toute opération datée avant sera refusée (la période de l’ancienne app est fermée). Les soldes initiaux et les reprises sont datés de ce jour.",
+      "date": "Jour de mise en service",
+      "set": "Fixer la date de démarrage",
+      "supervisorOnly": "Le Superviseur fixe la date de démarrage.",
+      "fixed": "Date de démarrage : {{date}}. Toute opération datée avant est refusée.",
+      "confirmTitle": "Démarrer le {{date}} ?",
+      "confirmHint": "Cette date ne se change plus ensuite. Toute opération (transfert, caisse, solde initial, ajustement) datée avant sera refusée."
+    },
+    "checklist": {
+      "title": "Liste de contrôle",
+      "hint": "Avant d’ouvrir l’app aux agents. Comparez le budget de chaque caisse avec celui de l’ancienne app au même moment.",
+      "startDate": "Date de démarrage fixée",
+      "parties": "Tiers importés",
+      "rate": "Taux du jour fixé",
+      "users": "Comptes créés · {{agency}}",
+      "treasury": "Caisses, banques et wallets · {{agency}}",
+      "capital": "Capital initial saisi · {{agency}}",
+      "budget": "Budget du jour enregistré · {{agency}}",
+      "budgetNow": "Budget actuel : {{amount}}",
+      "balance": "Bilan du jour enregistré · {{agency}}",
+      "count": "{{count}}",
+      "done": "Fait",
+      "todo": "À faire",
+      "open": "Ouvrir"
+    }
   }
 }

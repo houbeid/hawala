@@ -18,6 +18,7 @@ const ICONS: Record<TransferEventType, IconName> = {
   CodeUnlocked: 'unlock',
   CodeReplaced: 'sync',
   WrongCode: 'x',
+  Resumed: 'download',
 };
 
 /** Compteur d'essais : son évolution est dite par le titre « essai n sur 5 », pas dans le bloc Avant / Après. */

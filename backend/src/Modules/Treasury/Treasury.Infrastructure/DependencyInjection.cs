@@ -11,6 +11,7 @@ using Treasury.Application.Features.Accounts.CreateTreasuryAccount;
 using Treasury.Application.Features.Accounts.DeactivateTreasuryAccount;
 using Treasury.Application.Features.Accounts.ReactivateTreasuryAccount;
 using Treasury.Application.Features.Accounts.RenameTreasuryAccount;
+using Treasury.Application.Features.Accounts.SetTreasuryOpeningBalance;
 using Treasury.Application.Features.Accounts.GetTreasuryAccount;
 using Treasury.Application.Features.Accounts.GetTreasuryAccountStatement;
 using Treasury.Application.Features.Accounts.ListTreasuryAccounts;
@@ -55,6 +56,9 @@ public static class DependencyInjection
         services.AddSharedTransactional<CreateTreasuryAccountCommand, Guid, CreateTreasuryAccountCommandHandler>();
         services.AddSharedTransactional<DeactivateTreasuryAccountCommand, DeactivateTreasuryAccountCommandHandler>();
         services.AddSharedTransactional<ReactivateTreasuryAccountCommand, ReactivateTreasuryAccountCommandHandler>();
+
+        // Solde de départ (phase 8) : écriture d'ouverture au grand livre et ligne d'audit, dans la même transaction.
+        services.AddSharedTransactional<SetTreasuryOpeningBalanceCommand, SetTreasuryOpeningBalanceCommandHandler>();
 
         return services;
     }

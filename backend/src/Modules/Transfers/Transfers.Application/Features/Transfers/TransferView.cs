@@ -26,6 +26,7 @@ public enum TransferDirection
 /// <param name="CancellationOperationAt">Date et heure de l'annulation ; null sinon.</param>
 /// <param name="CancellationReason">Motif de l'annulation, visible des deux agences ; null sinon.</param>
 /// <param name="Version">Version actuelle, à renvoyer avec une modification (contrôle des modifications concurrentes).</param>
+/// <param name="IsResumed">Repris de l'ancienne app à la mise en service : montant non modifiable, exclu du bénéfice.</param>
 public sealed record TransferView(
     Guid Id,
     string Reference,
@@ -52,7 +53,8 @@ public sealed record TransferView(
     bool DeliveredWithoutCode,
     DateTimeOffset? CancellationOperationAt,
     string? CancellationReason,
-    int Version);
+    int Version,
+    bool IsResumed = false);
 
 /// <param name="TreasuryAccountName">Nom de la méthode de paiement (caisse, Bankily…).</param>
 public sealed record TransferPaymentView(Guid TreasuryAccountId, string? TreasuryAccountName, decimal Amount, Currency Currency);

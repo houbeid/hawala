@@ -39,6 +39,12 @@ public static class TreasuryErrors
             Error.Conflict(
                 "Treasury.Account.BalanceNotZero",
                 "Le solde doit être nul pour désactiver le compte : transférer d'abord l'argent restant.");
+
+        public static readonly Error OpeningBalanceRequired =
+            Error.Validation("Treasury.Account.OpeningBalanceRequired", "Indiquer le solde de départ du compte.");
+
+        public static readonly Error Inactive =
+            Error.Conflict("Treasury.Account.Inactive", "Compte désactivé : le réactiver avant de changer son solde de départ.");
     }
 
     public static class Statement

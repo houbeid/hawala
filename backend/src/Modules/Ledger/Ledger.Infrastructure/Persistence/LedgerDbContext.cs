@@ -3,6 +3,7 @@ using Hawala.SharedInfrastructure.Persistence;
 using Ledger.Application.Abstractions;
 using Ledger.Domain.Accounts;
 using Ledger.Domain.Entries;
+using Ledger.Domain.Settings;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ledger.Infrastructure.Persistence;
@@ -22,6 +23,8 @@ public sealed class LedgerDbContext(DbContextOptions<LedgerDbContext> options)
     public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
 
     public DbSet<JournalLine> JournalLines => Set<JournalLine>();
+
+    public DbSet<LedgerSettings> Settings => Set<LedgerSettings>();
 
     async Task IUnitOfWork.SaveChangesAsync(CancellationToken cancellationToken) =>
         await SaveChangesAsync(cancellationToken);

@@ -52,7 +52,8 @@ public sealed class UpdatePartyTests(ApiFixture fixture)
         var factory = await fixture.GetFactoryAsync();
         using var client = factory.CreateApiClient();
         var token = await LoginAsSupervisorAsync(factory, client);
-        var tag = Guid.NewGuid().ToString("N")[..10];
+        // Lettres seulement : la recherche compare aussi les chiffres du texte aux téléphones des autres tests.
+        var tag = new string([.. Guid.NewGuid().ToString("N")[..10].Select(c => (char)('g' + Convert.ToInt32(c.ToString(), 16)))]);
         var id = await CreateAsync(client, token, phone: null, nni: null, name: $"Hors {tag}");
 
         using var response = await client.UpdatePartyAsync(token, id, new { name = $"Hors {tag}", type = "Client", inBalanceSheet = false });

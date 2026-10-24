@@ -48,6 +48,7 @@ export const AUDIT_FAMILIES = [
   'Identity.Account',
   'Identity.Session',
   'Parties',
+  'Treasury',
   'Transfers',
   'Cash',
   'Rates',

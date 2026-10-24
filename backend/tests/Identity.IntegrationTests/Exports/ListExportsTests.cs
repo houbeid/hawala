@@ -142,6 +142,10 @@ public sealed class ListExportsTests(ApiFixture fixture)
 
     // --- Outils ------------------------------------------------------------
 
+    /// <summary>Marqueur en lettres seulement : la recherche des tiers compare aussi les chiffres aux téléphones des autres tests.</summary>
+    private static string Tag(string prefix) =>
+        prefix + new string([.. Guid.NewGuid().ToString("N")[..8].Select(c => (char)('g' + Convert.ToInt32(c.ToString(), 16)))]);
+
     private static async Task<XLWorkbook> OpenAsync(HttpResponseMessage response)
     {
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -186,7 +190,7 @@ public sealed class ListExportsTests(ApiFixture fixture)
             token, new { name = $"Caisse {Guid.NewGuid():N}"[..30], type = "cash", agencyId = nkc });
         Assert.Equal(HttpStatusCode.Created, cash.StatusCode);
 
-        var tag = $"Exp{Guid.NewGuid():N}"[..12];
+        var tag = Tag("Exp");
         var partyName = $"Tiers {tag}";
         var nni = "T" + Guid.NewGuid().ToString("N")[..12];
         using var party = await client.CreatePartyAsync(token, new { name = partyName, type = "Client", nni });

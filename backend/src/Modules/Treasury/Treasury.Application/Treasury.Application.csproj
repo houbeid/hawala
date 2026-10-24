@@ -5,6 +5,7 @@
     <ProjectReference Include="..\Treasury.Domain\Treasury.Domain.csproj" />
     <ProjectReference Include="..\Treasury.Contracts\Treasury.Contracts.csproj" />
     <ProjectReference Include="..\..\Ledger\Ledger.Contracts\Ledger.Contracts.csproj" />
+    <ProjectReference Include="..\..\Audit\Audit.Contracts\Audit.Contracts.csproj" />
     <ProjectReference Include="..\..\Organization\Organization.Contracts\Organization.Contracts.csproj" />
     <ProjectReference Include="..\..\Identity\Identity.Contracts\Identity.Contracts.csproj" />
   </ItemGroup>

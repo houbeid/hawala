@@ -89,6 +89,14 @@ const partyStatementRoute = createRoute({
   component: lazyRouteComponent(() => import('@/features/parties/pages/PartyStatementPage'), 'PartyStatementPage'),
 });
 
+/** Mise en service (phase 8) : import des tiers et de leurs soldes depuis le modèle Excel (Superviseur). */
+const setupRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/setup',
+  staticData: { titleKey: 'nav.setup', permission: 'parties.manage' },
+  component: lazyRouteComponent(() => import('@/features/setup/pages/SetupPage'), 'SetupPage'),
+});
+
 const treasuryRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: '/treasury',
@@ -250,6 +258,7 @@ const dashboardRoute = createRoute({
 const shellChildren = [
   indexRoute,
   moreRoute,
+  setupRoute,
   transfersRoute,
   createTransferRoute,
   transferDetailRoute,

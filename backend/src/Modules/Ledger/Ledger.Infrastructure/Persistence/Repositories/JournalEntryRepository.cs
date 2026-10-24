@@ -22,6 +22,17 @@ internal sealed class JournalEntryRepository(LedgerDbContext db) : IJournalEntry
             .OrderBy(e => e.RecordedAt)
             .ToListAsync(cancellationToken);
 
+    public async Task<decimal> SumByEntryTypeAsync(Guid accountId, string entryType, CancellationToken cancellationToken) =>
+        await (
+            from line in db.JournalLines
+            join entry in db.JournalEntries on EF.Property<Guid>(line, "EntryId") equals entry.Id
+            where line.AccountId == accountId && entry.EntryType == entryType
+            select line.Side == EntrySide.Debit ? line.Amount : -line.Amount)
+        .SumAsync(cancellationToken);
+
+    public Task<int> CountBeforeAsync(DateOnly date, CancellationToken cancellationToken) =>
+        db.JournalEntries.CountAsync(e => e.OperationDate < date, cancellationToken);
+
     public Task<bool> IsReversedAsync(Guid entryId, CancellationToken cancellationToken) =>
         db.JournalEntries.AnyAsync(e => e.ReversesEntryId == entryId, cancellationToken);
 

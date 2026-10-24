@@ -32,7 +32,8 @@ export function availableActions(transfer: Transfer, account: CurrentAccount): D
     cancel: open && can('transfers.cancel'),
     newCode: open && can('transfers.create') && sendingSide,
     unlock: open && transfer.isCodeLocked && can('transfers.manage_code'),
-    editAmounts: open && can('transfers.edit_rate'),
+    // Repris de l'ancienne app : son montant ne se modifie pas ici (refusé par le serveur).
+    editAmounts: open && can('transfers.edit_rate') && !transfer.isResumed,
     deliver:
       open &&
       !transfer.isCodeLocked &&
@@ -43,9 +44,9 @@ export function availableActions(transfer: Transfer, account: CurrentAccount): D
   };
 }
 
-/** « Créé par » : l'auteur de la ligne « Ajouté » de l'historique (l'API de la fiche ne porte pas de nom). */
+/** « Créé par » : l'auteur de la ligne « Ajouté » (ou « Repris ») de l'historique (l'API de la fiche ne porte pas de nom). */
 export function creatorName(history: TransferEvent[] | undefined): string | null {
-  return history?.find((event) => event.type === 'Created')?.authorName ?? null;
+  return history?.find((event) => event.type === 'Created' || event.type === 'Resumed')?.authorName ?? null;
 }
 
 /** Numéro de l'essai d'un code faux : la valeur « après » du compteur (« essai 2 sur 5 »). */

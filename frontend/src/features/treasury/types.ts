@@ -20,6 +20,17 @@ export interface TreasuryAccount {
   isActive: boolean;
   /** Null sans la permission cash.budget.read. */
   balance: number | null;
+  /**
+   * Solde de départ retenu (somme des écritures d'ouverture, lue au grand livre) : seulement sur la fiche, même
+   * visibilité que le solde ; null (ou absent) dans la liste.
+   */
+  openingBalance?: number | null;
+}
+
+/** PUT /treasury-accounts/{id}/opening-balance (treasury.manage) : nouveau solde de départ, date facultative (aaaa-mm-jj). */
+export interface SetTreasuryOpeningBalanceRequest {
+  amount: number;
+  operationDate: string | null;
 }
 
 /** POST /treasury-accounts (treasury.manage) : la devise découle de l'agence, jamais envoyée. */

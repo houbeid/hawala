@@ -22,6 +22,24 @@ public sealed record NewTransfer(
     Guid? CreditPartyId = null);
 
 /// <summary>
+/// Un transfert non livré de l'ancienne app, repris à la mise en service (décisions du 24 octobre 2026) : montants tels
+/// qu'enregistrés dans l'ancienne app (le MRO n'est pas recalculé), date d'opération d'origine, sans paiement ni crédit
+/// (l'argent est déjà dans le solde de départ des caisses).
+/// </summary>
+public sealed record ResumedTransfer(
+    Guid SourceAgencyId,
+    Currency SourceCurrency,
+    Guid DestinationAgencyId,
+    Currency DestinationCurrency,
+    Money AmountXof,
+    Money AmountMro,
+    ExchangeRate SaleRate,
+    string? SenderInfo,
+    string? BeneficiaryInfo,
+    string? Note,
+    DateTimeOffset OperationAt);
+
+/// <summary>
 /// Un transfert entre Nouakchott (MRO) et Dakar (FCFA). Règles validées :
 /// - créé par l'agence d'envoi ; montant de référence en FCFA (entier) ; MRO = FCFA × prix de vente / 5000,
 ///   arrondi UNE fois à la création (AwayFromZero), enregistré et jamais recalculé ;
@@ -59,7 +77,16 @@ public sealed class Transfer
         IdempotencyKey = null!;
     }
 
-    private Transfer(NewTransfer request, decimal amountMro, decimal creditAmount, string reference, string codeHash, string idempotencyKey, Guid createdBy, DateTimeOffset now)
+    private Transfer(
+        NewTransfer request,
+        decimal amountMro,
+        decimal creditAmount,
+        string reference,
+        string codeHash,
+        string idempotencyKey,
+        Guid createdBy,
+        DateTimeOffset now,
+        TransferEventType firstEvent = TransferEventType.Created)
     {
         Id = IdGenerator.NewId(now);
         Reference = reference;
@@ -83,7 +110,7 @@ public sealed class Transfer
         CreatedBy = createdBy;
         CreatedAt = now;
         _payments.AddRange(request.Payments.Select(p => new TransferPayment(PaymentStage.Creation, p.TreasuryAccountId, p.Amount, now)));
-        Record(TransferEventType.Created, createdBy, now);
+        Record(firstEvent, createdBy, now);
     }
 
     public Guid Id { get; private set; }
@@ -204,6 +231,9 @@ public sealed class Transfer
     /// <summary>Essais de code restants avant blocage.</summary>
     public int RemainingCodeAttempts => Math.Max(0, MaxCodeAttempts - FailedCodeAttempts);
 
+    /// <summary>Repris de l'ancienne app à la mise en service : exclu du bénéfice et du tableau de bord.</summary>
+    public bool IsResumed => _events.Any(e => e.Type == TransferEventType.Resumed);
+
     /// <summary>
     /// Compte qui a vu le code en cours : l'auteur du dernier nouveau code, sinon le créateur. Lui seul peut demander
     /// le reçu avec le code (règle du 24 octobre 2026).
@@ -296,6 +326,56 @@ public sealed class Transfer
         }
 
         return new Transfer(request, amountMro, credit.Value, reference, withdrawalCodeHash, idempotencyKey.Trim(), createdBy, now);
+    }
+
+    /// <summary>
+    /// Reprend un transfert non livré de l'ancienne app (mise en service). Mêmes contrôles de corridor, de montant, de date
+    /// et de textes qu'une création ; pas de paiement ni de crédit ; prix d'achat = prix de vente (le bénéfice a été compté
+    /// dans l'ancienne app, et un transfert repris est exclu du bénéfice). Le code de retrait est tiré au hasard et connu
+    /// de personne : la livraison passe par un nouveau code ou par « livrer sans code ». Historique : « Repris ».
+    /// </summary>
+    public static Result<Transfer> Resume(
+        ResumedTransfer request,
+        string reference,
+        string withdrawalCodeHash,
+        string idempotencyKey,
+        Guid createdBy,
+        DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentException.ThrowIfNullOrWhiteSpace(reference);
+        ArgumentException.ThrowIfNullOrWhiteSpace(withdrawalCodeHash);
+        ArgumentException.ThrowIfNullOrWhiteSpace(idempotencyKey);
+
+        var created = new NewTransfer(
+            request.SourceAgencyId, request.SourceCurrency, request.DestinationAgencyId, request.DestinationCurrency,
+            request.AmountXof, request.SaleRate, request.SaleRate, request.SenderInfo, request.BeneficiaryInfo, request.Note,
+            request.OperationAt, []);
+
+        if (request.SourceAgencyId == request.DestinationAgencyId || request.SourceCurrency == request.DestinationCurrency)
+        {
+            return TransfersErrors.Transfer.CorridorInvalid;
+        }
+
+        if (request.AmountXof.Currency != Currency.XOF || request.AmountXof.Amount <= 0m
+            || request.AmountMro.Currency != Currency.MRO || request.AmountMro.Amount <= 0m)
+        {
+            return TransfersErrors.Transfer.AmountInvalid;
+        }
+
+        if (request.OperationAt > now)
+        {
+            return TransfersErrors.Transfer.FutureDate;
+        }
+
+        var texts = ValidateTexts(created);
+        if (texts.IsFailure)
+        {
+            return texts.Error;
+        }
+
+        return new Transfer(
+            created, request.AmountMro.Amount, 0m, reference.Trim(), withdrawalCodeHash, idempotencyKey, createdBy, now, TransferEventType.Resumed);
     }
 
     /// <summary>Peut-on encore livrer ce transfert ? Non livré et pas bloqué par les codes faux.</summary>
@@ -602,6 +682,14 @@ public sealed class Transfer
         if (editable.IsFailure)
         {
             return editable.Error;
+        }
+
+        // Repris de l'ancienne app : son écriture est une écriture d'ouverture, sans paiement ; la contre-passer puis
+        // réécrire un paiement ferait entrer l'argent une seconde fois en caisse.
+        // POINT OUVERT : corriger le montant d'un transfert repris (à trancher avec Hamade).
+        if (IsResumed)
+        {
+            return TransfersErrors.Transfer.ResumedAmountsLocked;
         }
 
         if (string.IsNullOrWhiteSpace(reason))

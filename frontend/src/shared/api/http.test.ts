@@ -139,6 +139,28 @@ describe('createHttpClient', () => {
     ]);
   });
 
+  it('envoie un fichier en formulaire, sans Content-Type JSON', async () => {
+    let seen: { type: string | null; name: string | null; field: string | null } | null = null;
+    server.use(
+      http.post(apiUrl('/upload'), async ({ request }) => {
+        const form = await request.formData();
+        const file = form.get('file') as File | null;
+        seen = { type: request.headers.get('Content-Type'), name: file ? 'present' : null, field: form.get('operationDate') as string | null };
+        return HttpResponse.json({ ok: true });
+      }),
+    );
+    const form = new FormData();
+    form.append('file', new File(['x'], 'tiers.xlsx'));
+    form.append('operationDate', '2026-10-24');
+
+    await createHttpClient({ auth: tokenSource('t1') }).request('/upload', { method: 'POST', form });
+
+    expect(seen!.type).toMatch(/^multipart\/form-data/);
+    // Le nom du fichier se perd entre jsdom et le fetch de Node : seule sa présence est vérifiée ici.
+    expect(seen!.name).toBe('present');
+    expect(seen!.field).toBe('2026-10-24');
+  });
+
   it('un refus sur une réponse binaire reste une ApiError avec son code', async () => {
     server.use(
       http.get(apiUrl('/files'), () =>

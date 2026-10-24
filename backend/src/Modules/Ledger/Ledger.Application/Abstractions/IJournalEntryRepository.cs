@@ -41,5 +41,11 @@ public interface IJournalEntryRepository
     Task<IReadOnlyList<JournalEntry>> ListRecordedAsync(
         string entryType, Guid agencyId, DateTimeOffset recordedSince, CancellationToken cancellationToken);
 
+    /// <summary>SUM(débit − crédit) des lignes du compte dans les écritures de ce type ; 0 s'il n'y en a pas.</summary>
+    Task<decimal> SumByEntryTypeAsync(Guid accountId, string entryType, CancellationToken cancellationToken);
+
+    /// <summary>Nombre d'écritures datées avant ce jour (contrôle avant de fixer la date de démarrage).</summary>
+    Task<int> CountBeforeAsync(DateOnly date, CancellationToken cancellationToken);
+
     void Add(JournalEntry entry);
 }

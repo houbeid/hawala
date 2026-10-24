@@ -3,6 +3,7 @@ using Hawala.SharedKernel.Results;
 using Identity.Contracts;
 using Ledger.Contracts;
 using Treasury.Application.Abstractions;
+using Treasury.Application.Features.Accounts.SetTreasuryOpeningBalance;
 using Treasury.Domain;
 
 namespace Treasury.Application.Features.Accounts.GetTreasuryAccount;
@@ -28,6 +29,13 @@ public sealed class GetTreasuryAccountQueryHandler(
             return balances.Error;
         }
 
-        return TreasuryAccountSummaryMapper.ToSummary(account, balances.Value);
+        var summary = TreasuryAccountSummaryMapper.ToSummary(account, balances.Value);
+        if (!balances.Value.Visible)
+        {
+            return summary;
+        }
+
+        var opening = await ledger.SumEntriesAsync(account.LedgerAccountId, SetTreasuryOpeningBalanceCommandHandler.EntryType, cancellationToken);
+        return summary with { OpeningBalance = opening };
     }
 }
