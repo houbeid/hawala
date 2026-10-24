@@ -5,8 +5,8 @@ import '@/i18n';
 import { server } from './server';
 
 // Les écrans chargés à la demande (lazyRouteComponent) peuvent dépasser 1 s quand toute la suite tourne
-// en parallèle : on laisse 3 s aux findBy / waitFor avant d'échouer.
-configure({ asyncUtilTimeout: 3000 });
+// en parallèle ; le Budget et le Bilan chargent en plus Recharts (courbes) : on laisse 5 s aux findBy / waitFor.
+configure({ asyncUtilTimeout: 5000 });
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 

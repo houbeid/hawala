@@ -1,6 +1,6 @@
 import { isIsoDay } from '@/shared/format/dates';
 import { parseMoneyInput, type InputUnit, type MoneyInputResult } from '@/shared/format/moneyInput';
-import { BALANCE_FILTERS, BALANCE_SHEET_FILTERS, PARTY_TYPES, type BalanceFilter, type BalanceSheetFilter, type PartyType } from './types';
+import { BALANCE_FILTERS, BALANCE_SHEET_FILTERS, PARTY_TYPES, type BalanceFilter, type BalanceSheetFilter, type PartySummary, type PartyType } from './types';
 
 // Règles d'affichage des tiers (skill métier, « Tiers ») :
 // - solde débit − crédit : positif = rouge (il nous doit), négatif = vert (on lui doit), zéro = ni l'un ni l'autre ;
@@ -96,4 +96,14 @@ export function parseAmountOrZero(raw: string, unit: InputUnit): MoneyInputResul
 export function amountErrorKey(error: 'empty' | 'invalid' | 'tooPrecise' | 'notPositive', unit: InputUnit): string {
   if (error === 'tooPrecise') return `parties.amount.tooPrecise${unit}`;
   return `parties.amount.${error === 'empty' ? 'empty' : 'invalid'}`;
+}
+
+/** Recherche hors ligne : nom ou téléphone contenant le texte, sans tenir compte de la casse ni des espaces du numéro. */
+export function searchLocally(parties: readonly PartySummary[], text: string): PartySummary[] {
+  const wanted = text.trim().toLocaleLowerCase();
+  if (!wanted) return [...parties];
+  const digits = wanted.replace(/\s/g, '');
+  return parties.filter(
+    (party) => party.name.toLocaleLowerCase().includes(wanted) || (digits.length > 0 && (party.phone ?? '').replace(/\s/g, '').includes(digits)),
+  );
 }

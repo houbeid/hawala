@@ -38,6 +38,13 @@ export function formatDayLong(day: string, language: string): string {
   return `${weekday} ${day.slice(8, 10)}/${day.slice(5, 7)}/${day.slice(0, 4)}`;
 }
 
+/** « aaaa-mm-jjThh:mm » à l'heure du téléphone (valeur d'un champ datetime-local) à partir d'un instant ISO. */
+export function localInputFromIso(iso: string): string {
+  const date = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 /** « 20261024 » : jour dans un nom de fichier (export). */
 export function compactDay(day: string): string {
   return day.replaceAll('-', '');

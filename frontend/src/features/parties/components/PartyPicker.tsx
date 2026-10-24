@@ -1,7 +1,9 @@
 import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePermission } from '@/shared/auth/hooks';
+import { useOnlineStatus } from '@/shared/useOnlineStatus';
 import { Icon } from '@/shared/ui/Icon';
+import { searchLocally } from '../partyRules';
 import { useParties } from '../queries';
 import type { PartySummary } from '../types';
 import { CreatePartyDialog } from './CreatePartyDialog';
@@ -9,6 +11,8 @@ import { CreatePartyDialog } from './CreatePartyDialog';
 // Choix d'un tiers (crédit d'un transfert, plus tard mouvement de caisse) : recherche par nom ou téléphone,
 // 8 résultats au plus, tiers archivés exclus (le serveur les refuse). Le téléphone départage deux tiers
 // de même nom (noms non uniques). « Créer un tiers » avec parties.create.
+// Hors ligne (24 octobre 2026) : la recherche se fait sur le téléphone, dans la liste des tiers gardée (préchargée à
+// la connexion) ; créer un tiers exige le réseau.
 
 const SEARCH_DELAY_MS = 300;
 const MAX_RESULTS = 8;
@@ -33,8 +37,10 @@ export function PartyPicker({ label, selected, onSelect, error }: Props) {
     return () => clearTimeout(timer);
   }, [text]);
 
-  const parties = useParties({ search: search || undefined }, selected === null);
-  const results = (parties.data?.items ?? []).filter((p) => !p.isArchived).slice(0, MAX_RESULTS);
+  const online = useOnlineStatus();
+  const parties = useParties(online ? { search: search || undefined } : {}, selected === null);
+  const found = online ? (parties.data?.items ?? []) : searchLocally(parties.data?.items ?? [], search);
+  const results = found.filter((p) => !p.isArchived).slice(0, MAX_RESULTS);
 
   if (selected) {
     return (
@@ -100,7 +106,7 @@ export function PartyPicker({ label, selected, onSelect, error }: Props) {
         {parties.isSuccess && results.length === 0 && <li className="bg-surface p-3.5 text-muted">{t('parties.picker.none')}</li>}
       </ul>
 
-      {canCreate && (
+      {canCreate && online && (
         <>
           <button type="button" className="inline-flex min-h-11 items-center gap-2 self-start font-semibold underline" onClick={() => setCreating(true)}>
             <Icon name="plus" />

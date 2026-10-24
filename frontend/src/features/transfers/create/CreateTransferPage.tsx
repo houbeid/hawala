@@ -1,17 +1,21 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from '@tanstack/react-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearch } from '@tanstack/react-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useAgencies } from '@/features/organization/queries';
+import type { Agency } from '@/features/organization/types';
 import type { PartySummary } from '@/features/parties';
 import { useDailyRate } from '@/features/rates/queries';
+import { cachedParty } from '@/features/parties';
 import { useTreasuryAccounts } from '@/features/treasury/queries';
 import { useAgencyScope } from '@/shared/agency/agencyScope';
 import { errorMessage } from '@/shared/api/errorMessage';
+import { queuedErrorMessage } from '@/shared/offline/queuedErrorMessage';
 import { isApiError } from '@/shared/api/errors';
 import { newIdempotencyKey } from '@/shared/api/idempotency';
 import { useCurrentAccount, usePermission, useSessionManager } from '@/shared/auth/hooks';
+import { useOperationQueue } from '@/shared/offline/queueContext';
 import { toInputText } from '@/shared/format/decimalInput';
 import { formatAmount, formatRate } from '@/shared/format/money';
 import { defaultUnit, transferMroPreview } from '@/shared/format/moneyInput';
@@ -21,11 +25,13 @@ import { Notice } from '@/shared/ui/Notice';
 import { useOnlineStatus } from '@/shared/useOnlineStatus';
 import { createTransfer } from '../api';
 import { transferKeys } from '../queries';
-import type { CreatedTransfer } from '../types';
+import { TRANSFER_QUEUE_KIND } from '../offlineQueue';
+import type { CreatedTransfer, CreateTransferRequest } from '../types';
 import { AmountStep } from './AmountStep';
 import {
   amountToPay,
   amountXofValue,
+  formFromRequest,
   operationAtIso,
   paidTotal,
   paymentValues,
@@ -39,6 +45,7 @@ import {
   type Step,
 } from './createForm';
 import { CreatedTransferView } from './CreatedTransferView';
+import { QueuedTransferView } from './QueuedTransferView';
 import { CreditSection } from './CreditSection';
 import { PaymentStep } from './PaymentStep';
 import { PeopleStep } from './PeopleStep';
@@ -72,14 +79,30 @@ export function CreateTransferPage() {
 
   const canChooseSource = account?.agency == null;
   const canCredit = usePermission('transfers.credit');
-  const [creditEnabled, setCreditEnabled] = useState(false);
-  const [creditParty, setCreditParty] = useState<PartySummary | null>(null);
-  const form = useForm<CreateForm>({ defaultValues: { sourceAgencyId: account?.agency?.id ?? '', ...EMPTY } });
+  // Hors ligne (24 octobre 2026) : le transfert est gardé sur le téléphone et part au retour du réseau.
+  const queue = useOperationQueue();
+  // « Corriger » une opération rejetée : le formulaire repart rempli (?fromQueue=clé), avec son tiers à crédit.
+  const fromQueue = (useSearch({ strict: false }) as { fromQueue?: unknown }).fromQueue;
+  const [correcting] = useState(() =>
+    typeof fromQueue === 'string' ? queue?.getSnapshot().find((op) => op.id === fromQueue && op.kind === TRANSFER_QUEUE_KIND) : undefined,
+  );
+  const corrected = correcting?.request as CreateTransferRequest | undefined;
+  const [creditEnabled, setCreditEnabled] = useState(Boolean(corrected?.creditPartyId));
+  const [creditParty, setCreditParty] = useState<PartySummary | null>(() =>
+    corrected?.creditPartyId ? cachedParty(queryClient, corrected.creditPartyId) : null,
+  );
+  const form = useForm<CreateForm>({
+    defaultValues: initialForm(corrected, account?.agency?.id ?? '', agencies.data ?? []),
+  });
+  // Montant corrigé saisi en FCFA : la devise de l'agence d'envoi ne doit pas le remplacer au premier affichage.
+  const keepCorrectedUnit = useRef(Boolean(corrected));
   const [step, setStep] = useState<Step>(1);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState(newIdempotencyKey);
   const [created, setCreated] = useState<{ result: CreatedTransfer; form: CreateForm } | null>(null);
+  const [queued, setQueued] = useState<CreateForm | null>(null);
+  const [networkFailed, setNetworkFailed] = useState(false);
 
   // Superviseur : agence d'envoi = celle choisie dans l'en-tête, sinon la première, dès que la liste arrive.
   const sourceAgencyId = useWatch({ control: form.control, name: 'sourceAgencyId' });
@@ -98,7 +121,12 @@ export function CreateTransferPage() {
   // Saisie dans la devise de l'agence d'envoi (décision du 22 octobre 2026), l'autre reste au choix.
   const sourceCurrency = source?.currency;
   useEffect(() => {
-    if (sourceCurrency) form.setValue('amountUnit', sourceCurrency);
+    if (!sourceCurrency) return;
+    if (keepCorrectedUnit.current) {
+      keepCorrectedUnit.current = false;
+      return;
+    }
+    form.setValue('amountUnit', sourceCurrency);
   }, [sourceCurrency, form]);
   const amountMro = rate.data && amountXof !== null ? transferMroPreview(amountXof, rate.data.saleRate) : null;
   const toPay = source && amountXof !== null && amountMro !== null ? amountToPay(source.currency, amountXof, amountMro) : null;
@@ -139,6 +167,24 @@ export function CreateTransferPage() {
     goTo(3);
   }
 
+  function buildRequest(values: CreateForm, destinationId: string, xof: number): CreateTransferRequest {
+    return {
+      sourceAgencyId: values.sourceAgencyId || null,
+      destinationAgencyId: destinationId,
+      amountXof: xof,
+      senderInfo: values.senderInfo.trim(),
+      beneficiaryInfo: values.beneficiaryInfo.trim(),
+      note: values.note.trim() || null,
+      operationAt: operationAtIso(values),
+      payments: values.payments.map((line, index) => ({
+        treasuryAccountId: line.accountId,
+        // MRU déjà converti en MRO (× 10 exact) : le serveur reçoit la devise du compte.
+        amount: paymentValues(values.payments)[index] ?? 0,
+      })),
+      creditPartyId: creditEnabled && creditParty ? creditParty.id : null,
+    };
+  }
+
   async function create() {
     const values = form.getValues();
     const found = validatePeopleStep(values);
@@ -147,28 +193,41 @@ export function CreateTransferPage() {
       return;
     }
     setServerError(null);
+    setNetworkFailed(false);
+    const request = buildRequest(values, destination.id, amountXof);
+    if (!online) {
+      await keepForLater(request, values);
+      return;
+    }
     try {
-      const result = await submit.mutateAsync({
-        sourceAgencyId: values.sourceAgencyId || null,
-        destinationAgencyId: destination.id,
-        amountXof,
-        senderInfo: values.senderInfo.trim(),
-        beneficiaryInfo: values.beneficiaryInfo.trim(),
-        note: values.note.trim() || null,
-        operationAt: operationAtIso(values),
-        payments: values.payments.map((line, index) => ({
-          treasuryAccountId: line.accountId,
-          // MRU déjà converti en MRO (× 10 exact) : le serveur reçoit la devise du compte.
-          amount: paymentValues(values.payments)[index] ?? 0,
-        })),
-        creditPartyId: creditEnabled && creditParty ? creditParty.id : null,
-      });
+      const result = await submit.mutateAsync(request);
+      if (correcting) await queue?.remove(correcting.id);
       setCreated({ result, form: values });
       void queryClient.invalidateQueries({ queryKey: transferKeys.all });
     } catch (error) {
       setServerError(errorMessage(i18n, error));
+      if (isApiError(error) && error.isNetworkError) setNetworkFailed(true);
       if (isApiError(error) && !error.isNetworkError) setStep(stepForError(error.code));
     }
+  }
+
+  /**
+   * Gardé sur le téléphone avec la même clé d'idempotence (un premier envoi arrivé malgré la coupure ne sera pas
+   * doublé) et l'heure de la saisie comme date d'opération (taux de ce jour-là, décision du 24 octobre 2026).
+   */
+  async function keepForLater(request: CreateTransferRequest, values: CreateForm) {
+    if (!queue || !account) return;
+    await queue.enqueue({
+      id: idempotencyKey,
+      accountId: account.id,
+      kind: TRANSFER_QUEUE_KIND,
+      request: { ...request, operationAt: request.operationAt ?? new Date().toISOString() },
+      label: `${request.senderInfo} → ${request.beneficiaryInfo}`,
+    });
+    if (correcting && correcting.id !== idempotencyKey) await queue.remove(correcting.id);
+    setNetworkFailed(false);
+    setServerError(null);
+    setQueued(values);
   }
 
   function startNew() {
@@ -177,7 +236,22 @@ export function CreateTransferPage() {
     setCreditParty(null);
     setIdempotencyKey(newIdempotencyKey());
     setCreated(null);
+    setQueued(null);
     goTo(1);
+  }
+
+  if (queued) {
+    return (
+      <div className="mx-auto flex w-full max-w-xl flex-col gap-4">
+        <QueuedTransferView
+          amountXof={amountXof ?? 0}
+          sender={queued.senderInfo}
+          beneficiary={queued.beneficiaryInfo}
+          onDone={() => void navigate({ to: '/transfers' })}
+          onNew={startNew}
+        />
+      </div>
+    );
   }
 
   if (created && source && destination) {
@@ -211,7 +285,17 @@ export function CreateTransferPage() {
     >
       <StepIndicator step={step} />
       {!online && <Notice tone="info">{t('transfers.create.offline')}</Notice>}
+      {correcting?.error && <Notice tone="warning">{t('queue.correcting', { reason: queuedErrorMessage(i18n, correcting.error) })}</Notice>}
       {serverError && <Notice tone="error">{serverError}</Notice>}
+      {networkFailed && destination && amountXof !== null && (
+        <Button
+          fullWidth
+          icon={<Icon name="download" />}
+          onClick={() => void keepForLater(buildRequest(form.getValues(), destination.id, amountXof), form.getValues())}
+        >
+          {t('queue.keepForLater')}
+        </Button>
+      )}
 
       {step === 1 && (
         <AmountStep
@@ -311,9 +395,8 @@ export function CreateTransferPage() {
             icon={<Icon name="check" />}
             busy={submit.isPending}
             busyLabel={t('transfers.create.creating')}
-            disabled={!online}
           >
-            {t('transfers.create.submit')}
+            {online ? t('transfers.create.submit') : t('queue.saveOffline')}
           </Button>
         )}
       </div>
@@ -321,3 +404,10 @@ export function CreateTransferPage() {
   );
 }
 
+/** Formulaire de départ : vide, ou rempli à partir d'une opération rejetée de la file (agences déjà en cache). */
+function initialForm(corrected: CreateTransferRequest | undefined, ownAgencyId: string, agencies: readonly Agency[]): CreateForm {
+  const empty: CreateForm = { sourceAgencyId: ownAgencyId, ...EMPTY };
+  if (!corrected) return empty;
+  const source = agencies.find((a) => a.id === (corrected.sourceAgencyId ?? ownAgencyId));
+  return source ? formFromRequest(corrected, source.id, source.currency) : empty;
+}

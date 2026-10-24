@@ -18,6 +18,7 @@ import { AdjustmentSheet } from '../components/AdjustmentSheet';
 import { CancelMovementSheet } from '../components/CancelMovementSheet';
 import { CashMovementRow } from '../components/CashMovementRow';
 import { CashTotals } from '../components/CashTotals';
+import { QueuedCashMovements } from '../components/QueuedCashMovements';
 import { exportCashMovements } from '../api';
 import { useBalanceAdjustments, useCashMovements } from '../queries';
 import { CASH_MOVEMENT_TYPES, type CashMovement, type CashMovementType } from '../types';
@@ -91,6 +92,7 @@ export function CashPage() {
         <AgencyChoice label={t('cash.agencyChoice')} agencies={choices} selectedId={agency?.id} onSelect={(id) => setFilters({ agencyId: id })} />
       )}
 
+      {agency?.currency && <QueuedCashMovements currency={agency.currency} />}
       {data && agency?.currency && <CashTotals list={data} currency={agency.currency} />}
       {data && agency && (
         <ExportButton

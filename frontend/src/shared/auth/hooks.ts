@@ -1,6 +1,6 @@
 import { useContext, useSyncExternalStore } from 'react';
 import { SessionContext } from './context';
-import type { SessionManager, SessionState } from './session';
+import { accountOf, type SessionManager, type SessionState } from './session';
 import type { CurrentAccount } from './types';
 
 export function useSessionManager(): SessionManager {
@@ -14,10 +14,9 @@ export function useSession(): SessionState {
   return useSyncExternalStore(session.subscribe, session.getState, session.getState);
 }
 
-/** Le compte connecté, ou null tant que la session n'est pas ouverte. */
+/** Le compte connecté (ou gardé pour la lecture hors ligne), ou null tant que la session n'est pas ouverte. */
 export function useCurrentAccount(): CurrentAccount | null {
-  const state = useSession();
-  return state.status === 'authenticated' ? state.account : null;
+  return accountOf(useSession());
 }
 
 /**

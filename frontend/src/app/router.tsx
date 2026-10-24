@@ -197,6 +197,9 @@ const createTransferRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: '/transfers/new',
   staticData: { titleKey: 'transfers.new', permission: 'transfers.create' },
+  // « Corriger » un transfert rejeté de la file hors ligne : ?fromQueue=clé.
+  validateSearch: (search: Record<string, unknown>): { fromQueue?: string } =>
+    typeof search.fromQueue === 'string' && search.fromQueue ? { fromQueue: search.fromQueue } : {},
   component: lazyRouteComponent(() => import('@/features/transfers/create/CreateTransferPage'), 'CreateTransferPage'),
 });
 

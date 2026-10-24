@@ -23,6 +23,8 @@ export function RootLayout() {
     }
     case 'mustChangePassword':
       return location.pathname === '/change-password' ? <Outlet /> : <Navigate to="/change-password" replace />;
+    // Lecture hors ligne : mêmes écrans, données gardées sur le téléphone, actions serveur remplacées par leur explication.
+    case 'offline':
     case 'authenticated': {
       if (!isAuthPath(location.pathname)) return <Outlet />;
       const search = location.search as { redirect?: unknown };

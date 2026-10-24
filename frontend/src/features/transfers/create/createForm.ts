@@ -1,6 +1,8 @@
 import type { Currency } from '@/features/organization/types';
-import { parseDecimalInput } from '@/shared/format/decimalInput';
-import { parseMoneyInput, sumAmounts, xofFromMro, type InputUnit } from '@/shared/format/moneyInput';
+import { localInputFromIso } from '@/shared/format/dates';
+import { parseDecimalInput, toInputText } from '@/shared/format/decimalInput';
+import { defaultUnit, parseMoneyInput, sumAmounts, xofFromMro, type InputUnit } from '@/shared/format/moneyInput';
+import type { CreateTransferRequest } from '../types';
 
 // Formulaire de création d'un transfert (maquette 04) et sa validation étape par étape. Ce ne sont que des
 // contrôles de saisie : les règles métier (taux, plafonds, comptes, crédit) restent au serveur, et ses refus
@@ -137,4 +139,26 @@ export function stepForError(code: string): Step {
 /** Montant payé par le client à l'agence d'envoi, dans sa devise (celui que la répartition doit couvrir). */
 export function amountToPay(sourceCurrency: Currency, amountXof: number, amountMro: number): number {
   return sourceCurrency === 'XOF' ? amountXof : amountMro;
+}
+
+/**
+ * Formulaire rempli à partir d'une opération rejetée de la file hors ligne (« Corriger ») : le montant de référence
+ * en FCFA, la date de la saisie, la répartition dans la devise de l'agence d'envoi, les textes. Le crédit (tiers) est
+ * repris à part par la page.
+ */
+export function formFromRequest(request: CreateTransferRequest, sourceAgencyId: string, sourceCurrency: Currency): CreateForm {
+  return {
+    sourceAgencyId,
+    amount: String(request.amountXof),
+    amountUnit: 'XOF',
+    operationAt: request.operationAt ? localInputFromIso(request.operationAt) : '',
+    payments: request.payments.map((line) => ({
+      accountId: line.treasuryAccountId,
+      amount: toInputText(line.amount),
+      unit: defaultUnit(sourceCurrency),
+    })),
+    senderInfo: request.senderInfo,
+    beneficiaryInfo: request.beneficiaryInfo,
+    note: request.note ?? '',
+  };
 }

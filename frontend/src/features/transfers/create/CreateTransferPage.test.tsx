@@ -6,6 +6,7 @@ import { todayIso } from '@/shared/format/dates';
 import { agentAccount, dkr, nkc, readOnlyAccount, supervisorAccount } from '@/test/fixtures';
 import { renderApp, signedInAs } from '@/test/renderApp';
 import { stubDownloads } from '@/test/downloads';
+import { setNetwork } from '@/test/network';
 import { apiUrl, server } from '@/test/server';
 import type { CreatedTransfer } from '../types';
 
@@ -223,6 +224,52 @@ describe('Création d’un transfert — Agent de Nouakchott', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Plafond par jour de votre compte dépassé : il reste 250 000 MRO.');
     expect(mroField()).toBeInTheDocument();
+  });
+
+  it('hors ligne : gardé sur le téléphone, envoyé au retour du réseau avec sa clé et l’heure de la saisie, puis le code', async () => {
+    const { posts } = creationServer();
+    server.use(
+      http.get(apiUrl('/transfers'), () => HttpResponse.json({ items: [], page: 1, pageSize: 50, totalCount: 0, allCount: 0 })),
+      http.get(apiUrl('/transfers/summary'), () => HttpResponse.json({
+        agencyId: nkc.id, currency: 'MRO', otherAgencyId: dkr.id, otherCurrency: 'XOF', from: today, to: today,
+        incoming: { amount: 0, count: 0 }, outgoing: { amount: 0, count: 0 }, sentByOther: null, deliveredByOther: null,
+        notDelivered: { amount: 0, count: 0 }, profitMro: null, saleRate: 3650, purchaseRate: null,
+      })),
+    );
+    const { user } = renderApp('/transfers/new');
+
+    await fillAmount(user);
+    await screen.findByText('1 250 000 FCFA');
+    await user.click(screen.getByRole('button', { name: 'Continuer' }));
+    await screen.findByLabelText('Montant de la ligne 1');
+    await user.click(screen.getByRole('button', { name: 'Continuer' }));
+    await user.type(await screen.findByLabelText('Expéditeur'), 'Expéditeur Test');
+    await user.type(screen.getByLabelText('Bénéficiaire'), 'Bénéficiaire Test');
+
+    setNetwork(false);
+    expect(screen.getByText(/le transfert sera gardé sur ce téléphone/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Enregistrer sur le téléphone' }));
+
+    expect(await screen.findByRole('heading', { name: 'Transfert gardé sur le téléphone' })).toBeInTheDocument();
+    expect(posts).toHaveLength(0);
+
+    await user.click(screen.getByRole('button', { name: 'Terminé' }));
+    const queued = await screen.findByRole('region', { name: 'Transferts saisis hors ligne' });
+    expect(within(queued).getByText('En attente d’envoi')).toBeInTheDocument();
+    expect(within(queued).getByText('Expéditeur Test → Bénéficiaire Test')).toBeInTheDocument();
+    expect(screen.getByText('1 opération en attente d’envoi')).toBeInTheDocument();
+
+    setNetwork(true);
+
+    expect(await within(queued).findByText('Envoyé')).toBeInTheDocument();
+    expect(posts).toHaveLength(1);
+    expect(posts[0]!.key).toMatch(/^[0-9a-f-]{36}$/);
+    expect((posts[0]!.body as { operationAt: string | null }).operationAt).not.toBeNull();
+    expect(within(queued).getByRole('group', { name: 'Code de retrait' })).toBeInTheDocument();
+    expect(within(queued).getByRole('button', { name: 'Envoyer le reçu avec le code' })).toBeInTheDocument();
+
+    await user.click(within(queued).getByRole('button', { name: 'Terminé' }));
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Transferts saisis hors ligne' })).not.toBeInTheDocument());
   });
 
   it('réutilise la même clé d’idempotence quand l’agent renvoie après une coupure réseau', async () => {

@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "ETS EL-VETH",
-    "corridor": "Nouakchott · Dakar"
+    "corridor": "Nouakchott · Dakar",
+    "version": "Version {{version}}"
   },
   "language": {
     "label": "Langue",
@@ -572,7 +573,7 @@
       "continue": "Continuer",
       "submit": "Créer le transfert",
       "creating": "Création…",
-      "offline": "La création d’un transfert demande le réseau pour l’instant (la file d’attente hors ligne viendra plus tard).",
+      "offline": "Pas de réseau : le transfert sera gardé sur ce téléphone et envoyé dès le retour du réseau ; le code de retrait sera affiché après l’envoi.",
       "done": {
         "title": "Transfert enregistré",
         "replayedTitle": "Transfert déjà enregistré",
@@ -1662,5 +1663,47 @@
     "shared": "Fichier partagé.",
     "downloaded": "Fichier Excel téléchargé.",
     "offline": "Pas de réseau : l’export se fait en ligne."
+  },
+  "pwa": {
+    "updateAvailable": "Nouvelle version de l’application disponible.",
+    "update": "Mettre à jour",
+    "updating": "Mise à jour…",
+    "later": "Plus tard"
+  },
+  "offline": {
+    "reading": "Hors ligne : lecture seule des données gardées le {{since}}. La session reprendra seule dès que le serveur répondra."
+  },
+  "queue": {
+    "saveOffline": "Enregistrer sur le téléphone",
+    "keepForLater": "Garder sur le téléphone et envoyer plus tard",
+    "correcting": "Correction d’une opération rejetée : {{reason}}",
+    "cashOffline": "Pas de réseau : l’encaissement ou le décaissement sera gardé sur ce téléphone et envoyé dès le retour du réseau. Les autres opérations exigent le réseau.",
+    "transferSavedTitle": "Transfert gardé sur le téléphone",
+    "transferSavedHint": "Il sera envoyé dès le retour du réseau. Le code de retrait sera affiché après l’envoi, en tête de la liste des transferts : ne remettez pas encore de reçu.",
+    "transfersTitle": "Transferts saisis hors ligne",
+    "cashTitle": "Mouvements saisis hors ligne",
+    "status": {
+      "pending": "En attente d’envoi",
+      "rejected": "Rejeté",
+      "sent": "Envoyé"
+    },
+    "enteredAt": "Saisi le {{at}}",
+    "correct": "Corriger",
+    "correctOnline": "Corriger exige le réseau.",
+    "abandon": "Abandonner",
+    "abandonTitle": "Abandonner cette opération ?",
+    "abandonHint": "Elle sera retirée de ce téléphone et ne sera jamais envoyée. Si l’argent a été encaissé, saisissez-la de nouveau.",
+    "keep": "Garder",
+    "codeOnce": "Ce code ne sera plus affiché après « Terminé ». Envoyez le reçu à l’expéditeur maintenant.",
+    "signOutTitle": "Opérations en attente",
+    "signOutHint_one": "{{count}} opération saisie hors ligne reste sur ce téléphone : elle partira à votre prochaine connexion.",
+    "signOutHint_other": "{{count}} opérations saisies hors ligne restent sur ce téléphone : elles partiront à votre prochaine connexion.",
+    "signOutAnyway": "Se déconnecter quand même",
+    "stay": "Rester connecté",
+    "pendingCount_one": "{{count}} opération en attente d’envoi",
+    "pendingCount_other": "{{count}} opérations en attente d’envoi",
+    "rejectedCount_one": "{{count}} opération rejetée",
+    "rejectedCount_other": "{{count}} opérations rejetées",
+    "see": "Voir"
   }
 }

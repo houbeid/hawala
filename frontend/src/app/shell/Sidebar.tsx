@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import type { CurrentAccount } from '@/shared/auth/types';
 import { Icon } from '@/shared/ui/Icon';
+import { SignOutButton } from './SignOutButton';
 import { GROUP_ORDER, type NavItem } from './navigation';
 
 // Barre latérale (ordinateur, ≥ 1024 px, bureau D1) : toutes les entrées permises, par groupe ;
@@ -39,11 +40,12 @@ export function Sidebar({ items, account, onSignOut }: { items: NavItem[]; accou
         <div className="px-2.5">
           <div className="truncate font-semibold">{account.fullName}</div>
           <div className="text-sm text-muted">{t(`roles.${account.role}`)}</div>
+          <div className="text-xs text-muted">{t('app.version', { version: __APP_VERSION__ })}</div>
         </div>
-        <button type="button" onClick={onSignOut} className={`${linkClass} w-full text-start`}>
+        <SignOutButton onSignOut={onSignOut} className={`${linkClass} w-full text-start`}>
           <Icon name="signOut" />
           {t('auth.signOut')}
-        </button>
+        </SignOutButton>
       </div>
     </aside>
   );

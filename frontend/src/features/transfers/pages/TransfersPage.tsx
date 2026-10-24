@@ -12,6 +12,7 @@ import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
 import { Notice } from '@/shared/ui/Notice';
 import { useIsDesktop } from '@/shared/useMediaQuery';
+import { QueuedTransfers } from '../components/QueuedTransfers';
 import { SummaryCards } from '../components/SummaryCards';
 import { TransferCard } from '../components/TransferCard';
 import { TransferFiltersPanel } from '../components/TransferFiltersPanel';
@@ -92,6 +93,8 @@ export function TransfersPage() {
           <span className="sr-only">{t('common.loading')}</span>
         </div>
       )}
+
+      <QueuedTransfers />
 
       <div className="flex flex-wrap items-start gap-3">
         <div className="min-w-0 flex-1">

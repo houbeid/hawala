@@ -1,12 +1,14 @@
 import { Link, Outlet, useMatches } from '@tanstack/react-router';
-import { RealtimeNotice } from '@/shared/realtime/RealtimeNotice';
 import { useTranslation } from 'react-i18next';
-import { useCurrentAccount, useSessionManager } from '@/shared/auth/hooks';
+import { useCurrentAccount, useSession, useSessionManager } from '@/shared/auth/hooks';
+import { RealtimeNotice } from '@/shared/realtime/RealtimeNotice';
 import { Icon } from '@/shared/ui/Icon';
 import { Notice } from '@/shared/ui/Notice';
 import { useOnlineStatus } from '@/shared/useOnlineStatus';
 import { AgencyScopeProvider } from './AgencyScopeProvider';
 import { BottomNav } from './BottomNav';
+import { OfflineSessionNotice } from './OfflineSessionNotice';
+import { PendingOperationsNotice } from './PendingOperationsNotice';
 import { bottomBarItems, sidebarItems } from './navigation';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
@@ -43,6 +45,8 @@ export function AppShell() {
   const account = useCurrentAccount();
   const session = useSessionManager();
   const online = useOnlineStatus();
+  // En lecture hors ligne, son propre bandeau (avec l'heure des données) remplace le bandeau réseau.
+  const offlineSession = useSession().status === 'offline';
   const { titleKey, permission } = usePageMeta();
   if (!account) return null;
 
@@ -54,13 +58,15 @@ export function AppShell() {
         <Sidebar items={sidebarItems(account.permissions)} account={account} onSignOut={() => void session.logout()} />
         <div className="flex min-w-0 flex-1 flex-col">
           <TopBar title={t(titleKey)} />
-          {!online && (
+          {!online && !offlineSession && (
             <div role="status" className="flex items-center gap-2 bg-warn-bg px-4 py-2.5 text-sm font-semibold text-warn-fg">
               <Icon name="wifiOff" />
               <span>{t('shell.offlineBanner')}</span>
             </div>
           )}
           <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-4 pb-24 lg:px-6 lg:pb-8">
+            <OfflineSessionNotice />
+            <PendingOperationsNotice />
             <RealtimeNotice />
             {allowed ? <Outlet /> : <ForbiddenNotice />}
           </main>

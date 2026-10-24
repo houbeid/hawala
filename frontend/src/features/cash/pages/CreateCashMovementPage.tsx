@@ -1,13 +1,20 @@
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { useMemo, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PartyPicker, type PartySummary } from '@/features/parties';
+import { useQueryClient } from '@tanstack/react-query';
+import { cachedParty, PartyPicker, type PartySummary } from '@/features/parties';
 import { useTreasuryAccounts } from '@/features/treasury/queries';
 import { errorMessage } from '@/shared/api/errorMessage';
+import { isApiError } from '@/shared/api/errors';
 import { newIdempotencyKey } from '@/shared/api/idempotency';
 import { useAgencyScope, type AgencyRef } from '@/shared/agency/agencyScope';
+import { useCurrentAccount } from '@/shared/auth/hooks';
+import { localInputFromIso } from '@/shared/format/dates';
+import { toInputText } from '@/shared/format/decimalInput';
 import { formatAmount } from '@/shared/format/money';
-import { parseMoneyInput, type InputUnit } from '@/shared/format/moneyInput';
+import { defaultUnit, parseMoneyInput, type InputUnit } from '@/shared/format/moneyInput';
+import { useOperationQueue } from '@/shared/offline/queueContext';
+import { queuedErrorMessage } from '@/shared/offline/queuedErrorMessage';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
 import { MoneyField } from '@/shared/ui/MoneyField';
@@ -16,6 +23,7 @@ import { TextField } from '@/shared/ui/TextField';
 import { useOnlineStatus } from '@/shared/useOnlineStatus';
 import { createCashMovement } from '../api';
 import { buildCashRequest, leavesAccount, needsParty, overdraftAfter, validateCashForm, type CashForm, type CashFormErrors } from '../cashRules';
+import { CASH_QUEUE_KIND, OFFLINE_CASH_TYPES } from '../offlineQueue';
 import { useCashAction } from '../queries';
 import { CASH_MOVEMENT_TYPES, CASH_NOTE_MAX, type CashMovementType, type CreateCashMovementRequest } from '../types';
 
@@ -24,8 +32,9 @@ import { CASH_MOVEMENT_TYPES, CASH_NOTE_MAX, type CashMovementType, type CreateC
 // trésorerie (exigé par le backend ; écart avec la maquette, qui ne dessinait que le montant). Virement interne :
 // d'un compte vers un autre de la même agence. Comptes actifs de l'agence seulement ; MRO / MRU à Nouakchott.
 // Clé Idempotency-Key créée à l'ouverture et réutilisée après une coupure : un double envoi ne crée qu'un mouvement.
-// Un compte qui passerait en négatif : avertissement, sans blocage. Hors ligne : création désactivée (file
-// d'attente en phase 7).
+// Un compte qui passerait en négatif : avertissement, sans blocage. Hors ligne (24 octobre 2026) : seuls l'encaissement
+// et le décaissement se saisissent ; ils sont gardés sur le téléphone (heure de la saisie, même clé) et envoyés au
+// retour du réseau. « Corriger » une opération rejetée de la file : ?fromQueue=clé remplit le formulaire.
 
 const selectClass =
   'min-h-14 rounded-xl border-[1.5px] border-border bg-surface px-3.5 text-[17px] text-fg focus-visible:border-ink focus-visible:outline-none aria-invalid:border-red';
@@ -33,9 +42,17 @@ const selectClass =
 export function CreateCashMovementPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const search = useSearch({ strict: false }) as { type?: CashMovementType; agencyId?: string };
+  const search = useSearch({ strict: false }) as { type?: CashMovementType; agencyId?: string; fromQueue?: string };
   const { scope } = useAgencyScope();
   const online = useOnlineStatus();
+  const account = useCurrentAccount();
+  const queryClient = useQueryClient();
+  const queue = useOperationQueue();
+  const [correcting] = useState(() =>
+    search.fromQueue ? queue?.getSnapshot().find((op) => op.id === search.fromQueue && op.kind === CASH_QUEUE_KIND) : undefined,
+  );
+  const corrected = correcting?.request as CreateCashMovementRequest | undefined;
+  const [networkFailed, setNetworkFailed] = useState(false);
 
   const choices: AgencyRef[] = scope.kind === 'all' ? scope.agencies : [];
   const [agencyId, setAgencyId] = useState(
@@ -44,31 +61,40 @@ export function CreateCashMovementPage() {
   const agency = scope.kind === 'all' ? choices.find((a) => a.id === agencyId) : scope.agency;
   const currency = agency?.currency ?? null;
 
-  const [form, setForm] = useState<CashForm>({
-    type: search.type ?? 'Receipt',
-    accountId: '',
-    destinationId: '',
-    partyId: null,
-    amount: '',
-    unit: 'MRO',
-    note: '',
-    operationAt: '',
-  });
-  const [party, setParty] = useState<PartySummary | null>(null);
-  const [editDate, setEditDate] = useState(false);
+  const [form, setForm] = useState<CashForm>(() =>
+    corrected
+      ? {
+          type: corrected.type,
+          accountId: corrected.treasuryAccountId,
+          destinationId: '',
+          partyId: corrected.partyId,
+          amount: toInputText(corrected.amount),
+          unit: 'MRO',
+          note: corrected.note ?? '',
+          operationAt: corrected.operationAt ? localInputFromIso(corrected.operationAt) : '',
+        }
+      : { type: search.type ?? 'Receipt', accountId: '', destinationId: '', partyId: null, amount: '', unit: 'MRO', note: '', operationAt: '' },
+  );
+  const [party, setParty] = useState<PartySummary | null>(() =>
+    corrected?.partyId ? cachedParty(queryClient, corrected.partyId) : null,
+  );
+  const [editDate, setEditDate] = useState(Boolean(corrected?.operationAt));
   const [errors, setErrors] = useState<CashFormErrors>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState(newIdempotencyKey);
 
   const accounts = useTreasuryAccounts(agency?.id, { enabled: Boolean(agency) });
   const active = useMemo(() => accounts.data ?? [], [accounts.data]);
-  const unit: InputUnit = currency === 'XOF' ? 'XOF' : form.unit;
+  const unit: InputUnit = currency ? (currency === 'XOF' ? 'XOF' : form.unit) : defaultUnit('MRO');
+  // Hors ligne : encaissement et décaissement seulement (les autres opérations exigent le réseau).
+  const types = online ? CASH_MOVEMENT_TYPES : CASH_MOVEMENT_TYPES.filter((type) => OFFLINE_CASH_TYPES.includes(type));
+  const type = types.includes(form.type) ? form.type : 'Receipt';
   const create = useCashAction((http, request: CreateCashMovementRequest) => createCashMovement(http, request, idempotencyKey));
 
   const set = (patch: Partial<CashForm>) => setForm((current) => ({ ...current, ...patch }));
   const amount = parseMoneyInput(form.amount, unit);
   const source = active.find((a) => a.id === form.accountId);
-  const overdraft = overdraftAfter(form.type, source?.balance ?? null, amount.ok ? amount.value : null);
+  const overdraft = overdraftAfter(type, source?.balance ?? null, amount.ok ? amount.value : null);
   const destinations = useMemo(() => active.filter((a) => a.id !== form.accountId), [active, form.accountId]);
 
   /** Autre agence (Superviseur) : ses comptes et sa devise ; le choix de compte repart de zéro. */
@@ -77,31 +103,47 @@ export function CreateCashMovementPage() {
     set({ accountId: '', destinationId: '', unit: 'MRO' });
   }
 
-  async function submit(event: FormEvent) {
+  /** `keepOnPhone` : après une coupure réseau, l'agent choisit de garder l'opération pour l'envoyer plus tard. */
+  async function submit(event: FormEvent, keepOnPhone = false) {
     event.preventDefault();
     setServerError(null);
-    const filled = { ...form, unit, partyId: party?.id ?? null };
+    setNetworkFailed(false);
+    const filled = { ...form, type, unit, partyId: party?.id ?? null };
     const found = validateCashForm(filled);
     setErrors(found);
     if (Object.keys(found).length > 0 || !agency) return;
+    const request = buildCashRequest(filled, scope.kind === 'locked' ? null : agency.id);
+    if (!online || keepOnPhone) {
+      await keepForLater(request);
+      return;
+    }
     try {
-      await create.mutateAsync(buildCashRequest(filled, scope.kind === 'locked' ? null : agency.id));
+      await create.mutateAsync(request);
+      if (correcting) await queue?.remove(correcting.id);
       setIdempotencyKey(newIdempotencyKey());
-      void navigate({ to: '/cash', search: scope.kind === 'all' ? { agencyId: agency.id } : {} });
+      backToCash();
     } catch (error) {
       setServerError(errorMessage(i18n, error));
+      if (isApiError(error) && error.isNetworkError) setNetworkFailed(true);
     }
   }
 
-  if (!online) {
-    return (
-      <div className="mx-auto flex w-full max-w-xl flex-col gap-3">
-        <Notice tone="info">{t('cash.offline')}</Notice>
-        <Link to="/cash" className="font-semibold text-fg underline">
-          {t('cash.form.back')}
-        </Link>
-      </div>
-    );
+  function backToCash() {
+    void navigate({ to: '/cash', search: scope.kind === 'all' && agency ? { agencyId: agency.id } : {} });
+  }
+
+  /** Gardé sur le téléphone avec la même clé et l'heure de la saisie ; envoyé au retour du réseau. */
+  async function keepForLater(request: CreateCashMovementRequest) {
+    if (!queue || !account) return;
+    await queue.enqueue({
+      id: idempotencyKey,
+      accountId: account.id,
+      kind: CASH_QUEUE_KIND,
+      request: { ...request, operationAt: request.operationAt ?? new Date().toISOString() },
+      label: party?.name ?? '',
+    });
+    if (correcting && correcting.id !== idempotencyKey) await queue.remove(correcting.id);
+    backToCash();
   }
 
   return (
@@ -111,26 +153,33 @@ export function CreateCashMovementPage() {
         {t('cash.form.back')}
       </Link>
 
+      {!online && <Notice tone="info">{t('queue.cashOffline')}</Notice>}
+      {correcting?.error && <Notice tone="warning">{t('queue.correcting', { reason: queuedErrorMessage(i18n, correcting.error) })}</Notice>}
       {serverError && <Notice tone="error">{serverError}</Notice>}
+      {networkFailed && (
+        <Button fullWidth icon={<Icon name="download" />} onClick={() => void submit({ preventDefault: () => {} } as FormEvent, true)}>
+          {t('queue.keepForLater')}
+        </Button>
+      )}
 
       <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
         <legend className="mb-2 text-sm font-semibold text-muted">{t('cash.form.type')}</legend>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {CASH_MOVEMENT_TYPES.map((type) => (
+          {types.map((option) => (
             <label
-              key={type}
+              key={option}
               className="flex min-h-14 items-center gap-3 rounded-xl border-[1.5px] border-border bg-surface px-3.5 has-[:checked]:border-ink has-[:checked]:bg-surface-2"
             >
               <input
                 type="radio"
                 name="type"
-                checked={form.type === type}
-                onChange={() => set({ type, destinationId: '' })}
+                checked={type === option}
+                onChange={() => set({ type: option, destinationId: '' })}
                 className="size-5 accent-[var(--ink)]"
               />
               <span className="flex flex-col">
-                <span className="font-semibold">{t(`cash.types.${type}`)}</span>
-                <span className="text-sm text-muted">{t(`cash.form.typeHint.${type}`)}</span>
+                <span className="font-semibold">{t(`cash.types.${option}`)}</span>
+                <span className="text-sm text-muted">{t(`cash.form.typeHint.${option}`)}</span>
               </span>
             </label>
           ))}
@@ -152,7 +201,7 @@ export function CreateCashMovementPage() {
 
       <label className="flex flex-col gap-1.5">
         <span className="text-sm font-semibold text-muted">
-          {form.type === 'InternalTransfer' ? t('cash.form.fromAccount') : t('cash.form.account')}
+          {type === 'InternalTransfer' ? t('cash.form.fromAccount') : t('cash.form.account')}
         </span>
         <select
           value={form.accountId}
@@ -170,7 +219,7 @@ export function CreateCashMovementPage() {
         {errors.account && <span className="text-sm font-semibold text-red">{t(errors.account)}</span>}
       </label>
 
-      {form.type === 'InternalTransfer' && (
+      {type === 'InternalTransfer' && (
         <label className="flex flex-col gap-1.5">
           <span className="text-sm font-semibold text-muted">{t('cash.form.toAccount')}</span>
           <select
@@ -190,7 +239,7 @@ export function CreateCashMovementPage() {
         </label>
       )}
 
-      {needsParty(form.type) && (
+      {needsParty(type) && (
         <PartyPicker label={t('cash.form.party')} selected={party} onSelect={setParty} error={errors.party && t(errors.party)} />
       )}
 
@@ -230,10 +279,10 @@ export function CreateCashMovementPage() {
         </div>
       )}
 
-      <p className="m-0 text-sm text-muted">{t(`cash.form.effect.${leavesAccount(form.type) ? (form.type === 'InternalTransfer' ? 'internal' : 'out') : 'in'}`)}</p>
+      <p className="m-0 text-sm text-muted">{t(`cash.form.effect.${leavesAccount(type) ? (type === 'InternalTransfer' ? 'internal' : 'out') : 'in'}`)}</p>
 
       <Button type="submit" variant="primary" fullWidth busy={create.isPending} busyLabel={t('cash.form.saving')}>
-        {t('cash.form.save')}
+        {online ? t('cash.form.save') : t('queue.saveOffline')}
       </Button>
     </form>
   );

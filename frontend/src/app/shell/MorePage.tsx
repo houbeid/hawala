@@ -5,6 +5,7 @@ import { Icon } from '@/shared/ui/Icon';
 import { PreferencesSheet } from '@/shared/ui/PreferencesSheet';
 import { useTheme } from '@/shared/theme/useTheme';
 import { GROUP_ORDER, moreMenuItems } from './navigation';
+import { SignOutButton } from './SignOutButton';
 
 // « Plus » (maquette 02) : tout ce qui n'est pas dans la barre du bas, groupé (Pilotage, Administration,
 // Mon compte), puis les préférences et la déconnexion. Sur ordinateur, la barre latérale montre déjà tout.
@@ -63,12 +64,13 @@ export function MorePage() {
               </button>
             }
           />
-          <button type="button" className={rowClass} onClick={() => void session.logout()}>
+          <SignOutButton className={rowClass} onSignOut={() => void session.logout()}>
             <Icon name="signOut" />
             <span className="flex-1">{t('auth.signOut')}</span>
-          </button>
+          </SignOutButton>
         </div>
       </section>
+      <p className="m-0 text-center text-xs text-muted">{t('app.version', { version: __APP_VERSION__ })}</p>
     </div>
   );
 }

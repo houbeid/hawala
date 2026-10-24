@@ -5,19 +5,25 @@ import { http, HttpResponse } from 'msw';
 import { App } from '@/app/App';
 import { createAppRouter } from '@/app/router';
 import { SessionManager } from '@/shared/auth/session';
+import type { KeyValueStore } from '@/shared/offline/offlineStore';
 import type { CurrentAccount } from '@/shared/auth/types';
 import { createFakeHub } from './fakeHub';
+import { createFakeUpdates } from './fakeUpdates';
 import { dkr, nkc, tokens } from './fixtures';
 import { apiUrl, server } from './server';
 
-/** Toute l'application, à une adresse donnée (historique en mémoire), branchée sur un faux hub temps réel. */
-export function renderApp(path = '/') {
-  const session = new SessionManager();
+/**
+ * Toute l'application, à une adresse donnée (historique en mémoire), branchée sur un faux hub temps réel.
+ * `offlineStore` : stockage du téléphone (lecture hors ligne) ; absent, rien n'est gardé.
+ */
+export function renderApp(path = '/', options: { offlineStore?: KeyValueStore; queueStore?: KeyValueStore } = {}) {
+  const session = new SessionManager({ offline: options.offlineStore });
   const router = createAppRouter(createMemoryHistory({ initialEntries: [path] }));
   const user = userEvent.setup();
   const hub = createFakeHub();
-  render(<App session={session} router={router} realtime={hub.factory} />);
-  return { session, router, user, hub };
+  const updates = createFakeUpdates();
+  render(<App session={session} router={router} realtime={hub.factory} updates={updates.updates} offlineStore={options.offlineStore} queueStore={options.queueStore} />);
+  return { session, router, user, hub, updates };
 }
 
 /** Session déjà ouverte (cookie valable) pour ce compte, et les deux agences. */

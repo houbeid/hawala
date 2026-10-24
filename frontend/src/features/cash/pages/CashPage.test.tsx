@@ -6,6 +6,7 @@ import { agentAccount, dkr, nkc, supervisorAccount } from '@/test/fixtures';
 import { renderApp, signedInAs } from '@/test/renderApp';
 import { stubDownloads } from '@/test/downloads';
 import { exportServer } from '@/test/exportServer';
+import { setNetwork } from '@/test/network';
 import { apiUrl, server } from '@/test/server';
 import type { CashMovement, CashMovementList } from '../types';
 
@@ -184,6 +185,37 @@ describe('Caisse — nouveau mouvement', () => {
     await screen.findAllByRole('option', { name: /Espèces/ });
     return view;
   }
+
+  it('hors ligne : encaissement et décaissement seulement, gardés sur le téléphone puis envoyés au retour du réseau', async () => {
+    const { posts } = cashServer();
+    const { user, router } = await open();
+    // La liste des tiers (choix d'un tiers) est lue en ligne : hors ligne, la recherche se fait dedans.
+    await user.type(screen.getByRole('searchbox'), 'Bout');
+    await screen.findByRole('button', { name: /Boutique Fictive/ });
+
+    setNetwork(false);
+    expect(screen.getByText(/Pas de réseau : l’encaissement ou le décaissement sera gardé/)).toBeInTheDocument();
+    expect(screen.getAllByRole('radio')).toHaveLength(2);
+    expect(screen.queryByText('Approvisionnement de caisse')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Créer un tiers/ })).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText('Compte de trésorerie'), 'cash');
+    await user.click(screen.getByRole('button', { name: /Boutique Fictive/ }));
+    await user.type(screen.getByLabelText('Montant'), '300000');
+    await user.click(screen.getByRole('button', { name: 'Enregistrer sur le téléphone' }));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/cash'));
+    const queued = await screen.findByRole('region', { name: 'Mouvements saisis hors ligne' });
+    expect(within(queued).getByText('En attente d’envoi')).toBeInTheDocument();
+    expect(within(queued).getByText('Boutique Fictive')).toBeInTheDocument();
+    expect(posts).toHaveLength(0);
+
+    setNetwork(true);
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Mouvements saisis hors ligne' })).not.toBeInTheDocument());
+    expect(posts).toHaveLength(1);
+    expect(posts[0]?.body).toMatchObject({ type: 'Receipt', treasuryAccountId: 'cash', amount: 300000 });
+    expect((posts[0]?.body as { operationAt: string | null }).operationAt).not.toBeNull();
+  });
 
   it('encaissement : compte, tiers et montant ; envoyé avec une clé d’idempotence, puis retour à la caisse', async () => {
     const { posts } = cashServer();

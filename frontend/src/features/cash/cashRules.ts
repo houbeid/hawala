@@ -50,10 +50,12 @@ export function parseCashSearch(search: Record<string, unknown>): CashSearch {
 }
 
 /** Type et agence proposés par l'adresse de création (/cash/new?type=Payment&agencyId=…) ; encaissement par défaut. */
-export function parseNewMovementSearch(search: Record<string, unknown>): { type?: CashMovementType; agencyId?: string } {
-  const result: { type?: CashMovementType; agencyId?: string } = {};
+/** `fromQueue` : clé d'une opération rejetée de la file hors ligne à corriger (« Corriger »). */
+export function parseNewMovementSearch(search: Record<string, unknown>): { type?: CashMovementType; agencyId?: string; fromQueue?: string } {
+  const result: { type?: CashMovementType; agencyId?: string; fromQueue?: string } = {};
   if (CASH_MOVEMENT_TYPES.includes(search.type as CashMovementType)) result.type = search.type as CashMovementType;
   if (typeof search.agencyId === 'string' && search.agencyId) result.agencyId = search.agencyId;
+  if (typeof search.fromQueue === 'string' && search.fromQueue) result.fromQueue = search.fromQueue;
   return result;
 }
 
