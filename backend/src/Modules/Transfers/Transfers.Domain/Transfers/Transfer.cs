@@ -449,11 +449,7 @@ public sealed class Transfer
             return TransfersErrors.Payment.Required;
         }
 
-        if (lines.Select(l => l.TreasuryAccountId).Distinct().Count() != lines.Count)
-        {
-            return TransfersErrors.Payment.AccountDuplicated;
-        }
-
+        // Un même compte peut revenir sur plusieurs lignes (décision du patron, 27 octobre 2026).
         foreach (var line in lines)
         {
             if (line.Amount.Currency != DestinationCurrency)
@@ -936,11 +932,7 @@ public sealed class Transfer
             return TransfersErrors.Payment.Required;
         }
 
-        if (payments.Select(p => p.TreasuryAccountId).Distinct().Count() != payments.Count)
-        {
-            return TransfersErrors.Payment.AccountDuplicated;
-        }
-
+        // Un même compte peut revenir sur plusieurs lignes (décision du patron, 27 octobre 2026).
         foreach (var payment in payments)
         {
             if (payment.Amount.Currency != currency)

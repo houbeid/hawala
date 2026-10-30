@@ -141,7 +141,7 @@ Décisions validées pour le grand livre :
 
 Le sens inverse (reçu de Dakar, payé à Nouakchott) suit la même logique, devises échangées. Le type d'opération fixe le signe : l'agent ne choisit jamais « + » ou « − ».
 
-La livraison se répartit comme le paiement : le bénéficiaire peut être payé en espèces, par wallet ou par virement, ou par plusieurs moyens à la fois. L'écran « Livrer » reprend donc le sélecteur « Méthode de paiement », et le total livré doit égaler le montant du transfert.
+La livraison se répartit comme le paiement : le bénéficiaire peut être payé en espèces, par wallet ou par virement, ou par plusieurs moyens à la fois. L'écran « Livrer » reprend donc le sélecteur « Méthode de paiement », et le total livré doit égaler le montant du transfert. Un même compte peut revenir sur plusieurs lignes d'une répartition, au paiement comme à la livraison (décision du patron, 27 octobre 2026).
 
 **Code de retrait** (règle validée) : l'expéditeur le transmet lui-même au bénéficiaire.
 
@@ -194,7 +194,7 @@ Un seul patron possède deux caisses : Nouakchott en MRO, Dakar en FCFA. Il n'y 
 | Expéditeur, bénéficiaire, crédit | Expéditeur et bénéficiaire en texte libre ; crédit activé : la dette va sur un tiers choisi dans la liste (créé s'il n'existe pas), en rouge dans l'agence d'envoi ; crédit partiel ou total ; plafond bloquant pour tous, Superviseur compris (solde après transfert ≤ plafond) ; crédit sans part à crédit refusé |
 | Périmètre d'un agent | Une seule agence. Il voit les transferts envoyés et reçus par son agence, sa caisse et ses tiers ; jamais ceux de l'autre agence. Mêmes règles à Nouakchott et à Dakar |
 | Périmètre du Superviseur | Les deux agences : comptes, taux, bilan des deux caisses |
-| Taux | Seul le Superviseur fixe les deux taux du jour : le prix d'achat (taux du marché, T) et le prix de vente (taux client, appliqué automatiquement aux nouveaux transferts, modifiable par lui pour un transfert précis) ; le serveur refuse tout autre compte |
+| Taux | Seul le Superviseur fixe les deux taux du jour : le prix d'achat (taux du marché, T) et le prix de vente (taux client, proposé à chaque nouveau transfert). À la création, l'agent peut vendre à un autre prix, plus haut ou plus bas, sans limite ; plus de 5 % d'écart est signalé par le contrôle de cohérence (décision du patron, 30 octobre 2026). Après la création, seul le Superviseur change le prix d'un transfert |
 | Taux du jour | Prix d'achat et prix de vente, « 5 000 FCFA = ? MRO », enregistrés jour par jour. Commission d'un transfert = écart entre les deux × montant (ex. 5 000 000 FCFA vendus à 3 650, achetés à 3 600 : 50 000 MRO) |
 | Modification et historique (21 octobre 2026) | Textes : agence d'envoi ou Superviseur, motif facultatif ; argent (montant, prix de vente, répartition, crédit, date) : Superviseur, motif obligatoire, contre-passation et nouvelle écriture au jour de la modification ; version obligatoire (409 si périmée) ; historique de toutes les actions, codes faux compris, filtré selon les droits du lecteur |
 | Code de retrait (21 octobre 2026) | Superviseur : débloquer (compteur à zéro), livrer sans code (pièce d'identité + motif) ; agence d'envoi ou Superviseur : nouveau code (ne débloque pas, l'ancien ne marche plus) |

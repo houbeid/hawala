@@ -73,6 +73,55 @@ public sealed class DeliverTransferTests(ApiFixture fixture)
     }
 
     [Fact]
+    public async Task The_same_cash_account_can_be_used_on_several_lines_to_pay_and_to_deliver()
+    {
+        // Décision du patron (27 octobre 2026) : un compte peut revenir plusieurs fois dans une répartition.
+        var ctx = await ArrangeAsync();
+        var dakarCash = await ctx.CreateCashAsync("DKR");
+        await ctx.FundDakarAsync(dakarCash, 10_000m);
+
+        using var created = await ctx.Client.CreateTransferAsync(
+            ctx.NkcAgentToken,
+            new
+            {
+                destinationAgencyId = ctx.Dkr,
+                amountXof = 50_000m,
+                senderInfo = "Expéditeur fictif",
+                beneficiaryInfo = "Bénéficiaire fictif",
+                operationAt = ctx.OperationAt,
+                payments = new[]
+                {
+                    new { treasuryAccountId = ctx.NkcCash, amount = 16_500m },
+                    new { treasuryAccountId = ctx.NkcCash, amount = 20_000m },
+                },
+            },
+            Guid.NewGuid().ToString("N"));
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var body = await created.ReadJsonAsync();
+        var id = body.GetProperty("id").GetGuid();
+        Assert.Equal(36_500m, await ctx.TreasuryBalanceAsync(ctx.NkcCash));
+        Assert.Equal(2, (await ctx.GetAsync(ctx.SupervisorToken, id)).GetProperty("payments").GetArrayLength());
+
+        using var response = await ctx.Client.DeliverTransferAsync(ctx.DkrAgentToken, id, new
+        {
+            code = body.GetProperty("withdrawalCode").GetString(),
+            operationAt = ctx.OperationAt.AddHours(1),
+            payments = new[]
+            {
+                new { treasuryAccountId = dakarCash, amount = 20_000m },
+                new { treasuryAccountId = dakarCash, amount = 30_000m },
+            },
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        // 10 000 − 50 000 : la caisse passe à −40 000, signalée une seule fois.
+        var warning = Assert.Single((await response.ReadJsonAsync()).GetProperty("negativeBalances").EnumerateArray());
+        Assert.Equal(dakarCash, warning.GetProperty("treasuryAccountId").GetGuid());
+        Assert.Equal(-40_000m, warning.GetProperty("balance").GetDecimal());
+        Assert.Equal(-40_000m, await ctx.TreasuryBalanceAsync(dakarCash));
+    }
+
+    [Fact]
     public async Task Cashier_and_supervisor_can_deliver_and_a_credit_transfer_is_delivered_even_if_unpaid()
     {
         var ctx = await ArrangeAsync();

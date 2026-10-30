@@ -69,7 +69,7 @@ async function fillAmount(user: UserEvent, amount = '912 500') {
 describe('Création d’un transfert — Agent de Nouakchott', () => {
   beforeEach(() => signedInAs(agentAccount));
 
-  it('saisit en MRO à Nouakchott et calcule le FCFA en direct, avec le taux du jour verrouillé', async () => {
+  it('saisit en MRO à Nouakchott et calcule le FCFA en direct, au prix du jour quand le prix reste vide', async () => {
     creationServer();
     const { user } = renderApp('/transfers/new');
 
@@ -77,7 +77,8 @@ describe('Création d’un transfert — Agent de Nouakchott', () => {
 
     expect(await screen.findByText('1 250 000 FCFA')).toBeInTheDocument();
     expect(screen.getByText('912 500 × 5 000 ÷ 3 650, arrondi au FCFA')).toBeInTheDocument();
-    expect(screen.getByText('5 000 FCFA = 3 650 MRO')).toBeInTheDocument();
+    expect(screen.getByText('Prix du jour : 5 000 FCFA = 3 650 MRO. Laissez vide pour l’appliquer, ou saisissez un autre prix.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Prix de vente de ce transfert')).toHaveValue('');
     expect(screen.getByText('Verrouillée sur votre agence.')).toBeInTheDocument();
     expect(mroField()).toHaveValue('912 500');
     expect(within(screen.getByRole('group', { name: 'Saisir en :' })).getByRole('button', { name: 'MRO' })).toHaveAttribute(
@@ -101,6 +102,45 @@ describe('Création d’un transfert — Agent de Nouakchott', () => {
 
     await screen.findByRole('heading', { name: 'Transfert enregistré' });
     expect(posts[0]!.body).toMatchObject({ amountXof: 1233108, payments: [{ treasuryAccountId: 'acc-cash', amount: 912500 }] });
+  });
+
+  it('l’agent vend à son prix : le FCFA suit, plus de 5 % d’écart est signalé sans blocage, et le prix est envoyé', async () => {
+    const { posts } = creationServer();
+    const { user } = renderApp('/transfers/new');
+
+    await fillAmount(user);
+    const price = screen.getByLabelText('Prix de vente de ce transfert');
+    await user.type(price, '3900');
+    expect(await screen.findByText(/Plus de 5 % d’écart avec le prix du jour/)).toBeInTheDocument();
+    await user.clear(price);
+    await user.type(price, '3700');
+
+    // 912 500 MRO à 3 700 : 1 233 108 FCFA ; 1,4 % d'écart, pas d'avertissement.
+    expect(await screen.findByText('1 233 108 FCFA')).toBeInTheDocument();
+    expect(screen.getByText('912 500 × 5 000 ÷ 3 700, arrondi au FCFA')).toBeInTheDocument();
+    expect(screen.queryByText(/Plus de 5 % d’écart/)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Continuer' }));
+    expect(await screen.findByLabelText('Montant de la ligne 1')).toHaveValue('912500');
+    await user.click(screen.getByRole('button', { name: 'Continuer' }));
+    await user.type(await screen.findByLabelText('Expéditeur'), 'E');
+    await user.type(screen.getByLabelText('Bénéficiaire'), 'B');
+    expect(screen.getByRole('region', { name: 'Récapitulatif' })).toHaveTextContent('3 700');
+    await user.click(screen.getByRole('button', { name: 'Créer le transfert' }));
+
+    await screen.findByRole('heading', { name: 'Transfert enregistré' });
+    expect(posts[0]!.body).toMatchObject({ amountXof: 1233108, saleRate: 3700, payments: [{ treasuryAccountId: 'acc-cash', amount: 912500 }] });
+  });
+
+  it('refuse un prix de vente mal saisi', async () => {
+    creationServer();
+    const { user } = renderApp('/transfers/new');
+
+    await fillAmount(user);
+    await user.type(screen.getByLabelText('Prix de vente de ce transfert'), '3650,123');
+    await user.click(screen.getByRole('button', { name: 'Continuer' }));
+
+    expect(await screen.findByText('Deux décimales au maximum.')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Montant de la ligne 1')).not.toBeInTheDocument();
   });
 
   it('permet de saisir en FCFA avec la bascule, le MRO étant alors calculé', async () => {
@@ -180,6 +220,7 @@ describe('Création d’un transfert — Agent de Nouakchott', () => {
         { treasuryAccountId: 'acc-bankily', amount: 300000 },
       ],
       creditPartyId: null,
+      saleRate: null,
     });
   });
 

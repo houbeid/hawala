@@ -65,7 +65,7 @@ Mêmes règles pour Nouakchott et Dakar :
 - Deux taux du jour, au format « 5 000 FCFA = ? MRO », enregistrés **jour par jour** :
   - **prix d'achat** = taux du marché (T), ce que coûtent les FCFA ;
   - **prix de vente** = taux appliqué au client.
-- **Seul le Superviseur fixe ou modifie un taux.** Le prix de vente du jour s'applique automatiquement à chaque nouveau transfert ; le Superviseur peut le changer pour un transfert précis. Les agents des deux agences ne touchent à aucun taux ; le serveur refuse (permissions `rates.set_daily`, `transfers.edit_rate`).
+- **Seul le Superviseur fixe les taux du jour** (`rates.set_daily`). Le prix de vente du jour s'applique à chaque nouveau transfert **si l'agent ne saisit pas d'autre prix**. **Décision du patron (30 octobre 2026)** : à la création, tout compte qui crée un transfert (Agent, Superviseur), dans les deux sens, peut saisir le prix de vente de CE transfert, plus haut ou plus bas que celui du jour, **sans limite** ; un écart de plus de 5 % est signalé par le contrôle de cohérence (alerte « taux inhabituel »), jamais bloqué. Le prix d'achat reste toujours celui du jour. Après la création, seul le Superviseur modifie le prix d'un transfert (`transfers.edit_rate`).
 - **Commission = écart entre prix de vente et prix d'achat × montant.** Exemple : 5 000 000 FCFA vendus à 3 650 (le client paie 3 650 000 MRO), achetés à 3 600 (3 600 000 MRO) → 50 000 MRO. C'est la formule du bénéfice ci-dessous.
 - Chaque transfert garde ses taux (historisés).
 - **Un seul taux du jour pour les deux agences** (un seul corridor), validé le 20 octobre 2026.
@@ -268,7 +268,7 @@ Dans le code aujourd'hui (20 octobre 2026) : `parties.create`, `parties.view_bal
 - « Activer le crédit » : le client paie plus tard → dette sur le tiers (rouge).
 - **Expéditeur et bénéficiaire : texte libre** (« معلومات المرسل » / « معلومات المتلقي »), tapé à chaque transfert, sans fiche (validé le 20 octobre 2026).
 - **Crédit activé : la dette va sur un tiers choisi dans la liste des tiers** (pas forcément l'expéditeur) ; s'il n'existe pas, l'agent le crée comme nouveau tiers (validé le 20 octobre 2026). Le tiers passe en rouge dans l'agence d'envoi.
-- « Répartition des paiements » : un paiement peut être réparti sur plusieurs comptes ; le total affecté doit égaler le montant, sauf si le crédit est activé.
+- « Répartition des paiements » : un paiement peut être réparti sur plusieurs comptes ; le total affecté doit égaler le montant, sauf si le crédit est activé. **Un même compte peut revenir sur plusieurs lignes** (décision du patron, 27 octobre 2026), au paiement comme à la livraison : rien n'est refusé, les montants s'additionnent sur le compte.
 - **Crédit partiel possible** : une partie payée (répartie sur des comptes de trésorerie), le reste à crédit ; part à crédit = montant − total payé (validé le 20 octobre 2026).
 - **Temps réel (validé le 21 octobre 2026)** : message léger « TransferChanged » (identifiant, référence, événement, version, statut, agences ; **aucun montant, aucun nom**), l'application relit la fiche par l'API ; destinataires : agence d'envoi, agence de destination et Superviseurs ; « RatesChanged » à tous quand un taux du jour change ; envoyé **après** la validation de la transaction (jamais pour une opération refusée). Déconnexion en direct d'un compte bloqué : reportée à la phase 6 (appareils connectés).
 - **Modification d'un transfert et historique (validés le 21 octobre 2026)** :
@@ -355,7 +355,7 @@ Dans le code aujourd'hui (20 octobre 2026) : `parties.create`, `parties.view_bal
 - Un seul écran : statut de départ « غير مسلمة » (non livré) ; **« المبلغ (FCFA) » obligatoire : on saisit le FCFA** ; taux « 5,000 FCFA = ? MRO » obligatoire (saisi par l'agent) ; « المبلغ (MRO) » calculé (« MRO » à côté n'est qu'une étiquette, pas un bouton) ; « تفعيل الدين » (activer le crédit) ; « توزيع طرق الدفع » (répartition des paiements, +), ligne « Espèce نقدا », « المجموع الموزع » (total réparti) ; « معلومات المرسل » et « معلومات المتلقي » (expéditeur, bénéficiaire, obligatoires) ; « ملاحظة » (note) ; « حفظ » (enregistrer).
 - Bas de l'écran : « تاريخ العملية » (date de l'opération, **avec l'heure**, modifiable : ex. 20/10/2026 0:51) ; « المصدر » (source, obligatoire, ex. Nouakchott) et « الوجهة » (destination, obligatoire, ex. Dakar). Le sens n'est pas un choix envoyé / reçu : on choisit l'agence source et l'agence destination ; « envoyé » ou « reçu » dépend de l'agence qui regarde. Le transfert gardera date et heure ; le grand livre, la date d'opération.
 - **Confirme la règle validée : le FCFA (entier) est le montant de référence, le MRO est calculé.** Le transfert affiché à 10 000 000 MRO au taux 3 590 correspond à 13 927 577 FCFA saisis (× 3590 / 5000 = 10 000 000,29, arrondi à 10 000 000).
-- Différences voulues dans la nouvelle app : le taux n'est pas saisi par l'agent (prix de vente du jour automatique, modifiable par le Superviseur seul) ; création en 3 étapes ; code de retrait (nouveau).
+- Différences voulues dans la nouvelle app : prix de vente du jour proposé, l'agent peut saisir un autre prix pour ce transfert (décision du 30 octobre 2026, comme le « 5,000 FCFA = ? MRO » de l'app actuelle) ; création en 3 étapes ; code de retrait (nouveau).
 
 ### Code de retrait (validé)
 

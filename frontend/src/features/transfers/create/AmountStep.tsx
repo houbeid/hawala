@@ -7,13 +7,15 @@ import { formatAmount, formatNumber, formatRate } from '@/shared/format/money';
 import { AgencyBadge } from '@/shared/ui/AgencyBadge';
 import { Icon } from '@/shared/ui/Icon';
 import { Notice } from '@/shared/ui/Notice';
+import { RateField } from '@/shared/ui/RateField';
 import { TextField } from '@/shared/ui/TextField';
-import type { CreateForm, FieldErrors } from './createForm';
+import { isUnusualRate, type CreateForm, type FieldErrors } from './createForm';
 
-// Étape 1 (maquette 04) : agences, montant, taux du jour verrouillé (jamais saisi : le serveur applique le prix
-// de vente du jour de l'opération). Saisie (décision du 22 octobre 2026) : MRO par défaut à Nouakchott, FCFA à
-// Dakar, bascule pour l'autre devise ; l'autre montant est calculé en direct avec sa formule. Le FCFA entier
-// reste la référence envoyée au serveur.
+// Étape 1 (maquette 04) : agences, montant, prix de vente. Prix (décision du patron, 30 octobre 2026) : celui du
+// jour s'applique si le champ reste vide ; l'agent peut en saisir un autre, plus haut ou plus bas, sans limite ;
+// au-delà de 5 % d'écart, un avertissement (le contrôle de cohérence le signalera), jamais de blocage. Saisie
+// (décision du 22 octobre 2026) : MRO par défaut à Nouakchott, FCFA à Dakar, bascule pour l'autre devise ; l'autre
+// montant est calculé en direct avec sa formule, au prix appliqué. Le FCFA entier reste la référence envoyée.
 // Écart voulu avec la maquette : la date d'opération est ici, et non à l'étape 3, parce qu'elle décide du taux.
 
 interface Props {
@@ -26,9 +28,11 @@ interface Props {
   rate: { status: 'loading' | 'error' | 'ready'; data: DailyRate | null };
   amountXof: number | null;
   amountMro: number | null;
+  /** Prix appliqué : saisi par l'agent, sinon celui du jour ; null s'il est mal saisi. */
+  saleRate: number | null;
 }
 
-export function AmountStep({ form, errors, agencies, canChooseSource, source, destination, rate, amountXof, amountMro }: Props) {
+export function AmountStep({ form, errors, agencies, canChooseSource, source, destination, rate, amountXof, amountMro, saleRate }: Props) {
   const { t } = useTranslation();
   const { register, setValue } = form;
   const unit = useWatch({ control: form.control, name: 'amountUnit' });
@@ -114,9 +118,9 @@ export function AmountStep({ form, errors, agencies, canChooseSource, source, de
               {t('transfers.create.amountXofResult', { city: city(destination?.currency === 'XOF' ? destination : source) })}
             </span>
             <span className="amount text-2xl">{amountXof === null ? '— FCFA' : formatAmount(amountXof, 'XOF')}</span>
-            {rate.data && amountMro !== null && (
+            {saleRate !== null && amountMro !== null && (
               <span className="amount text-xs font-normal text-muted">
-                {t('transfers.create.formulaFromMro', { mro: formatNumber(amountMro, 0), rate: formatNumber(rate.data.saleRate) })}
+                {t('transfers.create.formulaFromMro', { mro: formatNumber(amountMro, 0), rate: formatNumber(saleRate) })}
               </span>
             )}
           </>
@@ -126,9 +130,9 @@ export function AmountStep({ form, errors, agencies, canChooseSource, source, de
               {t('transfers.create.amountMro', { city: city(destination?.currency === 'MRO' ? destination : source) })}
             </span>
             <span className="amount text-2xl">{amountMro === null ? '— MRO' : formatAmount(amountMro, 'MRO')}</span>
-            {rate.data && amountXof !== null && (
+            {saleRate !== null && amountXof !== null && (
               <span className="amount text-xs font-normal text-muted">
-                {t('transfers.create.formula', { xof: formatNumber(amountXof, 0), rate: formatNumber(rate.data.saleRate) })}
+                {t('transfers.create.formula', { xof: formatNumber(amountXof, 0), rate: formatNumber(saleRate) })}
               </span>
             )}
           </>
@@ -136,12 +140,19 @@ export function AmountStep({ form, errors, agencies, canChooseSource, source, de
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-sm font-semibold text-muted">{t('transfers.create.rate')}</span>
         {rate.status === 'ready' && rate.data ? (
-          <div className="flex min-h-14 items-center gap-2 rounded-xl border-[1.5px] border-border bg-surface-2 px-3.5">
-            <span className="amount flex-1">{formatRate(rate.data.saleRate)}</span>
-            <Icon name="lock" className="text-muted" />
-          </div>
+          <>
+            <RateField
+              label={t('transfers.create.saleRate')}
+              placeholder={formatNumber(rate.data.saleRate)}
+              error={errors.saleRate && t(errors.saleRate)}
+              {...register('saleRate')}
+            />
+            <span className="text-sm text-muted">{t('transfers.create.saleRateHint', { rate: formatRate(rate.data.saleRate) })}</span>
+            {saleRate !== null && isUnusualRate(saleRate, rate.data.saleRate) && (
+              <Notice tone="warning">{t('transfers.create.saleRateUnusual', { rate: formatRate(rate.data.saleRate) })}</Notice>
+            )}
+          </>
         ) : rate.status === 'loading' ? (
           <span className="text-muted">{t('common.loading')}</span>
         ) : rate.status === 'ready' ? (
@@ -149,7 +160,6 @@ export function AmountStep({ form, errors, agencies, canChooseSource, source, de
         ) : (
           <Notice tone="error">{t('errors.generic')}</Notice>
         )}
-        <span className="text-sm text-muted">{t('transfers.create.rateLocked')}</span>
       </div>
 
       {editDate ? (

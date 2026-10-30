@@ -53,7 +53,7 @@ describe('étape 2 · paiement', () => {
     expect(validatePaymentStep(split, 912500, false)).toEqual({});
   });
 
-  it('refuse un compte en double et un montant trop précis', () => {
+  it('accepte le même compte sur deux lignes et refuse un montant trop précis', () => {
     const errors = validatePaymentStep(
       {
         ...base,
@@ -65,7 +65,7 @@ describe('étape 2 · paiement', () => {
       912500,
       false,
     );
-    expect(errors['payments.1.accountId']).toBe('transfers.create.validation.accountDuplicated');
+    expect(errors['payments.1.accountId']).toBeUndefined();
     expect(errors['payments.1.amount']).toBe('transfers.create.validation.payment.tooPrecise');
   });
 

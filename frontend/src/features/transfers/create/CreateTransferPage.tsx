@@ -31,6 +31,8 @@ import { AmountStep } from './AmountStep';
 import {
   amountToPay,
   amountXofValue,
+  appliedSaleRate,
+  chosenSaleRate,
   formFromRequest,
   operationAtIso,
   paidTotal,
@@ -61,6 +63,7 @@ const EMPTY: Omit<CreateForm, 'sourceAgencyId'> = {
   // Remplacée dès que l'agence d'envoi est connue : MRO à Nouakchott, FCFA à Dakar.
   amountUnit: 'XOF',
   operationAt: '',
+  saleRate: '',
   payments: [],
   senderInfo: '',
   beneficiaryInfo: '',
@@ -111,12 +114,17 @@ export function CreateTransferPage() {
     form.setValue('sourceAgencyId', scope.kind === 'all' ? agencies.data[0]!.id : scope.agency.id);
   }, [sourceAgencyId, agencies.data, scope, form]);
 
-  const [amount, amountUnit, operationAt] = useWatch({ control: form.control, name: ['amount', 'amountUnit', 'operationAt'] });
+  const [amount, amountUnit, operationAt, saleRateText] = useWatch({
+    control: form.control,
+    name: ['amount', 'amountUnit', 'operationAt', 'saleRate'],
+  });
   const source = agencies.data?.find((a) => a.id === sourceAgencyId);
   const destination = agencies.data?.find((a) => a.id !== sourceAgencyId);
   const rate = useDailyRate(rateDay({ operationAt }));
+  // Prix appliqué : celui saisi par l'agent, sinon celui du jour (décision du patron, 30 octobre 2026).
+  const saleRate = appliedSaleRate({ saleRate: saleRateText }, rate.data?.saleRate ?? null);
   // FCFA de référence : tapé, ou déduit du MRO tapé (le serveur retrouve exactement ce MRO).
-  const amountXof = amountXofValue({ amount, amountUnit }, rate.data?.saleRate ?? null);
+  const amountXof = amountXofValue({ amount, amountUnit }, saleRate);
 
   // Saisie dans la devise de l'agence d'envoi (décision du 22 octobre 2026), l'autre reste au choix.
   const sourceCurrency = source?.currency;
@@ -128,7 +136,7 @@ export function CreateTransferPage() {
     }
     form.setValue('amountUnit', sourceCurrency);
   }, [sourceCurrency, form]);
-  const amountMro = rate.data && amountXof !== null ? transferMroPreview(amountXof, rate.data.saleRate) : null;
+  const amountMro = rate.data && saleRate !== null && amountXof !== null ? transferMroPreview(amountXof, saleRate) : null;
   const toPay = source && amountXof !== null && amountMro !== null ? amountToPay(source.currency, amountXof, amountMro) : null;
   const accounts = useTreasuryAccounts(sourceAgencyId || undefined, { enabled: Boolean(sourceAgencyId) });
   const activeAccounts = useMemo(() => (accounts.data ?? []).filter((a) => a.isActive), [accounts.data]);
@@ -182,6 +190,7 @@ export function CreateTransferPage() {
         amount: paymentValues(values.payments)[index] ?? 0,
       })),
       creditPartyId: creditEnabled && creditParty ? creditParty.id : null,
+      saleRate: chosenSaleRate(values),
     };
   }
 
@@ -308,6 +317,7 @@ export function CreateTransferPage() {
           rate={{ status: rate.isPending ? 'loading' : rate.isError ? 'error' : 'ready', data: rate.data ?? null }}
           amountXof={amountXof}
           amountMro={amountMro}
+          saleRate={saleRate}
         />
       )}
       {step === 2 && source && toPay !== null && (
@@ -355,7 +365,7 @@ export function CreateTransferPage() {
                 </dd>
                 <dt className="text-muted">{t('transfers.create.rate')}</dt>
                 <dd className="m-0 text-end">
-                  <span className="amount text-sm">{formatRate(rate.data.saleRate)}</span>
+                  <span className="amount text-sm">{formatRate(saleRate ?? rate.data.saleRate)}</span>
                 </dd>
                 <dt className="text-muted">{t('transfers.create.recapPaid')}</dt>
                 <dd className="m-0 text-end">

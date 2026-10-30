@@ -94,6 +94,14 @@ public sealed class CreateTransferCommandHandler(
             return TransfersErrors.Transfer.RateNotSet;
         }
 
+        // L'agent peut vendre à un autre prix que celui du jour, sans limite ; l'écart de plus de 5 % est signalé par le
+        // contrôle de cohérence (TransferMonitor), jamais bloqué.
+        var saleRate = command.SaleRate is { } given ? ExchangeRate.Create(given) : rate.SaleRate;
+        if (saleRate.IsFailure)
+        {
+            return saleRate.Error;
+        }
+
         var payments = await posting.ResolvePaymentsAsync(command.Payments, source.Id, source.Currency, cancellationToken);
         if (payments.IsFailure)
         {
@@ -102,7 +110,7 @@ public sealed class CreateTransferCommandHandler(
 
         var request = new NewTransfer(
             source.Id, source.Currency, destination.Id, destination.Currency,
-            xof.Value, rate.SaleRate, rate.PurchaseRate,
+            xof.Value, saleRate.Value, rate.PurchaseRate,
             command.SenderInfo, command.BeneficiaryInfo, command.Note,
             operationAt, [.. payments.Value.Select(p => p.Line)], command.CreditPartyId);
 

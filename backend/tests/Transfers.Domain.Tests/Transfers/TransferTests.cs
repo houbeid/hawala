@@ -165,11 +165,14 @@ public class TransferTests
     }
 
     [Fact]
-    public void A_payment_method_appears_once()
+    public void The_same_payment_method_can_appear_on_several_lines()
     {
         var request = NkcToDkr(new PaymentLine(Cash, Mro(1_000_000m)), new PaymentLine(Cash, Mro(2_650_000m)));
 
-        Assert.Equal(TransfersErrors.Payment.AccountDuplicated, Create(request).Error);
+        var transfer = Create(request);
+
+        Assert.True(transfer.IsSuccess);
+        Assert.Equal(2, transfer.Value.Payments.Count);
     }
 
     [Fact]

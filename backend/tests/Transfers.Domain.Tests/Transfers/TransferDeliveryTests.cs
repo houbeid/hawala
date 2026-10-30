@@ -71,9 +71,15 @@ public class TransferDeliveryTests
             transfer.ValidateDelivery([new PaymentLine(DkrCash, Mro(3_650_000m))], Now, null, Now).Error);
         Assert.Equal(TransfersErrors.Payment.Required,
             transfer.ValidateDelivery([], Now, null, Now).Error);
-        Assert.Equal(TransfersErrors.Payment.AccountDuplicated,
-            transfer.ValidateDelivery(
-                [new PaymentLine(DkrCash, Xof(2_500_000m)), new PaymentLine(DkrCash, Xof(2_500_000m))], Now, null, Now).Error);
+    }
+
+    [Fact]
+    public void The_same_cash_account_can_appear_on_several_delivery_lines()
+    {
+        var transfer = NewTransfer();
+
+        Assert.True(transfer.ValidateDelivery(
+            [new PaymentLine(DkrCash, Xof(2_500_000m)), new PaymentLine(DkrCash, Xof(2_500_000m))], Now, null, Now).IsSuccess);
     }
 
     [Fact]

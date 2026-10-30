@@ -43,7 +43,8 @@ public static class TransferEndpoints
         string? Note,
         DateTimeOffset? OperationAt,
         IReadOnlyList<CreateTransferPayment>? Payments,
-        Guid? CreditPartyId);
+        Guid? CreditPartyId,
+        decimal? SaleRate = null);
 
     public static IEndpointRouteBuilder MapTransferEndpoints(this IEndpointRouteBuilder app)
     {
@@ -466,7 +467,8 @@ public static class TransferEndpoints
                 request.Note,
                 request.OperationAt,
                 request.Payments,
-                request.CreditPartyId),
+                request.CreditPartyId,
+                request.SaleRate),
             cancellationToken);
 
         if (result.IsFailure)

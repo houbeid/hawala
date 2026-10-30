@@ -12,6 +12,10 @@ namespace Transfers.Application.Features.Transfers.CreateTransfer;
 /// <param name="CreditPartyId">
 /// Crédit activé : tiers qui porte la part non payée (permission transfers.credit). Null : payé comptant.
 /// </param>
+/// <param name="SaleRate">
+/// Prix de vente choisi par l'agent (MRO pour 5 000 FCFA), plus haut ou plus bas que celui du jour (décision du patron,
+/// 30 octobre 2026) ; null : prix de vente du jour. Le prix d'achat reste toujours celui du jour.
+/// </param>
 public sealed record CreateTransferCommand(
     Guid ActorId,
     string? IdempotencyKey,
@@ -23,7 +27,8 @@ public sealed record CreateTransferCommand(
     string? Note,
     DateTimeOffset? OperationAt,
     IReadOnlyList<CreateTransferPayment>? Payments,
-    Guid? CreditPartyId = null) : ICommand<CreatedTransfer>;
+    Guid? CreditPartyId = null,
+    decimal? SaleRate = null) : ICommand<CreatedTransfer>;
 
 public sealed record CreateTransferPayment(Guid TreasuryAccountId, decimal Amount);
 

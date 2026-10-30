@@ -10,6 +10,9 @@ import type { CreateTransferRequest } from '../types';
 
 export const SENDER_MAX = 200; // Transfer.PartyInfoMaxLength
 export const NOTE_MAX = 500; // Transfer.NoteMaxLength
+export const SALE_RATE_DECIMALS = 2; // ExchangeRate.MaxDecimals
+/** Écart avec le prix du jour au-delà duquel le contrôle de cohérence signale le transfert (TransferMonitor). */
+export const UNUSUAL_RATE_GAP = 0.05;
 
 export interface PaymentLine {
   accountId: string;
@@ -27,6 +30,11 @@ export interface CreateForm {
   amountUnit: 'MRO' | 'XOF';
   /** « aaaa-mm-jjThh:mm » (heure locale) ; vide = maintenant. */
   operationAt: string;
+  /**
+   * Prix de vente de ce transfert, tel que saisi ; vide = prix du jour (décision du patron, 30 octobre 2026 : l'agent
+   * peut vendre plus cher ou moins cher, sans limite). Absent dans « Modifier montant ou taux », qui a le sien.
+   */
+  saleRate?: string;
   payments: PaymentLine[];
   senderInfo: string;
   beneficiaryInfo: string;
@@ -54,6 +62,23 @@ export function amountXofValue(form: Pick<CreateForm, 'amount' | 'amountUnit'>, 
   return saleRate === null ? null : xofFromMro(entered, saleRate);
 }
 
+/** Prix de vente saisi par l'agent ; null s'il est vide (prix du jour) ou mal saisi. */
+export function chosenSaleRate(form: Pick<CreateForm, 'saleRate'>): number | null {
+  if (!form.saleRate?.trim()) return null;
+  const parsed = parseDecimalInput(form.saleRate, SALE_RATE_DECIMALS);
+  return parsed.ok ? parsed.value : null;
+}
+
+/** Prix appliqué au transfert : celui saisi par l'agent, sinon celui du jour ; null s'il est mal saisi. */
+export function appliedSaleRate(form: Pick<CreateForm, 'saleRate'>, dayRate: number | null): number | null {
+  return form.saleRate?.trim() ? chosenSaleRate(form) : dayRate;
+}
+
+/** Même règle que le serveur : écart relatif avec le prix du jour strictement supérieur à 5 %. */
+export function isUnusualRate(applied: number, dayRate: number): boolean {
+  return Math.abs(applied - dayRate) > dayRate * UNUSUAL_RATE_GAP;
+}
+
 /** Date d'opération envoyée au serveur (ISO) ; null = maintenant. */
 export function operationAtIso(form: Pick<CreateForm, 'operationAt'>): string | null {
   if (!form.operationAt) return null;
@@ -74,6 +99,10 @@ export function validateAmountStep(form: CreateForm, now: Date = new Date()): Fi
     // Un transfert est toujours entier dans les deux devises (MRO arrondi à l'unité, FCFA entier).
     errors.amount = `transfers.create.validation.amount.${parsed.error}${parsed.error === 'tooPrecise' ? form.amountUnit : ''}`;
   }
+  if (form.saleRate?.trim()) {
+    const rate = parseDecimalInput(form.saleRate, SALE_RATE_DECIMALS);
+    if (!rate.ok) errors.saleRate = `rates.validation.${rate.error}`;
+  }
   const iso = operationAtIso(form);
   if (form.operationAt && !iso) errors.operationAt = 'transfers.create.validation.dateInvalid';
   if (iso && new Date(iso) > now) errors.operationAt = 'transfers.create.validation.dateFuture';
@@ -92,16 +121,14 @@ export function paidTotal(lines: PaymentLine[]): number {
 }
 
 /**
- * Répartition : chaque ligne a un compte (une seule fois) et un montant valable ; sans crédit, le total
+ * Répartition : chaque ligne a un compte (le même peut revenir, décision du patron du 27 octobre 2026) et un
+ * montant valable ; sans crédit, le total
  * réparti égale le montant à payer. Avec crédit (2e livraison), le reste devient la part à crédit.
  */
 export function validatePaymentStep(form: CreateForm, amountToPay: number, credit: boolean): FieldErrors {
   const errors: FieldErrors = {};
-  const seen = new Set<string>();
   form.payments.forEach((line, index) => {
     if (!line.accountId) errors[`payments.${index}.accountId`] = 'transfers.create.validation.accountRequired';
-    else if (seen.has(line.accountId)) errors[`payments.${index}.accountId`] = 'transfers.create.validation.accountDuplicated';
-    seen.add(line.accountId);
     const parsed = parseMoneyInput(line.amount, line.unit);
     if (!parsed.ok) errors[`payments.${index}.amount`] = `transfers.create.validation.payment.${parsed.error}`;
   });
@@ -152,6 +179,7 @@ export function formFromRequest(request: CreateTransferRequest, sourceAgencyId: 
     amount: String(request.amountXof),
     amountUnit: 'XOF',
     operationAt: request.operationAt ? localInputFromIso(request.operationAt) : '',
+    saleRate: request.saleRate != null ? toInputText(request.saleRate) : '',
     payments: request.payments.map((line) => ({
       accountId: line.treasuryAccountId,
       amount: toInputText(line.amount),

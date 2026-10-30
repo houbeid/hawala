@@ -31,14 +31,11 @@ export function validateWithoutCode(form: Pick<DeliveryForm, 'idDocument' | 'rea
   return errors;
 }
 
-/** La remise : un compte par ligne (une seule fois), un montant valable, total = montant à livrer. */
+/** La remise : un compte par ligne (le même peut revenir), un montant valable, total = montant à livrer. */
 export function validateRemise(lines: PaymentLine[], amountToDeliver: number): FieldErrors {
   const errors: FieldErrors = {};
-  const seen = new Set<string>();
   lines.forEach((line, index) => {
     if (!line.accountId) errors[`payments.${index}.accountId`] = 'transfers.create.validation.accountRequired';
-    else if (seen.has(line.accountId)) errors[`payments.${index}.accountId`] = 'transfers.create.validation.accountDuplicated';
-    seen.add(line.accountId);
     const parsed = parseMoneyInput(line.amount, line.unit);
     if (!parsed.ok) errors[`payments.${index}.amount`] = `transfers.create.validation.payment.${parsed.error}`;
   });
@@ -61,16 +58,22 @@ export interface OverdraftWarning {
 
 /**
  * Caisses qui passeraient en négatif, d'après les soldes connus (cash.budget.read ; sans ce droit, pas de
- * prévision : le serveur le dira après la livraison). Avertissement seulement, jamais de blocage.
+ * prévision : le serveur le dira après la livraison). Une caisse sur plusieurs lignes : ses montants s'additionnent,
+ * un seul avertissement. Avertissement seulement, jamais de blocage.
  */
 export function overdraftWarnings(lines: PaymentLine[], accounts: TreasuryAccount[]): OverdraftWarning[] {
   const values = paymentValues(lines);
-  const warnings: OverdraftWarning[] = [];
+  const outByAccount = new Map<string, number[]>();
   lines.forEach((line, index) => {
-    const account = accounts.find((a) => a.id === line.accountId);
     const value = values[index];
-    if (!account || account.balance === null || value === null || value === undefined) return;
-    const after = Math.round((account.balance - value) * 100) / 100;
+    if (!line.accountId || value === null || value === undefined) return;
+    outByAccount.set(line.accountId, [...(outByAccount.get(line.accountId) ?? []), value]);
+  });
+  const warnings: OverdraftWarning[] = [];
+  outByAccount.forEach((out, accountId) => {
+    const account = accounts.find((a) => a.id === accountId);
+    if (!account || account.balance === null) return;
+    const after = sumAmounts([account.balance, ...out.map((value) => -value)]);
     if (after < 0) warnings.push({ accountId: account.id, name: account.name, after });
   });
   return warnings;

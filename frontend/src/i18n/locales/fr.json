@@ -244,7 +244,6 @@
         "ResumedAmountsLocked": "Transfert repris de l’ancienne app : son montant ne se modifie pas ici."
       },
       "Payment": {
-        "AccountDuplicated": "Un compte apparaît deux fois dans la répartition.",
         "AccountNotAllowed": "Ce compte n'est pas un compte actif de l'agence d'envoi.",
         "AmountNotPositive": "Chaque montant de la répartition doit être positif.",
         "CurrencyMismatch": "Le compte n'est pas dans la devise de l'agence d'envoi.",
@@ -589,7 +588,6 @@
       "amountMro": "Montant en MRO ({{city}})",
       "formula": "{{xof}} × {{rate}} ÷ 5 000, arrondi à l’unité",
       "rate": "Taux du jour",
-      "rateLocked": "Fixé par le Superviseur, non modifiable ici.",
       "rateNotSet": "Le taux du jour n'est pas encore fixé pour cette date. Demandez au Superviseur de le saisir, puis réessayez.",
       "operationAt": "Date et heure de l'opération",
       "operationNow": "Date de l'opération : maintenant",
@@ -639,7 +637,6 @@
         "dateInvalid": "Date invalide.",
         "dateFuture": "La date de l'opération ne peut pas être dans le futur.",
         "accountRequired": "Choisissez un compte.",
-        "accountDuplicated": "Ce compte est déjà dans la répartition.",
         "payment": {
           "empty": "Saisissez le montant.",
           "invalid": "Saisissez un nombre.",
@@ -675,7 +672,10 @@
       "amountUnit": "Saisir en :",
       "amountMroInput": "Montant payé en MRO ({{city}})",
       "amountXofResult": "Montant en FCFA ({{city}})",
-      "formulaFromMro": "{{mro}} × 5 000 ÷ {{rate}}, arrondi au FCFA"
+      "formulaFromMro": "{{mro}} × 5 000 ÷ {{rate}}, arrondi au FCFA",
+      "saleRate": "Prix de vente de ce transfert",
+      "saleRateHint": "Prix du jour : {{rate}}. Laissez vide pour l’appliquer, ou saisissez un autre prix.",
+      "saleRateUnusual": "Plus de 5 % d’écart avec le prix du jour ({{rate}}) : le transfert sera signalé au contrôle du soir."
     },
     "detail": {
       "backToList": "Transferts",

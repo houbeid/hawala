@@ -92,7 +92,10 @@ public sealed class DeliveryPosting(ITreasuryDirectory treasury, ILedger ledger)
             cancellationToken);
     }
 
-    /// <summary>Soldes des caisses de la livraison après l'écriture (lus dans la même transaction) : celles en négatif.</summary>
+    /// <summary>
+    /// Soldes des caisses de la livraison après l'écriture (lus dans la même transaction) : celles en négatif, une fois
+    /// chacune même si elle revient sur plusieurs lignes.
+    /// </summary>
     public async Task<IReadOnlyList<NegativeBalanceWarning>> NegativeBalancesAsync(
         IReadOnlyList<DeliveryLine> lines, CancellationToken cancellationToken)
     {
@@ -105,7 +108,9 @@ public sealed class DeliveryPosting(ITreasuryDirectory treasury, ILedger ledger)
         }
 
         return [.. lines
-            .Select(l => (l.Account, Balance: balances.Value.Single(b => b.AccountId == l.Account.LedgerAccountId).Balance))
+            .Select(l => l.Account)
+            .DistinctBy(a => a.Id)
+            .Select(account => (Account: account, Balance: balances.Value.Single(b => b.AccountId == account.LedgerAccountId).Balance))
             .Where(x => x.Balance.Amount < 0m)
             .Select(x => new NegativeBalanceWarning(x.Account.Id, x.Account.Name, x.Balance.Amount, x.Balance.Currency))];
     }

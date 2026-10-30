@@ -85,9 +85,6 @@ public static class TransfersErrors
         public static readonly Error CurrencyMismatch =
             Error.Validation("Transfers.Payment.CurrencyMismatch", "La répartition est dans la devise de l'agence d'envoi.");
 
-        public static readonly Error AccountDuplicated =
-            Error.Validation("Transfers.Payment.AccountDuplicated", "Une méthode de paiement n'apparaît qu'une fois dans la répartition.");
-
         public static readonly Error TotalMismatch =
             Error.Validation("Transfers.Payment.TotalMismatch", "Le total réparti doit être égal au montant payé par le client (inférieur avec le crédit activé, jamais supérieur).");
 

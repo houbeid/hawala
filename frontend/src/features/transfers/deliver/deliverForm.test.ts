@@ -37,4 +37,13 @@ describe('livraison', () => {
     ];
     expect(overdraftWarnings(lines, accounts)).toEqual([{ accountId: 'cash', name: 'Espèces', after: -450000 }]);
   });
+
+  it('accepte la même caisse sur deux lignes et additionne ses sorties pour le découvert', () => {
+    const lines = [
+      { accountId: 'cash', amount: '600 000', unit: 'XOF' as const },
+      { accountId: 'cash', amount: '650 000', unit: 'XOF' as const },
+    ];
+    expect(validateRemise(lines, 1250000)).toEqual({});
+    expect(overdraftWarnings(lines, accounts)).toEqual([{ accountId: 'cash', name: 'Espèces', after: -450000 }]);
+  });
 });

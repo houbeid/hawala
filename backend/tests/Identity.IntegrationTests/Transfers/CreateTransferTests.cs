@@ -126,6 +126,42 @@ public sealed class CreateTransferTests(ApiFixture fixture)
     }
 
     [Fact]
+    public async Task Agent_can_sell_above_or_below_the_rate_of_the_day()
+    {
+        // Décision du patron (30 octobre 2026) : l'agent saisit son prix de vente, sans limite ; le prix d'achat reste celui du jour.
+        var ctx = await ArrangeAsync();
+        var date = await ctx.SetRateAsync(purchase: 3600m, sale: 3650m);
+        var cash = await ctx.CreateTreasuryAccountAsync("NKC", "cash");
+        var agentToken = await ctx.LoginAgentAsync("NKC");
+
+        // 1 000 000 FCFA vendus à 3 700 : 740 000 MRO.
+        var above = await CreateOkAsync(ctx, agentToken, WithSaleRate(ctx.Dkr, date, cash, 740_000m, 3700m));
+        Assert.Equal(3700m, above.GetProperty("saleRate").GetDecimal());
+        Assert.Equal(740_000m, above.GetProperty("amountMro").GetDecimal());
+
+        // Plus bas que le prix du jour : accepté aussi (3 620,50 : 724 100 MRO).
+        var below = await CreateOkAsync(ctx, agentToken, WithSaleRate(ctx.Dkr, date, cash, 724_100m, 3620.5m));
+        Assert.Equal(724_100m, below.GetProperty("amountMro").GetDecimal());
+
+        await using (var scope = ctx.Factory.Services.CreateAsyncScope())
+        {
+            var transfer = await scope.ServiceProvider.GetRequiredService<TransfersDbContext>()
+                .Transfers.IgnoreQueryFilters().SingleAsync(t => t.Id == above.GetProperty("id").GetGuid());
+            Assert.Equal(3700m, transfer.SaleRate.MroPer5000Xof);
+            Assert.Equal(3600m, transfer.PurchaseRate.MroPer5000Xof);
+        }
+
+        // Un prix trop précis ou nul est refusé, jamais arrondi.
+        using var tooPrecise = await ctx.Client.CreateTransferAsync(
+            agentToken, WithSaleRate(ctx.Dkr, date, cash, 730_000m, 3650.001m), NewKey());
+        using var zero = await ctx.Client.CreateTransferAsync(
+            agentToken, WithSaleRate(ctx.Dkr, date, cash, 730_000m, 0m), NewKey());
+        Assert.Equal("Money.Rate.Invalid", await tooPrecise.ReadErrorCodeAsync());
+        Assert.Equal("Money.Rate.Invalid", await zero.ReadErrorCodeAsync());
+        Assert.Equal(740_000m + 724_100m, await ctx.TreasuryBalanceAsync(cash));
+    }
+
+    [Fact]
     public async Task Operation_date_defaults_to_now_with_the_rate_of_today()
     {
         var ctx = await ArrangeAsync();
@@ -309,6 +345,18 @@ public sealed class CreateTransferTests(ApiFixture fixture)
     // --- Outils ------------------------------------------------------------
 
     private static string NewKey() => Guid.NewGuid().ToString("N");
+
+    /// <summary>1 000 000 FCFA vers Dakar, payés dans une caisse, au prix de vente choisi par l'agent.</summary>
+    private static object WithSaleRate(Guid destination, DateTimeOffset operationAt, Guid cash, decimal paid, decimal saleRate) => new
+    {
+        destinationAgencyId = destination,
+        amountXof = 1_000_000m,
+        senderInfo = "Expéditeur fictif",
+        beneficiaryInfo = "Bénéficiaire fictif",
+        operationAt,
+        payments = new[] { new { treasuryAccountId = cash, amount = paid } },
+        saleRate,
+    };
 
     private static object Body(
         Guid? destination,

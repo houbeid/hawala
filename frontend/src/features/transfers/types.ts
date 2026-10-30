@@ -144,6 +144,11 @@ export interface CreateTransferRequest {
   payments: { treasuryAccountId: string; amount: number }[];
   /** Crédit activé : tiers qui porte la part non payée. */
   creditPartyId: string | null;
+  /**
+   * Prix de vente choisi par l'agent (MRO pour 5 000 FCFA), plus haut ou plus bas que celui du jour (décision du
+   * patron, 30 octobre 2026) ; absent ou null : prix de vente du jour.
+   */
+  saleRate?: number | null;
 }
 
 /** Réponse de POST /transfers (CreatedTransfer, CreateTransferCommand.cs). */
