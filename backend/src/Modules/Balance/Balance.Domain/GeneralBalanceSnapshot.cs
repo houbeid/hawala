@@ -1,4 +1,5 @@
 using Hawala.SharedKernel.Ids;
+using Hawala.SharedKernel.Money;
 
 namespace Balance.Domain;
 
@@ -76,6 +77,16 @@ public sealed class GeneralBalanceSnapshot
         ArgumentNullException.ThrowIfNull(figures);
         return new GeneralBalanceSnapshot(date, figures, savedProfitsMro, savedBy, now);
     }
+
+    /// <summary>Les chiffres de la photo, recalculés depuis ses composants, son taux et son capital (même formule).</summary>
+    public GeneralBalanceFigures ToFigures() =>
+        GeneralBalanceFigures.Compute(
+            new CaisseComponents(
+                Currency.MRO, NouakchottCash, NouakchottBanks, NouakchottDebtors, NouakchottCreditors, NouakchottUndelivered,
+                NouakchottOwnerContributions),
+            new CaisseComponents(Currency.XOF, DakarCash, DakarBanks, DakarDebtors, DakarCreditors, DakarUndelivered, DakarOwnerContributions),
+            ExchangeRate.Create(Rate).Value,
+            Capital);
 
     public void Replace(GeneralBalanceFigures figures, decimal savedProfitsMro, Guid savedBy, DateTimeOffset now)
     {

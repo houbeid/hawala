@@ -52,6 +52,7 @@ public static class DependencyInjection
         services.AddScoped<IQueryHandler<ListGeneralBalanceSnapshotsQuery, IReadOnlyList<GeneralBalanceSnapshotView>>>(sp => sp.GetRequiredService<GeneralBalanceHandlers>());
         services.AddSharedTransactional<SetGeneralCapitalCommand, GeneralBalanceHandlers>();
         services.AddScoped<IQueryHandler<GetGeneralCapitalQuery, GeneralCapitalView>>(sp => sp.GetRequiredService<GeneralBalanceHandlers>());
+        services.AddScoped<IQueryHandler<GetGeneralBalanceVariationQuery, GeneralBalanceVariationView>>(sp => sp.GetRequiredService<GeneralBalanceHandlers>());
 
         return services;
     }

@@ -35,6 +35,9 @@ public interface IGeneralBalanceSnapshotRepository
 
     Task<GeneralBalanceSnapshot?> GetAsync(DateOnly date, CancellationToken cancellationToken);
 
+    /// <summary>La photo la plus récente, ou null s'il n'y en a aucune.</summary>
+    Task<GeneralBalanceSnapshot?> GetLatestAsync(CancellationToken cancellationToken);
+
     /// <summary>Photos d'une période, de la plus ancienne à la plus récente.</summary>
     Task<IReadOnlyList<GeneralBalanceSnapshot>> ListAsync(DateOnly from, DateOnly to, CancellationToken cancellationToken);
 }

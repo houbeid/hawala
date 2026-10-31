@@ -4,6 +4,7 @@ import type {
   BalanceSnapshot,
   CaisseCapital,
   GeneralBalanceSnapshot,
+  GeneralBalanceVariation,
   GeneralBalanceView,
   GeneralCapital,
   SetCapitalRequest,
@@ -46,6 +47,11 @@ export function saveGeneralBalance(http: HttpClient, rate: number): Promise<Gene
 /** Photos du bilan général, 30 derniers jours par défaut, de la plus ancienne à la plus récente. */
 export function listGeneralSnapshots(http: HttpClient): Promise<GeneralBalanceSnapshot[]> {
   return http.get<GeneralBalanceSnapshot[]>('/balance/general/snapshots');
+}
+
+/** Écart entre la dernière photo du bilan général et maintenant, au taux donné ; 404 sans photo. */
+export function getGeneralVariation(http: HttpClient, rate: number): Promise<GeneralBalanceVariation> {
+  return http.get<GeneralBalanceVariation>(`/balance/general/variation?rate=${encodeURIComponent(String(rate))}`);
 }
 
 export function getGeneralCapital(http: HttpClient): Promise<GeneralCapital> {

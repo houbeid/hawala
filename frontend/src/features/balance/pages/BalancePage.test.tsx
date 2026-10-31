@@ -3,7 +3,15 @@ import { http, HttpResponse } from 'msw';
 import { agentAccount, dkr, nkc, readOnlyAccount, supervisorAccount } from '@/test/fixtures';
 import { renderApp, signedInAs } from '@/test/renderApp';
 import { apiUrl, server } from '@/test/server';
-import type { BalanceComponents, BalanceOverview, BalanceSnapshot, CaisseCapital, GeneralBalanceSnapshot, GeneralBalanceView } from '../types';
+import type {
+  BalanceComponents,
+  BalanceOverview,
+  BalanceSnapshot,
+  CaisseCapital,
+  GeneralBalanceSnapshot,
+  GeneralBalanceVariation,
+  GeneralBalanceView,
+} from '../types';
 
 // Bilan (maquettes 12 / D5) : en tête le bilan général (Nouakchott + Dakar converti au taux du bilan, décisions du
 // 31 octobre 2026), dessous le bilan par caisse (deux caisses, deux capitaux). Données fictives uniquement ; les montants du
@@ -98,7 +106,30 @@ const generalSnapshot: GeneralBalanceSnapshot = {
   savedAt: '2026-10-23T22:19:00Z',
 };
 
-function balanceServer() {
+// Depuis la photo du 23/10 (taux 3 600) : +1 000 000 MRO d'espèces à Nouakchott, −2 000 000 FCFA d'espèces à Dakar, et l'effet
+// du taux (3 600 → 3 675,25) sur les 32 302 475 FCFA de Dakar. Effets : +1 000 000 − 1 470 100 + 486 152,2 = +16 052,2.
+const variation: GeneralBalanceVariation = {
+  fromDate: '2026-10-23',
+  fromSavedAt: '2026-10-23T22:19:00Z',
+  fromRate: 3600,
+  toRate: 3675.25,
+  fromGeneralBalance: 167_855_539.05,
+  toGeneralBalance: 167_871_591.25,
+  components: [
+    { component: 'Cash', nouakchottChange: 1_000_000, dakarChange: -2_000_000, dakarChangeMro: -1_470_100, effect: -470_100 },
+    { component: 'Banks', nouakchottChange: 0, dakarChange: 0, dakarChangeMro: 0, effect: 0 },
+    { component: 'Debtors', nouakchottChange: 0, dakarChange: 0, dakarChangeMro: 0, effect: 0 },
+    { component: 'Creditors', nouakchottChange: 0, dakarChange: 0, dakarChangeMro: 0, effect: 0 },
+    { component: 'Undelivered', nouakchottChange: 0, dakarChange: 0, dakarChangeMro: 0, effect: 0 },
+  ],
+  rateEffect: 486_152.2,
+  generalBalanceChange: 16_052.2,
+  capitalChange: 0,
+  ownerContributionsChange: 1_000_000,
+  netResultChange: -983_947.8,
+};
+
+function balanceServer(options: { noGeneralSnapshot?: boolean } = {}) {
   let reads = 0;
   const saves: unknown[] = [];
   const capitals: unknown[] = [];
@@ -115,6 +146,11 @@ function balanceServer() {
       return HttpResponse.json({ ...general, rate: Number(rate) });
     }),
     http.get(apiUrl('/balance/general/snapshots'), () => HttpResponse.json([generalSnapshot])),
+    http.get(apiUrl('/balance/general/variation'), () =>
+      options.noGeneralSnapshot
+        ? HttpResponse.json({ code: 'Balance.General.NoSnapshot' }, { status: 404 })
+        : HttpResponse.json(variation),
+    ),
     http.post(apiUrl('/balance/general/snapshots'), async ({ request }) => {
       generalSaves.push(await request.json());
       return HttpResponse.json({ ...generalSnapshot, id: 'g2', date: '2026-10-24', savedAt: '2026-10-24T22:08:00Z' });
@@ -170,8 +206,7 @@ describe('Bilan général — Superviseur', () => {
     const details = within(section).getByRole('region', { name: 'Détail des composants' });
     expect(within(details).getByText('Dettes tiers').closest('summary')).toHaveTextContent('442 556 159 MRO');
     expect(within(details).getByText('22 697 525 FCFA · soit 16 683 816 MRO')).toBeInTheDocument();
-    // Premier rendu de l'écran (Recharts chargé à la demande) : plus lent quand toute la suite tourne.
-  }, 15_000);
+  });
 
   it('un autre taux ne part qu’avec « Actualiser », et un taux mal saisi est refusé', async () => {
     const { generalRates } = balanceServer();
@@ -220,6 +255,37 @@ describe('Bilan général — Superviseur', () => {
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(generalCapitals).toEqual([{ amount: 170_000_000, reason: 'Correction' }]);
+  });
+
+  it('« Expliquer la variation » : écart depuis la dernière photo, poste par poste, effet du taux et résultat', async () => {
+    balanceServer();
+    const { user } = renderApp('/balance');
+    const section = await generalSection();
+    await user.click(await within(section).findByRole('button', { name: 'Expliquer la variation' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'D’où vient la variation ?' });
+    expect(await within(dialog).findByText(/Depuis le bilan général sauvegardé le 23\/10 à 22:19/)).toBeInTheDocument();
+    expect(within(dialog).getByText('Écart').nextElementSibling).toHaveTextContent('+ 16 052 MRO');
+
+    // Seuls les postes qui ont bougé, avec Nouakchott en MRO et Dakar en FCFA.
+    const lines = within(dialog).getByRole('region', { name: 'Poste par poste' });
+    expect(within(lines).getByText('Espèces').closest('li')).toHaveTextContent('− 470 100 MRO');
+    expect(within(lines).getByText('Espèces').closest('li')).toHaveTextContent('Nouakchott + 1 000 000 MRO · Dakar − 2 000 000 FCFA (soit − 1 470 100 MRO)');
+    expect(within(lines).queryByText('Dettes tiers')).not.toBeInTheDocument();
+    expect(within(lines).getByText('Effet du taux sur la caisse de Dakar').closest('li')).toHaveTextContent('+ 486 152 MRO');
+    expect(within(lines).getByText('5 000 FCFA = 3 600 → 3 675,25 MRO')).toBeInTheDocument();
+    expect(within(dialog).getByText('Apports nets du patron (deux caisses)').nextElementSibling).toHaveTextContent('+ 1 000 000 MRO');
+    expect(within(dialog).getByText('Résultat net').nextElementSibling).toHaveTextContent('− 983 948 MRO');
+  });
+
+  it('« Expliquer la variation » sans aucune photo : le dit simplement', async () => {
+    balanceServer({ noGeneralSnapshot: true });
+    const { user } = renderApp('/balance');
+    const section = await generalSection();
+    await user.click(await within(section).findByRole('button', { name: 'Expliquer la variation' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'D’où vient la variation ?' });
+    expect(await within(dialog).findByText(/Aucun bilan général sauvegardé/)).toBeInTheDocument();
   });
 
   it('liste les bilans généraux sauvegardés, chacun dépliable sur ses totaux', async () => {

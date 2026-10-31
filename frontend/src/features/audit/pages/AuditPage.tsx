@@ -9,6 +9,8 @@ import { AgencyBadge } from '@/shared/ui/AgencyBadge';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
 import { Notice } from '@/shared/ui/Notice';
+import { ExpandChevron } from '@/shared/ui/ExpandChevron';
+import { SUMMARY_WITHOUT_MARKER } from '@/shared/ui/summary';
 import { changeView, parseAuditSearch, valueKey } from '../auditText';
 import { useAudit } from '../queries';
 import { AUDIT_FAMILIES, AUDIT_PAGE_SIZE, type AuditLine, type AuditParams } from '../types';
@@ -63,8 +65,11 @@ function Line({ line, agencyCodes }: { line: AuditLine; agencyCodes: Map<string,
         </ul>
       )}
       {(line.ipAddress || line.device) && (
-        <details className="text-sm text-muted">
-          <summary className="cursor-pointer">{t('audit.device')}</summary>
+        <details className="group text-sm text-muted">
+          <summary className={`inline-flex items-center gap-1 ${SUMMARY_WITHOUT_MARKER}`}>
+            {t('audit.device')}
+            <ExpandChevron className="size-4" />
+          </summary>
           <span className="block break-words" dir="ltr">
             {[line.ipAddress, line.device].filter(Boolean).join(' · ')}
           </span>

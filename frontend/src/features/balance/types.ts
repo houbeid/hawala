@@ -132,6 +132,35 @@ export interface GeneralCapital {
   history: GeneralCapitalChange[];
 }
 
+/** Composant du budget, en texte (BalanceComponent côté serveur). */
+export type BalanceComponentName = 'Cash' | 'Banks' | 'Debtors' | 'Creditors' | 'Undelivered';
+
+/** Variation d'un composant : Nouakchott en MRO, Dakar en FCFA et converti au taux de maintenant, effet signé (MRO). */
+export interface ComponentVariation {
+  component: BalanceComponentName;
+  nouakchottChange: number;
+  dakarChange: number;
+  dakarChangeMro: number;
+  /** Effet sur le bilan général : + pour espèces, banques, créances ; − pour dettes et non livrés. */
+  effect: number;
+}
+
+/** GET /balance/general/variation?rate= : écart avec la dernière photo ; somme des effets + effet du taux = écart. */
+export interface GeneralBalanceVariation {
+  fromDate: string;
+  fromSavedAt: string;
+  fromRate: number;
+  toRate: number;
+  fromGeneralBalance: number;
+  toGeneralBalance: number;
+  components: ComponentVariation[];
+  rateEffect: number;
+  generalBalanceChange: number;
+  capitalChange: number | null;
+  ownerContributionsChange: number;
+  netResultChange: number | null;
+}
+
 /** PUT /balance/general/capital (balance.manage) : positif, en MRO ; motif facultatif. */
 export interface SetGeneralCapitalRequest {
   amount: number;

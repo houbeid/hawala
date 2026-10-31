@@ -104,6 +104,34 @@ public sealed class GeneralBalanceTests(ApiFixture fixture)
     }
 
     [Fact]
+    public async Task The_variation_since_the_last_snapshot_is_explained_line_by_line()
+    {
+        var ctx = await ArrangeAsync();
+        var saved = await ctx.SaveGeneralAsync(3600m);
+        await ctx.OwnerContributionAsync(1_000_000m);
+
+        using var response = await ctx.Client.SendGetAsync(ctx.SupervisorToken, "/api/v1/balance/general/variation?rate=3700");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var variation = await response.ReadJsonAsync();
+
+        Assert.Equal(saved.GetProperty("date").GetString(), variation.GetProperty("fromDate").GetString());
+        Assert.Equal(3600m, variation.GetProperty("fromRate").GetDecimal());
+        Assert.Equal(3700m, variation.GetProperty("toRate").GetDecimal());
+        Assert.Equal(saved.GetProperty("generalBalance").GetDecimal(), variation.GetProperty("fromGeneralBalance").GetDecimal());
+
+        // L'approvisionnement entre en espèces à Nouakchott ; le taux change le bilan de Dakar de la photo.
+        var components = variation.GetProperty("components").EnumerateArray().ToList();
+        var cash = components.Single(c => c.GetProperty("component").GetString() == "Cash");
+        Assert.Equal(1_000_000m, cash.GetProperty("nouakchottChange").GetDecimal());
+        Assert.Equal(saved.GetProperty("dakar").GetProperty("budget").GetDecimal() * 100m / 5000m, variation.GetProperty("rateEffect").GetDecimal());
+
+        var change = variation.GetProperty("generalBalanceChange").GetDecimal();
+        Assert.Equal(change, components.Sum(c => c.GetProperty("effect").GetDecimal()) + variation.GetProperty("rateEffect").GetDecimal());
+        Assert.Equal(
+            variation.GetProperty("toGeneralBalance").GetDecimal() - variation.GetProperty("fromGeneralBalance").GetDecimal(), change);
+    }
+
+    [Fact]
     public async Task Bad_inputs_and_other_roles_are_refused()
     {
         var ctx = await ArrangeAsync();
@@ -115,6 +143,8 @@ public sealed class GeneralBalanceTests(ApiFixture fixture)
         using var badPeriod = await ctx.Client.SendGetAsync(
             ctx.SupervisorToken, "/api/v1/balance/general/snapshots?from=2026-10-10&to=2026-10-01");
         using var agentReads = await ctx.Client.SendGetAsync(ctx.AgentToken, "/api/v1/balance/general?rate=3600");
+        using var variationWithoutRate = await ctx.Client.SendGetAsync(ctx.SupervisorToken, "/api/v1/balance/general/variation");
+        using var agentVariation = await ctx.Client.SendGetAsync(ctx.AgentToken, "/api/v1/balance/general/variation?rate=3600");
         using var agentSetsCapital = await ctx.Client.PutJsonAsync(ctx.AgentToken, "/api/v1/balance/general/capital", new { amount = 1m });
 
         Assert.Equal("Balance.Rate.Required", await noRate.ReadErrorCodeAsync());
@@ -123,6 +153,8 @@ public sealed class GeneralBalanceTests(ApiFixture fixture)
         Assert.Equal("Balance.GeneralCapital.AmountInvalid", await zeroCapital.ReadErrorCodeAsync());
         Assert.Equal("Balance.Filter.PeriodInvalid", await badPeriod.ReadErrorCodeAsync());
         Assert.Equal(HttpStatusCode.Forbidden, agentReads.StatusCode);
+        Assert.Equal("Balance.Rate.Required", await variationWithoutRate.ReadErrorCodeAsync());
+        Assert.Equal(HttpStatusCode.Forbidden, agentVariation.StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, agentSetsCapital.StatusCode);
     }
 

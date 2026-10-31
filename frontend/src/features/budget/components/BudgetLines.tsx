@@ -1,5 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { formatAmount } from '@/shared/format/money';
+import { ExpandChevron } from '@/shared/ui/ExpandChevron';
+import { SUMMARY_WITHOUT_MARKER } from '@/shared/ui/summary';
 import type { CashBudgetLine, CashBudgetView } from '../types';
 
 // La formule du budget, ligne par ligne (maquette 10) : un signe + ou − dans un rond, le montant, et chaque ligne
@@ -22,8 +24,9 @@ function Line({ sign, title, line, currency }: { sign: '+' | '−'; title: strin
   }
   return (
     <details className="group rounded-2xl border border-border bg-surface">
-      <summary className="flex min-h-14 cursor-pointer list-none items-center gap-2 px-3.5">
+      <summary className={`flex min-h-14 items-center gap-2 px-3.5 ${SUMMARY_WITHOUT_MARKER}`}>
         {summary}
+        <ExpandChevron />
         <span className="sr-only">{t('budget.showDetail')}</span>
       </summary>
       <ul className="m-0 flex list-none flex-col gap-1 border-t border-border bg-bg px-3.5 py-2 ps-14">

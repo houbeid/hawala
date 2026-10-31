@@ -6,30 +6,34 @@ import { formatDayTimeShort, todayIso } from '@/shared/format/dates';
 import { toInputText } from '@/shared/format/decimalInput';
 import { formatAmount, formatPercent, formatRate } from '@/shared/format/money';
 import { Button } from '@/shared/ui/Button';
+import { ExpandChevron } from '@/shared/ui/ExpandChevron';
 import { Icon } from '@/shared/ui/Icon';
 import { Notice } from '@/shared/ui/Notice';
 import { RateField } from '@/shared/ui/RateField';
 import { Sheet } from '@/shared/ui/Sheet';
+import { SUMMARY_WITHOUT_MARKER } from '@/shared/ui/summary';
 import { balanceRateError, COMPONENT_ROWS, parseBalanceRate, partiesResultOf, treasuryOf } from '../generalBalance';
 import { useGeneralBalance, useGeneralSnapshots, useSaveGeneralBalance } from '../queries';
 import type { GeneralBalanceSnapshot, GeneralBalanceView } from '../types';
 import { GeneralCapitalSheet } from './GeneralCapitalSheet';
+import { VariationSheet } from './VariationSheet';
 
 // Bilan général (décisions du 31 octobre 2026, en tête de l'écran ; le bilan par caisse reste dessous) : Nouakchott en MRO
 // + Dakar converti au taux du bilan. Le taux est prérempli avec le prix d'achat du jour et modifiable ; le calcul (lourd)
 // part au chargement, puis seulement avec « Actualiser » (ou Entrée), jamais à chaque chiffre tapé. Résultat net = bilan
 // général − (capital général + apports nets du patron). Totaux seulement : le détail par tiers est sur l'écran Tiers.
-// Sauvegarder et saisir le capital : balance.manage, en ligne.
+// Sauvegarder et saisir le capital : balance.manage, en ligne ; « Expliquer la variation » (lecture) : en ligne.
 
 interface Props {
   manageable: boolean;
+  online: boolean;
   dakarName: string;
   nouakchottName: string;
 }
 
 const mro = (value: number, signed = false) => formatAmount(value, 'MRO', { signed, maxDecimals: 0 });
 
-export function GeneralBalanceSection({ manageable, dakarName, nouakchottName }: Props) {
+export function GeneralBalanceSection({ manageable, online, dakarName, nouakchottName }: Props) {
   const { t, i18n } = useTranslation();
   const dayRate = useDailyRate(todayIso());
   const purchase = dayRate.data?.purchaseRate ?? null;
@@ -46,6 +50,7 @@ export function GeneralBalanceSection({ manageable, dakarName, nouakchottName }:
   const save = useSaveGeneralBalance();
   const [confirming, setConfirming] = useState(false);
   const [capitalOpen, setCapitalOpen] = useState(false);
+  const [variationOpen, setVariationOpen] = useState(false);
   const [saved, setSaved] = useState<GeneralBalanceSnapshot | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const data = general.data;
@@ -141,13 +146,14 @@ export function GeneralBalanceSection({ manageable, dakarName, nouakchottName }:
           <section className="flex flex-col gap-1.5" aria-label={t('balance.general.details')}>
             <h3 className="m-0 text-sm font-semibold text-muted">{t('balance.general.details')}</h3>
             {COMPONENT_ROWS.map(({ key, sign }) => (
-              <details key={key} className="rounded-xl border border-border bg-surface">
-                <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-3 px-3.5">
-                  <span>
+              <details key={key} className="group rounded-xl border border-border bg-surface">
+                <summary className={`flex min-h-12 items-center gap-3 px-3.5 ${SUMMARY_WITHOUT_MARKER}`}>
+                  <span className="flex-1">
                     <span aria-hidden="true" className="me-2 text-muted">{sign}</span>
                     {t(`balance.general.components.${key}`)}
                   </span>
                   <span className="amount">{mro(data.total[key])}</span>
+                  <ExpandChevron />
                 </summary>
                 <dl className="m-0 flex flex-col gap-1.5 border-t border-border px-3.5 py-2.5">
                   <Row label={nouakchottName} value={mro(data.nouakchott[key])} />
@@ -165,20 +171,27 @@ export function GeneralBalanceSection({ manageable, dakarName, nouakchottName }:
             <p className="m-0 text-xs text-muted">{t('balance.general.savedProfitsHint')}</p>
           </dl>
 
-          {manageable && (
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <Button
-                variant="primary"
-                icon={<Icon name="check" />}
-                onClick={() => {
-                  setSaveError(null);
-                  setConfirming(true);
-                }}
-              >
-                {t('balance.general.save.open')}
-              </Button>
-              <Button icon={<Icon name="pencil" />} onClick={() => setCapitalOpen(true)}>
-                {t('balance.general.capitalSheet.open')}
+          {online && (
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {manageable && (
+                <>
+                  <Button
+                    variant="primary"
+                    icon={<Icon name="check" />}
+                    onClick={() => {
+                      setSaveError(null);
+                      setConfirming(true);
+                    }}
+                  >
+                    {t('balance.general.save.open')}
+                  </Button>
+                  <Button icon={<Icon name="pencil" />} onClick={() => setCapitalOpen(true)}>
+                    {t('balance.general.capitalSheet.open')}
+                  </Button>
+                </>
+              )}
+              <Button icon={<Icon name="trend" />} onClick={() => setVariationOpen(true)}>
+                {t('balance.general.variation.open')}
               </Button>
             </div>
           )}
@@ -211,6 +224,7 @@ export function GeneralBalanceSection({ manageable, dakarName, nouakchottName }:
         </>
       )}
       {capitalOpen && <GeneralCapitalSheet onClose={() => setCapitalOpen(false)} />}
+      {variationOpen && <VariationSheet rate={appliedRate} onClose={() => setVariationOpen(false)} />}
     </section>
   );
 }

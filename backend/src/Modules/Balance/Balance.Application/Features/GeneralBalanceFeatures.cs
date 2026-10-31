@@ -83,6 +83,28 @@ public sealed record GeneralBalanceSnapshotView(
     }
 }
 
+/// <summary>Variation d'un composant : Nouakchott en MRO, Dakar en FCFA et converti au taux de maintenant, effet signé en MRO.</summary>
+public sealed record ComponentVariationView(
+    BalanceComponent Component, decimal NouakchottChange, decimal DakarChange, decimal DakarChangeMro, decimal Effect);
+
+/// <summary>
+/// « Expliquer la variation » : écart entre la dernière photo du bilan général et maintenant, au taux donné. La somme des
+/// effets des composants et de l'effet du taux redonne exactement l'écart du bilan général.
+/// </summary>
+public sealed record GeneralBalanceVariationView(
+    DateOnly FromDate,
+    DateTimeOffset FromSavedAt,
+    decimal FromRate,
+    decimal ToRate,
+    decimal FromGeneralBalance,
+    decimal ToGeneralBalance,
+    IReadOnlyList<ComponentVariationView> Components,
+    decimal RateEffect,
+    decimal GeneralBalanceChange,
+    decimal? CapitalChange,
+    decimal OwnerContributionsChange,
+    decimal? NetResultChange);
+
 public sealed record GeneralCapitalChangeView(Guid Id, decimal Amount, string? Reason, Guid SetBy, DateTimeOffset SetAt);
 
 /// <summary>Capital général actuel (MRO) et ses saisies, de la plus récente à la plus ancienne.</summary>
@@ -104,6 +126,9 @@ public sealed record SetGeneralCapitalCommand(Guid ActorId, decimal? Amount, str
 /// <summary>Capital général et historique de ses saisies (balance.view).</summary>
 public sealed record GetGeneralCapitalQuery(Guid ActorId) : IQuery<GeneralCapitalView>;
 
+/// <summary>Écart entre la dernière photo du bilan général et maintenant, au taux du bilan donné (balance.view).</summary>
+public sealed record GetGeneralBalanceVariationQuery(Guid ActorId, decimal? Rate) : IQuery<GeneralBalanceVariationView>;
+
 /// <summary>
 /// Bilan général (décisions du 31 octobre 2026) : la caisse en MRO (Nouakchott) et la caisse en FCFA (Dakar) convertie au taux
 /// du bilan, que l'écran envoie (prérempli au prix d'achat du jour, modifiable) : le Bilan ne lit pas le module Taux.
@@ -124,7 +149,8 @@ public sealed class GeneralBalanceHandlers(
       ICommandHandler<SaveGeneralBalanceCommand, GeneralBalanceSnapshotView>,
       IQueryHandler<ListGeneralBalanceSnapshotsQuery, IReadOnlyList<GeneralBalanceSnapshotView>>,
       ICommandHandler<SetGeneralCapitalCommand>,
-      IQueryHandler<GetGeneralCapitalQuery, GeneralCapitalView>
+      IQueryHandler<GetGeneralCapitalQuery, GeneralCapitalView>,
+      IQueryHandler<GetGeneralBalanceVariationQuery, GeneralBalanceVariationView>
 {
     public async Task<Result<GeneralBalanceView>> Handle(GetGeneralBalanceQuery query, CancellationToken cancellationToken)
     {
@@ -214,6 +240,36 @@ public sealed class GeneralBalanceHandlers(
         return new GeneralCapitalView(
             history.FirstOrDefault()?.Amount,
             [.. history.Select(c => new GeneralCapitalChangeView(c.Id, c.Amount, c.Reason, c.SetBy, c.SetAt))]);
+    }
+
+    public async Task<Result<GeneralBalanceVariationView>> Handle(GetGeneralBalanceVariationQuery query, CancellationToken cancellationToken)
+    {
+        var computed = await ComputeAsync(query.Rate, cancellationToken);
+        if (computed.IsFailure)
+        {
+            return computed.Error;
+        }
+
+        var latest = await snapshots.GetLatestAsync(cancellationToken);
+        if (latest is null)
+        {
+            return BalanceErrors.General.NoSnapshot;
+        }
+
+        var variation = GeneralBalanceVariation.Between(latest.ToFigures(), computed.Value.Figures);
+        return new GeneralBalanceVariationView(
+            latest.Date,
+            latest.SavedAt,
+            variation.FromRate,
+            variation.ToRate,
+            variation.FromGeneralBalance,
+            variation.ToGeneralBalance,
+            [.. variation.Components.Select(c => new ComponentVariationView(c.Component, c.NouakchottChange, c.DakarChange, c.DakarChangeMro, c.Effect))],
+            variation.RateEffect,
+            variation.GeneralBalanceChange,
+            variation.CapitalChange,
+            variation.OwnerContributionsChange,
+            variation.NetResultChange);
     }
 
     /// <summary>Les deux caisses lues à la Caisse et au grand livre, puis combinées au taux du bilan.</summary>

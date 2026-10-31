@@ -73,7 +73,7 @@ export function BalancePage() {
       </div>
       {!online && <Notice tone="info">{t('balance.offline')}</Notice>}
 
-      <GeneralBalanceSection manageable={manageable} nouakchottName={cityOf('MRO')} dakarName={cityOf('XOF')} />
+      <GeneralBalanceSection manageable={manageable} online={online} nouakchottName={cityOf('MRO')} dakarName={cityOf('XOF')} />
       {generalSnapshots.data && <GeneralBalanceHistory snapshots={generalSnapshots.data} />}
 
       <h2 className="m-0 mt-2 text-lg font-bold">{t('balance.byCaisse')}</h2>

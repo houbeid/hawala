@@ -5,6 +5,7 @@ import {
   getCapital,
   getGeneralBalance,
   getGeneralCapital,
+  getGeneralVariation,
   listBalanceSnapshots,
   listGeneralSnapshots,
   saveBalance,
@@ -22,6 +23,7 @@ export const balanceKeys = {
   general: (rate: number | null) => ['balance', 'general', 'live', rate] as const,
   generalSnapshots: ['balance', 'general', 'snapshots'] as const,
   generalCapital: ['balance', 'general', 'capital'] as const,
+  generalVariation: (rate: number | null) => ['balance', 'general', 'variation', rate] as const,
 };
 
 export function useBalance() {
@@ -56,6 +58,16 @@ export function useGeneralBalance(rate: number | null) {
     queryKey: balanceKeys.general(rate),
     queryFn: () => getGeneralBalance(session.http, rate!),
     enabled: rate !== null,
+  });
+}
+
+/** Lue seulement quand la fenêtre « Expliquer la variation » est ouverte. */
+export function useGeneralVariation(rate: number | null, enabled: boolean) {
+  const session = useSessionManager();
+  return useQuery({
+    queryKey: balanceKeys.generalVariation(rate),
+    queryFn: () => getGeneralVariation(session.http, rate!),
+    enabled: enabled && rate !== null,
   });
 }
 

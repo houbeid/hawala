@@ -30,6 +30,9 @@ public static class BalanceErrors
     {
         public static readonly Error CaissesMissing =
             Error.Validation("Balance.General.CaissesMissing", "Le bilan général demande une caisse en MRO et une caisse en FCFA.");
+
+        public static readonly Error NoSnapshot =
+            Error.NotFound("Balance.General.NoSnapshot", "Aucun bilan général sauvegardé : rien à comparer.");
     }
 
     public static class Agency

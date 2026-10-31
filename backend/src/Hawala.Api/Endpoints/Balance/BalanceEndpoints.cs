@@ -40,6 +40,7 @@ public static class BalanceEndpoints
 
         group.MapGet("/general", GetGeneralBalance).RequirePermission(Permissions.BalanceView);
         group.MapGet("/general/snapshots", ListGeneralSnapshots).RequirePermission(Permissions.BalanceView);
+        group.MapGet("/general/variation", GetGeneralVariation).RequirePermission(Permissions.BalanceView);
         group.MapPost("/general/snapshots", SaveGeneralBalance).RequirePermission(Permissions.BalanceManage);
         group.MapGet("/general/capital", GetGeneralCapital).RequirePermission(Permissions.BalanceView);
         group.MapPut("/general/capital", SetGeneralCapital).RequirePermission(Permissions.BalanceManage);
@@ -132,6 +133,22 @@ public static class BalanceEndpoints
         }
 
         var result = await handler.Handle(new GetGeneralBalanceQuery(actorId, rate), cancellationToken);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    /// <summary>Écart avec la dernière photo du bilan général ; 404 « Balance.General.NoSnapshot » s'il n'y en a aucune.</summary>
+    private static async Task<IResult> GetGeneralVariation(
+        decimal? rate,
+        ClaimsPrincipal user,
+        IQueryHandler<GetGeneralBalanceVariationQuery, GeneralBalanceVariationView> handler,
+        CancellationToken cancellationToken)
+    {
+        if (!user.TryGetAccountId(out var actorId))
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        var result = await handler.Handle(new GetGeneralBalanceVariationQuery(actorId, rate), cancellationToken);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.Error.ToProblem();
     }
 

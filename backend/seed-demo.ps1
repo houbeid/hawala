@@ -5,8 +5,13 @@
 .DESCRIPTION
   Tout passe par l'API, avec les mêmes règles et les mêmes écritures que l'app : comptes de démo, caisses, banques et
   wallets avec leur solde de départ, tiers avec soldes et plafonds, taux des 30 derniers jours, transferts dans les deux
-  sens (comptant, à crédit, livrés, non livrés, annulés, livré sans code, codes faux), mouvements de caisse, ajustement,
-  capital, puis les photos du jour (budget, bénéfice, bilan).
+  sens (comptant, à crédit, livrés, non livrés, annulés, livré sans code, codes faux, vendus à un autre prix que celui du
+  jour, paiement réparti deux fois sur la même caisse), mouvements de caisse, ajustement, capitaux (par caisse et général),
+  puis les photos du jour (budget, bénéfice, bilan par caisse, bilan général) et quelques opérations faites APRÈS ces photos,
+  pour que « Expliquer la variation » ait quelque chose à montrer.
+
+  Les courbes demandent au moins deux jours de photos : le serveur date toujours une photo du jour même. Pour les voir,
+  lancer ensuite seed-demo-history.ps1 (historique fictif, écrit directement dans la base de démo).
 
   À LANCER SUR UNE BASE DE DÉMONSTRATION SEULEMENT (ex. hawala_demo), jamais sur la base de production : le grand livre
   est immuable, ces données ne s'effacent pas. Toutes les données sont fictives (emails en @example.com).
@@ -184,12 +189,14 @@ $creditLimit = @{ "$($p.atlas)|$($nkc.id)" = 6000000; "$($p.dune)|$($nkc.id)" = 
 # --- Taux du jour ------------------------------------------------------------------------------------------------------
 Write-Host '4/7 Taux du jour'
 $rates = @{}
+$purchases = @{}
 for ($i = $Days; $i -ge 0; $i--) {
     $d = $today.AddDays(-$i)
     $purchase = 3600 + (Rand 0 25)
     $sale = $purchase + 40 + (Rand 0 15)
     $null = Invoke-Api PUT "/rates/$(Day $d)" @{ purchaseRate = [decimal]$purchase; saleRate = [decimal]$sale } $sup
     $rates[(Day $d)] = [decimal]$sale
+    $purchases[(Day $d)] = [decimal]$purchase
 }
 
 # --- Opérations jour par jour -------------------------------------------------------------------------------------------
@@ -234,7 +241,12 @@ for ($i = $Days - 1; $i -ge 0; $i--) {
         $source = if ($fromNkc) { $nkc } else { $dkr }
         $dest = if ($fromNkc) { $dkr } else { $nkc }
         $xof = [decimal](5000 * (Rand 20 400))
-        $mro = ($xof / 5000) * $sale
+        # L'agent peut vendre à un autre prix que celui du jour (30 octobre 2026) ; un transfert à plus de 5 % d'écart
+        # fait apparaître l'alerte « taux inhabituel » du contrôle de cohérence.
+        $applied = $sale
+        if (Chance 0.1) { $applied = $sale + (Rand 5 30) }
+        if ($i -eq 2 -and $n -eq 0) { $applied = [decimal][Math]::Round([double]$sale * 1.07) }
+        $mro = ($xof / 5000) * $applied
         $toPay = if ($fromNkc) { $mro } else { $xof }
         $at = OpTime $day 8 18
 
@@ -264,6 +276,14 @@ for ($i = $Days - 1; $i -ge 0; $i--) {
                 $balances[$cashOf[$source.id]] += $cashPart
                 $balances[$walletOf[$source.id]] += $walletPart
             }
+            elseif (Chance 0.1) {
+                # La même caisse deux fois dans la répartition (27 octobre 2026).
+                $first = [decimal]::Floor($toPay / 2)
+                $payments = @(
+                    @{ treasuryAccountId = $cashOf[$source.id]; amount = $first },
+                    @{ treasuryAccountId = $cashOf[$source.id]; amount = $toPay - $first })
+                $balances[$cashOf[$source.id]] += $toPay
+            }
             else {
                 $payments = @(@{ treasuryAccountId = $cashOf[$source.id]; amount = $toPay })
                 $balances[$cashOf[$source.id]] += $toPay
@@ -276,6 +296,7 @@ for ($i = $Days - 1; $i -ge 0; $i--) {
             destinationAgencyId = $dest.id; amountXof = $xof
             senderInfo = "Expéditeur démo $label"; beneficiaryInfo = "Bénéficiaire démo $label"; note = $note
             operationAt = (Iso $at); payments = [object[]]$payments; creditPartyId = $creditParty
+            saleRate = $(if ($applied -ne $sale) { $applied } else { $null })
         } $tokens[$source.id] (New-Key)
 
         $t = [pscustomobject]@{
@@ -391,19 +412,42 @@ $null = Invoke-Api POST '/balance-adjustments' @{ agencyId = $nkc.id; target = '
     amount = [decimal]-2500; reason = 'Écart constaté au comptage du soir (démo)' } $sup
 
 # --- Capital et photos du jour ------------------------------------------------------------------------------------------
-Write-Host '7/7 Capital, budget, bénéfice et bilan du jour'
+Write-Host '7/7 Capitaux, photos du jour, puis quelques opérations après les photos'
 $null = Invoke-Api PUT '/balance/capital' @{ agencyId = $nkc.id; amount = [decimal]70000000; reason = 'Capital de démonstration' } $sup
 $null = Invoke-Api PUT '/balance/capital' @{ agencyId = $dkr.id; amount = [decimal]45000000; reason = 'Capital de démonstration' } $sup
+$null = Invoke-Api PUT '/balance/general/capital' @{ amount = [decimal]100000000; reason = 'Capital général de démonstration' } $sup
 foreach ($agency in @($nkc, $dkr)) {
     $null = Invoke-Api POST '/cash-budget/snapshots' @{ agencyId = $agency.id } $sup
     $null = Invoke-Api POST '/balance/snapshots' @{ agencyId = $agency.id } $sup
+    $null = Invoke-Api POST '/profit/snapshots' @{ agencyId = $agency.id } $sup
 }
 $null = Invoke-Api POST '/profit/snapshots' @{ agencyId = $null } $sup
+$balanceRate = $purchases[(Day $today)]
+$null = Invoke-Api POST '/balance/general/snapshots' @{ rate = $balanceRate } $sup
+
+# Après les photos : un remboursement à Nouakchott, un approvisionnement à Dakar et un transfert pas encore livré.
+# « Expliquer la variation » les retrouve poste par poste (espèces, créances, non livrés).
+$late = $now.AddMinutes(-2)
+$repayKey = "$($p.atlas)|$($nkc.id)"
+if ($partyBalance[$repayKey] -ge 200000) {
+    $null = Invoke-Api POST '/cash-movements' @{ agencyId = $nkc.id; type = 'Receipt'; treasuryAccountId = $acc.nkcCash; partyId = $p.atlas
+        amount = [decimal]200000; note = 'Remboursement du soir (démo)'; operationAt = (Iso $late) } $agentNkc (New-Key)
+}
+$null = Invoke-Api POST '/cash-movements' @{ agencyId = $dkr.id; type = 'OwnerContribution'; treasuryAccountId = $acc.dkrCash
+    amount = [decimal]5000000; note = 'Approvisionnement du soir (démo)'; operationAt = (Iso $late) } $agentDkr (New-Key)
+$lateXof = [decimal]1000000
+$lateMro = ($lateXof / 5000) * $rates[(Day $today)]
+$null = Invoke-Api POST '/transfers' @{
+    destinationAgencyId = $dkr.id; amountXof = $lateXof; senderInfo = 'Expéditeur démo du soir'; beneficiaryInfo = 'Bénéficiaire démo du soir'
+    note = $null; operationAt = (Iso $late); payments = [object[]]@(@{ treasuryAccountId = $acc.nkcCash; amount = $lateMro }); creditPartyId = $null
+} $agentNkc (New-Key)
 
 $delivered = @($transfers | Where-Object { $_.delivered }).Count
 Write-Host ''
 Write-Host 'Terminé.' -ForegroundColor Green
-Write-Host ("  {0} transferts ({1} livrés), 6 comptes de trésorerie, 9 tiers, {2} jours de taux." -f $transfers.Count, $delivered, ($Days + 1))
+Write-Host ("  {0} transferts ({1} livrés), 6 comptes de trésorerie, 9 tiers, {2} jours de taux." -f ($transfers.Count + 1), $delivered, ($Days + 1))
+Write-Host ("  Bilan général sauvegardé au taux de {0} ; capital général 100 000 000 MRO." -f $balanceRate.ToString($inv))
+Write-Host '  Pour les courbes (30 jours de photos fictives) : .\seed-demo-history.ps1'
 Write-Host '  Comptes de démo (mot de passe commun choisi plus haut) :'
 Write-Host '    agent.nkc.demo@example.com     Agent, Nouakchott'
 Write-Host '    agent.dkr.demo@example.com     Agent, Dakar'

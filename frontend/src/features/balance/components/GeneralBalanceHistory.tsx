@@ -1,8 +1,10 @@
 import { useTranslation } from 'react-i18next';
 import { formatDayShort, formatDayTimeShort } from '@/shared/format/dates';
 import { formatAmount, formatPercent, formatRate } from '@/shared/format/money';
+import { ExpandChevron } from '@/shared/ui/ExpandChevron';
 import { HistoryChart } from '@/shared/ui/HistoryChart';
 import { historySeries } from '@/shared/ui/historySeries';
+import { SUMMARY_WITHOUT_MARKER } from '@/shared/ui/summary';
 import { partiesResultOf, treasuryOf } from '../generalBalance';
 import type { GeneralBalanceSnapshot } from '../types';
 
@@ -30,9 +32,9 @@ export function GeneralBalanceHistory({ snapshots }: { snapshots: GeneralBalance
         <ul className="m-0 flex list-none flex-col gap-2 p-0" aria-label={t('balance.general.history.list')}>
           {recentFirst.map((s) => (
             <li key={s.id}>
-              <details className="rounded-2xl border border-border bg-surface">
-                <summary className="flex cursor-pointer flex-wrap items-start justify-between gap-3 px-3.5 py-3">
-                  <span className="flex flex-col gap-0.5">
+              <details className="group rounded-2xl border border-border bg-surface">
+                <summary className={`flex items-start gap-3 px-3.5 py-3 ${SUMMARY_WITHOUT_MARKER}`}>
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="font-semibold tabular-nums">
                       {formatDayShort(s.date)} · {formatDayTimeShort(s.savedAt).slice(-5)}
                     </span>
@@ -47,6 +49,7 @@ export function GeneralBalanceHistory({ snapshots }: { snapshots: GeneralBalance
                     <span className="text-sm text-muted">{formatRate(s.rate)}</span>
                   </span>
                   <span className="amount text-lg font-bold">{mro(s.generalBalance)}</span>
+                  <ExpandChevron className="mt-1" />
                 </summary>
                 <dl className="m-0 flex flex-col gap-1.5 border-t border-border px-3.5 py-2.5">
                   <Line label={t('balance.general.treasury')} value={mro(treasuryOf(s.total))} />

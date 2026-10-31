@@ -473,7 +473,8 @@
         "AmountInvalid": "Le capital général est positif, en MRO, à 2 décimales au plus."
       },
       "General": {
-        "CaissesMissing": "Le bilan général demande une caisse en MRO et une caisse en FCFA."
+        "CaissesMissing": "Le bilan général demande une caisse en MRO et une caisse en FCFA.",
+        "NoSnapshot": "Aucun bilan général sauvegardé : sauvegardez-en un pour pouvoir comparer ensuite."
       }
     }
   },
@@ -1432,6 +1433,19 @@
         "list": "Liste des bilans généraux sauvegardés",
         "netResult": "Résultat net : {{amount}} {{percent}}",
         "noResult": "Résultat net : capital non saisi"
+      },
+      "variation": {
+        "open": "Expliquer la variation",
+        "title": "D’où vient la variation ?",
+        "since": "Depuis le bilan général sauvegardé le {{day}} à {{time}}, au taux affiché.",
+        "before": "Bilan sauvegardé",
+        "now": "Maintenant",
+        "change": "Écart",
+        "why": "Poste par poste",
+        "nothing": "Aucun poste n’a bougé depuis cette photo.",
+        "split": "Nouakchott {{nouakchott}} · Dakar {{dakar}} (soit {{dakarMro}})",
+        "rateEffect": "Effet du taux sur la caisse de Dakar",
+        "rates": "5 000 FCFA = {{from}} → {{to}} MRO"
       }
     }
   },

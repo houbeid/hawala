@@ -140,6 +140,9 @@ internal sealed class GeneralBalanceSnapshotRepository(BalanceDbContext db) : IG
     public Task<GeneralBalanceSnapshot?> GetAsync(DateOnly date, CancellationToken cancellationToken) =>
         db.GeneralSnapshots.FirstOrDefaultAsync(s => s.Date == date, cancellationToken);
 
+    public Task<GeneralBalanceSnapshot?> GetLatestAsync(CancellationToken cancellationToken) =>
+        db.GeneralSnapshots.AsNoTracking().OrderByDescending(s => s.Date).FirstOrDefaultAsync(cancellationToken);
+
     public async Task<IReadOnlyList<GeneralBalanceSnapshot>> ListAsync(DateOnly from, DateOnly to, CancellationToken cancellationToken) =>
         await db.GeneralSnapshots.AsNoTracking()
             .Where(s => s.Date >= from && s.Date <= to)
