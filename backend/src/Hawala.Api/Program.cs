@@ -47,6 +47,7 @@ builder.Services.AddProfitModule(builder.Configuration);
 builder.Services.AddBalanceModule(builder.Configuration);
 builder.Services.AddHawalaAuthentication();
 builder.Services.AddHawalaRateLimiting(builder.Configuration);
+builder.Services.AddHawalaForwardedHeaders(builder.Configuration);
 
 // Temps réel : un hub, des groupes par agence et pour les Superviseurs ; les Transferts publient après validation.
 builder.Services.AddSignalR()
@@ -89,6 +90,8 @@ await app.Services.InitializeProfitModuleAsync();
 // Bilan général : capital initial et photos du bilan.
 await app.Services.InitializeBalanceModuleAsync();
 
+// En premier : la vraie adresse du visiteur (derrière Caddy) avant toute lecture de RemoteIpAddress.
+app.UseForwardedHeaders();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 

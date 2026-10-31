@@ -1,0 +1,40 @@
+# Caddy : HTTPS automatique (Let's Encrypt), interface statique, /api et /hubs vers l'API (WebSocket compris).
+# SITE_ADDRESS : le nom du site (ex. hawala-preprod.duckdns.org) ; « :80 » pour un essai local en HTTP.
+{
+	email {$ACME_EMAIL}
+}
+
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	@backend path /api/* /hubs/*
+	handle @backend {
+		# Caddy ajoute X-Forwarded-For / X-Forwarded-Proto ; l'API les croit car Caddy est sur son réseau de confiance.
+		reverse_proxy api:8080
+	}
+
+	handle {
+		root * /srv
+		# Fichiers à nom versionné : gardés un an. Tout le reste (index.html, sw.js, registerSW.js,
+		# manifest.webmanifest, icônes) est revalidé à chaque fois, sinon les mises à jour de l'app n'arrivent pas.
+		@versioned path /assets/*
+		header @versioned Cache-Control "public, max-age=31536000, immutable"
+		@other not path /assets/*
+		header @other Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

@@ -511,6 +511,8 @@ i18next (fr, ar) ; `lang` et `dir` sur `<html>` ; CSS en propriétés logiques. 
 
 ## Déploiement et exploitation
 
+Fichiers dans `deploy/` et procédure dans `docs/deploiement.md` (31 octobre 2026) : préprod gratuite sur une VM Oracle Cloud avec un sous-domaine DuckDNS, prod sur un VPS payant avec un domaine et Cloudflare ; Caddy seul exposé, l'API ne croit l'adresse transmise que de Caddy.
+
 Au départ, un seul serveur suffit pour deux agences ; l'architecture permet de passer à plusieurs instances sans réécriture.
 
 | Élément | Départ | Quand ça grandit |

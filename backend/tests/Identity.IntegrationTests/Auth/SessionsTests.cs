@@ -44,6 +44,26 @@ public sealed class SessionsTests(ApiFixture fixture)
     }
 
     [Fact]
+    public async Task A_supervisor_without_agency_sees_his_sessions_and_those_of_another_supervisor()
+    {
+        // Un Superviseur n'a pas d'agence : la lecture de ses sessions plantait (500), trouvé au premier essai du déploiement.
+        var factory = await fixture.GetFactoryAsync();
+        var supervisor = await TestAccounts.CreateAsync(factory, RoleTemplate.Supervisor);
+        var other = await TestAccounts.CreateAsync(factory, RoleTemplate.Supervisor);
+        var (token, _) = await LoginAsync(factory, supervisor, Laptop);
+        await LoginAsync(factory, other, Phone);
+        using var client = factory.CreateApiClient();
+
+        using var mine = await client.SendGetAsync(token, "/api/v1/auth/sessions");
+        using var theirs = await client.SendGetAsync(token, $"/api/v1/users/{other.Id}/sessions");
+
+        Assert.Equal(HttpStatusCode.OK, mine.StatusCode);
+        Assert.Equal(Laptop, Assert.Single((await mine.ReadJsonAsync()).EnumerateArray()).GetProperty("device").GetString());
+        Assert.Equal(HttpStatusCode.OK, theirs.StatusCode);
+        Assert.Equal(Phone, Assert.Single((await theirs.ReadJsonAsync()).EnumerateArray()).GetProperty("device").GetString());
+    }
+
+    [Fact]
     public async Task Closing_another_of_my_sessions_cuts_it_right_away()
     {
         var factory = await fixture.GetFactoryAsync();

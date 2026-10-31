@@ -1,0 +1,84 @@
+# Déploiement Hawala (préprod et prod) : PostgreSQL + API + Caddy (interface et HTTPS).
+# Les réglages et secrets viennent du fichier .env à côté de ce fichier (modèle : .env.example), jamais versionné.
+#   Démarrer / mettre à jour : docker compose up -d --build
+#   Journaux : docker compose logs -f api
+# Seul Caddy est exposé (80 et 443) ; la base et l'API ne sont joignables que depuis les conteneurs.
+name: hawala
+
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hawala
+      POSTGRES_USER: hawala
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant dans .env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hawala -d hawala"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [data]
+    logging: &logging
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+
+  api:
+    build:
+      context: ../backend
+      dockerfile: ../deploy/api.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Staging}
+      ConnectionStrings__Hawala: "Host=db;Port=5432;Database=hawala;Username=hawala;Password=${POSTGRES_PASSWORD}"
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?JWT_SIGNING_KEY manquant dans .env}
+      Encryption__Key: ${ENCRYPTION_KEY:?ENCRYPTION_KEY manquant dans .env}
+      SeedSupervisor__Email: ${SEED_SUPERVISOR_EMAIL:?SEED_SUPERVISOR_EMAIL manquant dans .env}
+      SeedSupervisor__FullName: ${SEED_SUPERVISOR_NAME:?SEED_SUPERVISOR_NAME manquant dans .env}
+      SeedSupervisor__TemporaryPassword: ${SEED_SUPERVISOR_PASSWORD:?SEED_SUPERVISOR_PASSWORD manquant dans .env}
+      # Seul Caddy (réseau « edge ») peut transmettre l'adresse du visiteur.
+      ReverseProxy__TrustedNetworks: 172.30.0.0/24
+    volumes:
+      - api-keys:/home/app/.aspnet/DataProtection-Keys
+    networks: [data, edge]
+    logging: *logging
+
+  web:
+    build:
+      context: ../frontend
+      dockerfile: ../deploy/web.Dockerfile
+    restart: unless-stopped
+    depends_on: [api]
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?SITE_ADDRESS manquant dans .env}
+      ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL manquant dans .env}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${HTTPS_PORT:-443}:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks: [edge]
+    logging: *logging
+
+networks:
+  # Caddy ↔ API, sous-réseau fixe : c'est lui que l'API croit pour l'adresse du visiteur.
+  edge:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+  # API ↔ base, sans accès à l'extérieur.
+  data:
+    internal: true
+
+volumes:
+  db-data:
+  api-keys:
+  caddy-data:
+  caddy-config:

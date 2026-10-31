@@ -5,6 +5,7 @@ using Hawala.SharedKernel.Time;
 using Identity.Application.Abstractions;
 using Identity.Application.Features.Users;
 using Identity.Domain;
+using Identity.Domain.Accounts;
 using Identity.Domain.RefreshTokens;
 
 namespace Identity.Application.Features.Sessions;
@@ -89,7 +90,7 @@ public sealed class SessionHandlers(
         {
             var recorded = await audit.RecordAsync(
                 new AuditRecord(
-                    AuditAction, "UserAccount", command.UserId, command.ActorId, allowed.Value,
+                    AuditAction, "UserAccount", command.UserId, command.ActorId, allowed.Value.AgencyId,
                     Changes: [new AuditChange($"session:{command.SessionId}", "open", "closed")]),
                 cancellationToken);
             if (recorded.IsFailure)
@@ -102,7 +103,8 @@ public sealed class SessionHandlers(
     }
 
     /// <summary>Soi-même, ou un compte qu'il gère (Superviseur : tous ; users.manage : son agence). Renvoie l'agence du compte.</summary>
-    private async Task<Result<Guid?>> EnsureAllowedAsync(Guid actorId, Guid userId, CancellationToken cancellationToken)
+    // Renvoie le compte (jamais nul) : son agence est nulle pour un Superviseur, et un succès doit porter une valeur.
+    private async Task<Result<UserAccount>> EnsureAllowedAsync(Guid actorId, Guid userId, CancellationToken cancellationToken)
     {
         var account = await accounts.GetByIdAsync(userId, cancellationToken);
         if (account is null)
@@ -119,6 +121,6 @@ public sealed class SessionHandlers(
             }
         }
 
-        return account.AgencyId;
+        return account;
     }
 }

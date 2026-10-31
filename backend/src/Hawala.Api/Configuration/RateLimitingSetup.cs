@@ -13,8 +13,7 @@ namespace Hawala.Api.Configuration;
 /// </list>
 /// Fenêtres fixes d'une minute, comptées en mémoire : une seule instance de l'API tourne (VPS). Les valeurs se règlent
 /// dans la configuration (« RateLimits:LoginPerMinute », « RateLimits:RequestsPerMinute »), par exemple pour les tests.
-/// POINT OUVERT : derrière Caddy et Cloudflare, l'IP vue ici sera celle du proxy tant que les en-têtes transférés
-/// ne sont pas configurés (au déploiement) : toutes les connexions partageraient alors la même limite.
+/// Derrière Caddy, l'IP est celle du visiteur grâce à <see cref="ForwardedHeadersSetup"/>.
 /// </summary>
 public static class RateLimitingSetup
 {
