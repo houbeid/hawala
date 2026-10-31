@@ -14,6 +14,24 @@ public static class BalanceErrors
             Error.Validation("Balance.Capital.ReasonTooLong", "Motif : 500 caractères au plus.");
     }
 
+    public static class GeneralCapital
+    {
+        public static readonly Error AmountInvalid =
+            Error.Validation("Balance.GeneralCapital.AmountInvalid", "Le capital général est positif, en MRO, à 2 décimales au plus.");
+    }
+
+    public static class Rate
+    {
+        public static readonly Error Required =
+            Error.Validation("Balance.Rate.Required", "Indiquer le taux du bilan (MRO pour 5 000 FCFA).");
+    }
+
+    public static class General
+    {
+        public static readonly Error CaissesMissing =
+            Error.Validation("Balance.General.CaissesMissing", "Le bilan général demande une caisse en MRO et une caisse en FCFA.");
+    }
+
     public static class Agency
     {
         public static readonly Error Required =

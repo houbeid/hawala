@@ -243,21 +243,8 @@ public sealed class BalanceHandlers(
             figures.CapitalUsed, figures.NetResult, figures.NetResultPercent, savedProfits);
     }
 
-    /// <summary>
-    /// Approvisionnements − retraits du patron dans une caisse : « Apports du patron » est crédité à chaque approvisionnement,
-    /// son solde (débit − crédit) est donc négatif quand le patron a apporté plus qu'il n'a retiré.
-    /// </summary>
-    private async Task<decimal> OwnerContributionsAsync(Guid agencyId, CancellationToken cancellationToken)
-    {
-        var account = await ledger.FindSystemAccountAsync(SystemAccountRole.OwnerContributions, agencyId, cancellationToken);
-        if (account is not { } id)
-        {
-            return 0m;
-        }
-
-        var balances = await ledger.GetBalancesAsync([id], asOf: null, cancellationToken);
-        return balances.IsSuccess ? -balances.Value.Sum(b => b.Balance.Amount) : 0m;
-    }
+    private Task<decimal> OwnerContributionsAsync(Guid agencyId, CancellationToken cancellationToken) =>
+        OwnerContributions.ReadAsync(ledger, agencyId, cancellationToken);
 
     private DateOnly Today() => DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
 }

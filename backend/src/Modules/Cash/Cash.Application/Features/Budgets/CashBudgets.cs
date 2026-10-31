@@ -14,6 +14,14 @@ public sealed class CashBudgets(CashBudgetCalculator calculator) : ICashBudgets
         }
 
         var budget = await calculator.ComputeAsync(agency.Value, cancellationToken);
-        return budget.IsFailure ? null : new CashBudgetTotal(agency.Value.Id, agency.Value.Currency, budget.Value.Budget);
+        if (budget.IsFailure)
+        {
+            return null;
+        }
+
+        var view = budget.Value;
+        return new CashBudgetTotal(
+            agency.Value.Id, agency.Value.Currency, view.Budget,
+            view.Cash.Amount, view.Banks.Amount, view.Debtors.Amount, view.Creditors.Amount, view.Undelivered);
     }
 }

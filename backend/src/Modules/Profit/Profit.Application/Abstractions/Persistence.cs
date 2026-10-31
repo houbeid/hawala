@@ -21,4 +21,7 @@ public interface IProfitSnapshotRepository
 
     /// <summary>Somme des bénéfices de toutes les photos d'une agence.</summary>
     Task<decimal> SumProfitsAsync(Guid agencyId, CancellationToken cancellationToken);
+
+    /// <summary>Toutes les photos (des agences et des deux agences).</summary>
+    Task<IReadOnlyList<ProfitSnapshot>> ListAllAsync(CancellationToken cancellationToken);
 }

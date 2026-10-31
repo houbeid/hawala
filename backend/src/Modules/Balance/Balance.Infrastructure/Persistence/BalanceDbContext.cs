@@ -19,6 +19,10 @@ public sealed class BalanceDbContext(DbContextOptions<BalanceDbContext> options)
 
     public DbSet<BalanceSnapshot> Snapshots => Set<BalanceSnapshot>();
 
+    public DbSet<GeneralCapitalChange> GeneralCapitalChanges => Set<GeneralCapitalChange>();
+
+    public DbSet<GeneralBalanceSnapshot> GeneralSnapshots => Set<GeneralBalanceSnapshot>();
+
     async Task IUnitOfWork.SaveChangesAsync(CancellationToken cancellationToken) =>
         await SaveChangesAsync(cancellationToken);
 
@@ -67,7 +71,80 @@ public sealed class BalanceDbContext(DbContextOptions<BalanceDbContext> options)
             // Une photo par caisse et par jour.
             snapshot.HasIndex(s => new { s.AgencyId, s.Date }).IsUnique();
         });
+
+        modelBuilder.Entity<GeneralCapitalChange>(change =>
+        {
+            change.ToTable("general_capital_changes", table =>
+                table.HasCheckConstraint("ck_general_capital_changes_amount_positive", "\"Amount\" > 0"));
+            change.HasKey(c => c.Id);
+            change.Property(c => c.Id).ValueGeneratedNever();
+            change.Property(c => c.Amount).HasPrecision(18, 2);
+            change.Property(c => c.Reason).HasMaxLength(CapitalChange.ReasonMaxLength);
+            change.Property(c => c.SetBy);
+            change.Property(c => c.SetAt);
+            change.HasIndex(c => c.SetAt);
+        });
+
+        modelBuilder.Entity<GeneralBalanceSnapshot>(snapshot =>
+        {
+            snapshot.ToTable("general_balance_snapshots");
+            snapshot.HasKey(s => s.Id);
+            snapshot.Property(s => s.Id).ValueGeneratedNever();
+            snapshot.Property(s => s.Date);
+            snapshot.Property(s => s.Rate).HasPrecision(18, 2);
+
+            // Composants de chaque caisse dans sa devise : montants des comptes, deux décimales.
+            snapshot.Property(s => s.NouakchottCash).HasPrecision(18, 2);
+            snapshot.Property(s => s.NouakchottBanks).HasPrecision(18, 2);
+            snapshot.Property(s => s.NouakchottDebtors).HasPrecision(18, 2);
+            snapshot.Property(s => s.NouakchottCreditors).HasPrecision(18, 2);
+            snapshot.Property(s => s.NouakchottUndelivered).HasPrecision(18, 2);
+            snapshot.Property(s => s.NouakchottOwnerContributions).HasPrecision(18, 2);
+            snapshot.Property(s => s.DakarCash).HasPrecision(18, 2);
+            snapshot.Property(s => s.DakarBanks).HasPrecision(18, 2);
+            snapshot.Property(s => s.DakarDebtors).HasPrecision(18, 2);
+            snapshot.Property(s => s.DakarCreditors).HasPrecision(18, 2);
+            snapshot.Property(s => s.DakarUndelivered).HasPrecision(18, 2);
+            snapshot.Property(s => s.DakarOwnerContributions).HasPrecision(18, 2);
+
+            // Pleine précision (règle d'arrondi 4) : tout ce qui vient d'une conversion au taux du bilan.
+            snapshot.Property(s => s.GeneralBalance).HasPrecision(28, 10);
+            snapshot.Property(s => s.Capital).HasPrecision(18, 2);
+            snapshot.Property(s => s.CapitalUsed).HasPrecision(28, 10);
+            snapshot.Property(s => s.NetResult).HasPrecision(28, 10);
+            snapshot.Property(s => s.NetResultPercent).HasPrecision(28, 10);
+            snapshot.Property(s => s.SavedProfitsMro).HasPrecision(28, 10);
+            snapshot.Property(s => s.SavedBy);
+            snapshot.Property(s => s.SavedAt);
+
+            // Une photo par jour.
+            snapshot.HasIndex(s => s.Date).IsUnique();
+        });
     }
+}
+
+internal sealed class GeneralCapitalRepository(BalanceDbContext db) : IGeneralCapitalRepository
+{
+    public void Add(GeneralCapitalChange change) => db.GeneralCapitalChanges.Add(change);
+
+    public async Task<IReadOnlyList<GeneralCapitalChange>> ListAsync(CancellationToken cancellationToken) =>
+        await db.GeneralCapitalChanges.AsNoTracking()
+            .OrderByDescending(c => c.SetAt).ThenByDescending(c => c.Id)
+            .ToListAsync(cancellationToken);
+}
+
+internal sealed class GeneralBalanceSnapshotRepository(BalanceDbContext db) : IGeneralBalanceSnapshotRepository
+{
+    public void Add(GeneralBalanceSnapshot snapshot) => db.GeneralSnapshots.Add(snapshot);
+
+    public Task<GeneralBalanceSnapshot?> GetAsync(DateOnly date, CancellationToken cancellationToken) =>
+        db.GeneralSnapshots.FirstOrDefaultAsync(s => s.Date == date, cancellationToken);
+
+    public async Task<IReadOnlyList<GeneralBalanceSnapshot>> ListAsync(DateOnly from, DateOnly to, CancellationToken cancellationToken) =>
+        await db.GeneralSnapshots.AsNoTracking()
+            .Where(s => s.Date >= from && s.Date <= to)
+            .OrderBy(s => s.Date)
+            .ToListAsync(cancellationToken);
 }
 
 internal sealed class CapitalRepository(BalanceDbContext db) : ICapitalRepository

@@ -9,4 +9,16 @@ public interface ICashBudgets
     Task<CashBudgetTotal?> GetBudgetAsync(Guid agencyId, CancellationToken cancellationToken);
 }
 
-public sealed record CashBudgetTotal(Guid AgencyId, Currency Currency, decimal Budget);
+/// <summary>Budget d'une agence et ses composants, dans sa devise (totaux seulement).</summary>
+/// <param name="Debtors">Tiers « dans le bilan » qui nous doivent, en positif.</param>
+/// <param name="Creditors">Tiers « dans le bilan » à qui l'on doit, en positif.</param>
+/// <param name="Undelivered">Transferts que l'agence doit encore payer.</param>
+public sealed record CashBudgetTotal(
+    Guid AgencyId,
+    Currency Currency,
+    decimal Budget,
+    decimal Cash,
+    decimal Banks,
+    decimal Debtors,
+    decimal Creditors,
+    decimal Undelivered);

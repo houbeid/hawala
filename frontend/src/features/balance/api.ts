@@ -1,5 +1,14 @@
 import type { HttpClient } from '@/shared/api/http';
-import type { BalanceOverview, BalanceSnapshot, CaisseCapital, SetCapitalRequest } from './types';
+import type {
+  BalanceOverview,
+  BalanceSnapshot,
+  CaisseCapital,
+  GeneralBalanceSnapshot,
+  GeneralBalanceView,
+  GeneralCapital,
+  SetCapitalRequest,
+  SetGeneralCapitalRequest,
+} from './types';
 
 /** Bilan en direct des deux caisses (balance.view) : lourd (tous les soldes), jamais appelé à l'ouverture de l'app. */
 export function getBalance(http: HttpClient): Promise<BalanceOverview> {
@@ -22,4 +31,27 @@ export function getCapital(http: HttpClient): Promise<CaisseCapital[]> {
 
 export function setCapital(http: HttpClient, request: SetCapitalRequest): Promise<void> {
   return http.put<void>('/balance/capital', request);
+}
+
+/** Bilan général en direct, au taux du bilan (MRO pour 5 000 FCFA) ; aussi lourd que le bilan par caisse. */
+export function getGeneralBalance(http: HttpClient, rate: number): Promise<GeneralBalanceView> {
+  return http.get<GeneralBalanceView>(`/balance/general?rate=${encodeURIComponent(String(rate))}`);
+}
+
+/** Sauvegarde le bilan général du jour avec son taux (balance.manage). */
+export function saveGeneralBalance(http: HttpClient, rate: number): Promise<GeneralBalanceSnapshot> {
+  return http.post<GeneralBalanceSnapshot>('/balance/general/snapshots', { rate });
+}
+
+/** Photos du bilan général, 30 derniers jours par défaut, de la plus ancienne à la plus récente. */
+export function listGeneralSnapshots(http: HttpClient): Promise<GeneralBalanceSnapshot[]> {
+  return http.get<GeneralBalanceSnapshot[]>('/balance/general/snapshots');
+}
+
+export function getGeneralCapital(http: HttpClient): Promise<GeneralCapital> {
+  return http.get<GeneralCapital>('/balance/general/capital');
+}
+
+export function setGeneralCapital(http: HttpClient, request: SetGeneralCapitalRequest): Promise<void> {
+  return http.put<void>('/balance/general/capital', request);
 }

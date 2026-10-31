@@ -1,5 +1,6 @@
 using Profit.Application.Abstractions;
 using Profit.Contracts;
+using Profit.Domain.Snapshots;
 
 namespace Profit.Application.Features;
 
@@ -8,4 +9,7 @@ public sealed class ProfitHistory(IProfitSnapshotRepository snapshots) : IProfit
 {
     public Task<decimal> SumSavedProfitsAsync(Guid agencyId, CancellationToken cancellationToken) =>
         snapshots.SumProfitsAsync(agencyId, cancellationToken);
+
+    public async Task<decimal> SumSavedProfitsOfBothAgenciesAsync(CancellationToken cancellationToken) =>
+        SavedProfits.OfBothAgencies(await snapshots.ListAllAsync(cancellationToken));
 }

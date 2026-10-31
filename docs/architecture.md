@@ -169,7 +169,19 @@ Le bénéfice du jour est la somme sur les transferts du jour. Cette formule red
 R\acute{e}sultat\ net = Budget\ de\ la\ caisse - (Capital\ initial + Apports\ nets\ du\ patron)
 ```
 
-Le taux du jour n'intervient pas : un total converti en MRO varierait avec le taux sans aucune opération. L'ancienne formule (tout en MRO au taux du bilan, −261 005 MRO, −0,16 % d'un capital de 165 500 000) est abandonnée.
+Le taux du jour n'intervient pas : un total converti en MRO varierait avec le taux sans aucune opération.
+
+**Bilan général** (décisions du 31 octobre 2026, à la demande du patron, en plus du bilan par caisse) :
+
+```latex
+Bilan\ g\acute{e}n\acute{e}ral = Bilan_{NKC} + Bilan_{DKR} \times \frac{taux\ du\ bilan}{5000}
+```
+
+```latex
+R\acute{e}sultat\ net = Bilan\ g\acute{e}n\acute{e}ral - (Capital\ g\acute{e}n\acute{e}ral + Apports\ nets\ du\ patron)
+```
+
+Le taux du bilan est saisi sur l'écran (prérempli au prix d'achat du jour) et gardé avec la photo ; le capital général est saisi à part en MRO, fixe ; les apports du patron de Dakar sont convertis au même taux. Une photo par jour garde les totaux de chaque caisse dans sa devise (pas le détail par tiers), ce qui permet d'expliquer la variation entre deux photos. Chiffres de référence de l'ancienne app : 144 127 657 MRO + 32 302 475 FCFA × 3 675,25 ÷ 5 000 = 167 871 591 MRO ; résultat 2 371 591 MRO (1,43 %) sur un capital de 165 500 000.
 
 Garanties techniques :
 

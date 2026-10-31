@@ -43,6 +43,16 @@ public static class DependencyInjection
         services.AddSharedTransactional<SetInitialCapitalCommand, BalanceHandlers>();
         services.AddScoped<IQueryHandler<GetCapitalQuery, IReadOnlyList<CaisseCapitalView>>>(sp => sp.GetRequiredService<BalanceHandlers>());
 
+        // Bilan général (31 octobre 2026) : le capital général écrit une ligne d'audit, donc dans la transaction commune.
+        services.AddScoped<IGeneralCapitalRepository, GeneralCapitalRepository>();
+        services.AddScoped<IGeneralBalanceSnapshotRepository, GeneralBalanceSnapshotRepository>();
+        services.AddScoped<GeneralBalanceHandlers>();
+        services.AddScoped<IQueryHandler<GetGeneralBalanceQuery, GeneralBalanceView>>(sp => sp.GetRequiredService<GeneralBalanceHandlers>());
+        services.AddScoped<ICommandHandler<SaveGeneralBalanceCommand, GeneralBalanceSnapshotView>>(sp => sp.GetRequiredService<GeneralBalanceHandlers>());
+        services.AddScoped<IQueryHandler<ListGeneralBalanceSnapshotsQuery, IReadOnlyList<GeneralBalanceSnapshotView>>>(sp => sp.GetRequiredService<GeneralBalanceHandlers>());
+        services.AddSharedTransactional<SetGeneralCapitalCommand, GeneralBalanceHandlers>();
+        services.AddScoped<IQueryHandler<GetGeneralCapitalQuery, GeneralCapitalView>>(sp => sp.GetRequiredService<GeneralBalanceHandlers>());
+
         return services;
     }
 

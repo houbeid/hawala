@@ -8,4 +8,10 @@ public interface IProfitHistory
     /// en MRO, à titre d'information (validé le 21 octobre 2026 : non ajouté au capital).
     /// </summary>
     Task<decimal> SumSavedProfitsAsync(Guid agencyId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Bénéfices enregistrés des deux agences, pour le bilan général (décision du 31 octobre 2026), en MRO : jour par jour, la photo
+    /// « des deux agences » fait foi si elle existe, sinon la somme des photos de chaque agence.
+    /// </summary>
+    Task<decimal> SumSavedProfitsOfBothAgenciesAsync(CancellationToken cancellationToken);
 }

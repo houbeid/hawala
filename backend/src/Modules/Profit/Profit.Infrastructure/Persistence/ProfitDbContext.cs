@@ -53,6 +53,10 @@ internal sealed class ProfitSnapshotRepository(ProfitDbContext db) : IProfitSnap
     public async Task<decimal> SumProfitsAsync(Guid agencyId, CancellationToken cancellationToken) =>
         await db.Snapshots.Where(s => s.AgencyId == agencyId).SumAsync(s => s.ProfitMro, cancellationToken);
 
+    // Au plus trois photos par jour (chaque agence et les deux) : la lecture complète reste petite.
+    public async Task<IReadOnlyList<ProfitSnapshot>> ListAllAsync(CancellationToken cancellationToken) =>
+        await db.Snapshots.AsNoTracking().ToListAsync(cancellationToken);
+
     public async Task<IReadOnlyList<ProfitSnapshot>> ListAsync(
         Guid? agencyId, DateOnly from, DateOnly to, CancellationToken cancellationToken) =>
         await db.Snapshots.AsNoTracking()

@@ -465,6 +465,15 @@
       },
       "Filter": {
         "PeriodInvalid": "La date de début doit être avant la date de fin."
+      },
+      "Rate": {
+        "Required": "Indiquez le taux du bilan (MRO pour 5 000 FCFA)."
+      },
+      "GeneralCapital": {
+        "AmountInvalid": "Le capital général est positif, en MRO, à 2 décimales au plus."
+      },
+      "General": {
+        "CaissesMissing": "Le bilan général demande une caisse en MRO et une caisse en FCFA."
       }
     }
   },
@@ -1375,6 +1384,55 @@
       "title": "Bilans enregistrés (30 derniers jours)",
       "empty": "Aucun bilan enregistré.",
       "chartTitle": "Résultat net · {{unit}}"
+    },
+    "byCaisse": "Bilan par caisse",
+    "general": {
+      "title": "Bilan général",
+      "rate": "Taux du bilan",
+      "rateHint": "Prérempli avec le prix d’achat du jour ({{rate}}). Changez-le puis « Actualiser ».",
+      "rateNone": "Aucun prix d’achat pour aujourd’hui : saisissez le taux du bilan puis « Actualiser ».",
+      "apply": "Actualiser",
+      "total": "Bilan général",
+      "formula": "Trésorerie toutes caisses + résultat tiers − transferts non livrés ; Dakar converti au taux du bilan.",
+      "capital": "Capital général",
+      "ownerContributions": "Apports nets du patron (deux caisses)",
+      "noCapital": "Saisissez le capital général pour calculer le résultat net.",
+      "treasury": "Trésorerie toutes caisses",
+      "partiesResult": "Résultat tiers",
+      "caisseBalance": "Bilan {{name}}",
+      "inMro": "soit {{amount}}",
+      "details": "Détail des composants",
+      "components": {
+        "cash": "Espèces",
+        "banks": "Banques et wallets",
+        "debtors": "Créances tiers",
+        "creditors": "Dettes tiers",
+        "undelivered": "Transferts non livrés"
+      },
+      "savedProfits": "Bénéfices enregistrés",
+      "savedProfitsHint": "Total des deux agences, à titre d’information : il ne s’ajoute pas au résultat.",
+      "save": {
+        "open": "Sauvegarder le bilan général",
+        "title": "Sauvegarder le bilan général ?",
+        "hint": "Photo datée des deux caisses, avec le taux du bilan et le capital utilisés.",
+        "replaces": "Le bilan général déjà sauvegardé aujourd’hui sera remplacé.",
+        "done": "Bilan général sauvegardé ({{time}})."
+      },
+      "capitalSheet": {
+        "open": "Capital général",
+        "title": "Capital général",
+        "hint": "En MRO, fixe : il ne bouge pas avec le taux. Chaque saisie est gardée et tracée ; la plus récente fait foi.",
+        "none": "Aucun capital général saisi.",
+        "current": "Capital général actuel : {{amount}}.",
+        "amount": "Nouveau capital général"
+      },
+      "history": {
+        "title": "Bilans généraux sauvegardés (30 derniers jours)",
+        "chartTitle": "Bilan général · MRO",
+        "list": "Liste des bilans généraux sauvegardés",
+        "netResult": "Résultat net : {{amount}} {{percent}}",
+        "noResult": "Résultat net : capital non saisi"
+      }
     }
   },
   "users": {
