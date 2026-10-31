@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAgencies } from '@/features/organization/queries';
@@ -13,16 +14,13 @@ import { useOnlineStatus } from '@/shared/useOnlineStatus';
 import { BalanceHistory } from '../components/BalanceHistory';
 import { CaisseBalanceCard } from '../components/CaisseBalanceCard';
 import { CapitalSheet } from '../components/CapitalSheet';
-import { GeneralBalanceHistory } from '../components/GeneralBalanceHistory';
-import { GeneralBalanceSection } from '../components/GeneralBalanceSection';
-import { useBalance, useBalanceSnapshots, useGeneralSnapshots, useSaveBalance } from '../queries';
+import { useBalance, useBalanceSnapshots, useSaveBalance } from '../queries';
 import type { BalanceSnapshot } from '../types';
 
-// Bilan (maquettes 12 / D5), balance.view. En tête, le bilan général (décisions du 31 octobre 2026) : Nouakchott en MRO
-// + Dakar converti au taux du bilan, capital général, et ses photos (courbe + liste). Dessous, le bilan par caisse
-// (décision du 21 octobre 2026 : « 2 caisses, 2 capitaux ») : chacune dans sa devise, résultat net = budget de la caisse −
-// (capital initial + apports nets du patron). Calculs lourds : jamais à l'ouverture de l'app, seulement sur cet écran,
-// avec « Actualiser ». Sauvegarder un bilan et saisir un capital : balance.manage, en ligne.
+// Bilan par caisse (maquettes 12 / D5), balance.view (décision du 21 octobre 2026 : « 2 caisses, 2 capitaux ») : chacune
+// dans sa devise, résultat net = budget de la caisse − (capital initial + apports nets du patron). Le bilan général a sa
+// page (/balance/general, décision du 31 octobre 2026). Calcul lourd : jamais à l'ouverture de l'app, seulement sur cet
+// écran, avec « Actualiser ». Sauvegarder un bilan et saisir un capital : balance.manage, en ligne.
 
 export function BalancePage() {
   const { t, i18n } = useTranslation();
@@ -30,7 +28,6 @@ export function BalancePage() {
   const online = useOnlineStatus();
   const balance = useBalance();
   const snapshots = useBalanceSnapshots();
-  const generalSnapshots = useGeneralSnapshots();
   const agencies = useAgencies();
   const byId = useMemo(() => new Map((agencies.data ?? []).map((a) => [a.id, a])), [agencies.data]);
   const save = useSaveBalance();
@@ -48,10 +45,6 @@ export function BalancePage() {
   const confirmed = data?.caisses.find((c) => c.agencyId === confirming);
   const savedToday = (agencyId: string) => snapshots.data?.find((s) => s.agencyId === agencyId && s.date === data?.date) ?? null;
   const capitalCaisse = data?.caisses.find((c) => c.agencyId === capitalFor);
-  const cityOf = (currency: 'MRO' | 'XOF') => {
-    const agency = agencies.data?.find((a) => a.currency === currency);
-    return agency ? t(`agencies.${agency.code}`, { defaultValue: agency.name }) : currency;
-  };
 
   async function confirm(agencyId: string) {
     setSaveError(null);
@@ -72,11 +65,6 @@ export function BalancePage() {
         </Button>
       </div>
       {!online && <Notice tone="info">{t('balance.offline')}</Notice>}
-
-      <GeneralBalanceSection manageable={manageable} online={online} nouakchottName={cityOf('MRO')} dakarName={cityOf('XOF')} />
-      {generalSnapshots.data && <GeneralBalanceHistory snapshots={generalSnapshots.data} />}
-
-      <h2 className="m-0 mt-2 text-lg font-bold">{t('balance.byCaisse')}</h2>
 
       {balance.isPending && (
         <div role="status" className="grid gap-4 lg:grid-cols-2">
@@ -119,6 +107,11 @@ export function BalancePage() {
       )}
 
       {snapshots.data && agencies.data && <BalanceHistory snapshots={snapshots.data} agencies={agencies.data} />}
+
+      <Link to="/balance/general" className="inline-flex min-h-11 items-center gap-2 font-semibold text-fg underline">
+        <Icon name="bank" />
+        {t('balance.toGeneral')}
+      </Link>
 
       {confirmed && (
         <Sheet

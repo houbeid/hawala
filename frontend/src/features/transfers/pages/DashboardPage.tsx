@@ -90,7 +90,7 @@ export function DashboardPage() {
           {t('dashboard.toTransfers')}
         </Link>
         {canSeeBalance && (
-          <Link to="/balance" className="inline-flex min-h-11 items-center gap-2 font-semibold text-fg underline">
+          <Link to="/balance/general" className="inline-flex min-h-11 items-center gap-2 font-semibold text-fg underline">
             <Icon name="cash" />
             {t('dashboard.toBalance')}
           </Link>

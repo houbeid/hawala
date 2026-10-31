@@ -33,7 +33,7 @@ describe('« Plus » et barre latérale', () => {
 
   it('ne propose ni bénéfice, ni bilan, ni comptes, ni audit sans leur permission', () => {
     const more = ids(moreMenuItems('Agent', agentAccount.permissions));
-    for (const id of ['profit', 'balance', 'dashboard', 'users', 'audit']) expect(more).not.toContain(id);
+    for (const id of ['profit', 'generalBalance', 'balance', 'dashboard', 'users', 'audit']) expect(more).not.toContain(id);
   });
 
   it('montre tout au Superviseur sur ordinateur, sauf « Nouveau » (bouton de la liste)', () => {
@@ -45,6 +45,7 @@ describe('« Plus » et barre latérale', () => {
       'budget',
       'rates',
       'profit',
+      'generalBalance',
       'balance',
       'users',
       'treasury',

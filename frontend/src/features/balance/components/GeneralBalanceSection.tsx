@@ -18,7 +18,7 @@ import type { GeneralBalanceSnapshot, GeneralBalanceView } from '../types';
 import { GeneralCapitalSheet } from './GeneralCapitalSheet';
 import { VariationSheet } from './VariationSheet';
 
-// Bilan général (décisions du 31 octobre 2026, en tête de l'écran ; le bilan par caisse reste dessous) : Nouakchott en MRO
+// Bilan général (décisions du 31 octobre 2026, sur sa propre page) : Nouakchott en MRO
 // + Dakar converti au taux du bilan. Le taux est prérempli avec le prix d'achat du jour et modifiable ; le calcul (lourd)
 // part au chargement, puis seulement avec « Actualiser » (ou Entrée), jamais à chaque chiffre tapé. Résultat net = bilan
 // général − (capital général + apports nets du patron). Totaux seulement : le détail par tiers est sur l'écran Tiers.
@@ -78,8 +78,6 @@ export function GeneralBalanceSection({ manageable, online, dakarName, nouakchot
 
   return (
     <section className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-4" aria-label={t('balance.general.title')}>
-      <h2 className="m-0 text-lg font-bold">{t('balance.general.title')}</h2>
-
       <form noValidate onSubmit={apply} className="flex flex-wrap items-end gap-2">
         <div className="min-w-60 flex-1">
           <RateField

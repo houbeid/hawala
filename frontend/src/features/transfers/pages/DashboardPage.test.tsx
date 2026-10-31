@@ -45,6 +45,10 @@ function dashboardServer() {
       balanceCalls += 1;
       return HttpResponse.json({});
     }),
+    http.get(apiUrl('/balance/general'), () => {
+      balanceCalls += 1;
+      return HttpResponse.json({});
+    }),
   );
   return { periods, balanceCalls: () => balanceCalls };
 }
@@ -59,7 +63,7 @@ describe('Tableau de bord', () => {
     await waitFor(() => expect(router.state.location.pathname).toBe('/dashboard'));
     await screen.findByRole('region', { name: 'Caisse de Nouakchott' });
     expect(calls.balanceCalls()).toBe(0);
-    expect(screen.getByRole('link', { name: 'Voir le bilan par caisse' })).toHaveAttribute('href', '/balance');
+    expect(screen.getByRole('link', { name: 'Voir le bilan général' })).toHaveAttribute('href', '/balance/general');
   });
 
   it('montre chaque caisse dans sa devise : envoyé, livrés, non livrés, taux de livraison', async () => {

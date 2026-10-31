@@ -27,6 +27,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { id: 'budget', to: '/budget', labelKey: 'nav.budget', icon: 'chart', group: 'pilotage', permission: 'cash.budget.read' },
   { id: 'rates', to: '/rates', labelKey: 'nav.rates', icon: 'rate', group: 'pilotage' },
   { id: 'profit', to: '/profit', labelKey: 'nav.profit', icon: 'trend', group: 'pilotage', permission: 'profit.view' },
+  { id: 'generalBalance', to: '/balance/general', labelKey: 'nav.generalBalance', icon: 'bank', group: 'pilotage', permission: 'balance.view' },
   { id: 'balance', to: '/balance', labelKey: 'nav.balance', icon: 'cash', group: 'pilotage', permission: 'balance.view' },
   { id: 'users', to: '/users', labelKey: 'nav.users', icon: 'user', group: 'administration', permission: 'users.manage' },
   { id: 'treasury', to: '/treasury', labelKey: 'nav.treasury', icon: 'bank', group: 'administration' },

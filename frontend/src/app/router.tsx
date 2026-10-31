@@ -146,6 +146,14 @@ const userDetailRoute = createRoute({
   component: lazyRouteComponent(() => import('@/features/users/pages/UserDetailPage'), 'UserDetailPage'),
 });
 
+/** Bilan général (balance.view, décision du 31 octobre 2026 : page à part) : taux du bilan, capital général, photos. */
+const generalBalanceRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/balance/general',
+  staticData: { titleKey: 'nav.generalBalance', permission: 'balance.view' },
+  component: lazyRouteComponent(() => import('@/features/balance/pages/GeneralBalancePage'), 'GeneralBalancePage'),
+});
+
 /** Bilan par caisse (balance.view) : calcul lourd, seulement sur cet écran. */
 const balanceRoute = createRoute({
   getParentRoute: () => shellRoute,
@@ -273,6 +281,7 @@ const shellChildren = [
   budgetRoute,
   ratesRoute,
   profitRoute,
+  generalBalanceRoute,
   balanceRoute,
   dashboardRoute,
   usersRoute,

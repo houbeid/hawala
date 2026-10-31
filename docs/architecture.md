@@ -466,7 +466,7 @@ Mêmes routes sur mobile et sur bureau : les écrans « Bureau » des maquettes 
 | `/cash`, `/cash/new` | Caisse | `cash.budget.read` / `cash.create` |
 | `/budget` | Budget de la caisse | `cash.budget.read` |
 | `/profit` | Bénéfice | `profit.view` |
-| `/balance`, `/dashboard` | Bilan, tableau de bord | `balance.view` |
+| `/balance/general`, `/balance`, `/dashboard` | Bilan général, bilan par caisse, tableau de bord | `balance.view` |
 | `/treasury`, `/treasury/:id` | Comptes de trésorerie, fiche et relevé d'un compte | connecté ; relevé `cash.budget.read` ; gestion `treasury.manage` |
 | `/users`, `/users/:id` | Comptes | `users.manage` |
 | `/audit` | Journal d'audit | `audit.view` |

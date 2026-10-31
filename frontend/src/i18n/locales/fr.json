@@ -25,6 +25,7 @@
     "budget": "Budget de la caisse",
     "rates": "Taux du jour",
     "profit": "Bénéfice",
+    "generalBalance": "Bilan général",
     "balance": "Bilan par caisse",
     "dashboard": "Tableau de bord",
     "users": "Comptes",
@@ -854,7 +855,7 @@
     "deliveryRate": "Taux de livraison",
     "noTransfers": "Aucun transfert envoyé sur la période.",
     "toTransfers": "Voir les transferts",
-    "toBalance": "Voir le bilan par caisse"
+    "toBalance": "Voir le bilan général"
   },
   "parties": {
     "types": {
@@ -1386,7 +1387,8 @@
       "empty": "Aucun bilan enregistré.",
       "chartTitle": "Résultat net · {{unit}}"
     },
-    "byCaisse": "Bilan par caisse",
+    "toGeneral": "Voir le bilan général",
+    "toByCaisse": "Voir le bilan par caisse",
     "general": {
       "title": "Bilan général",
       "rate": "Taux du bilan",
