@@ -28,7 +28,6 @@ services:
   api:
     build:
       context: ../backend
-      dockerfile: ../deploy/api.Dockerfile
     restart: unless-stopped
     depends_on:
       db: { condition: service_healthy }

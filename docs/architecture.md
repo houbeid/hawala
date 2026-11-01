@@ -511,7 +511,7 @@ i18next (fr, ar) ; `lang` et `dir` sur `<html>` ; CSS en propriétés logiques. 
 
 ## Déploiement et exploitation
 
-Fichiers dans `deploy/` et procédure dans `docs/deploiement.md` (31 octobre 2026) : préprod gratuite sur une VM Oracle Cloud avec un sous-domaine DuckDNS, prod sur un VPS payant avec un domaine et Cloudflare ; Caddy seul exposé, l'API ne croit l'adresse transmise que de Caddy.
+Procédure dans `docs/deploiement.md`. Préprod (décision du 1er novembre 2026) : API et PostgreSQL sur Railway (`backend/Dockerfile`), interface sur Vercel qui relaie `/api` (même origine pour le cookie), temps réel en direct sur l'API (CORS du hub seulement, `Cors:HubOrigins`). Variante serveur (`deploy/`, 31 octobre 2026) : Docker Compose avec PostgreSQL, l'API et Caddy seul exposé ; l'API ne croit l'adresse transmise que de Caddy. Prod : hébergement payant à choisir, vrai domaine.
 
 Au départ, un seul serveur suffit pour deux agences ; l'architecture permet de passer à plusieurs instances sans réécriture.
 

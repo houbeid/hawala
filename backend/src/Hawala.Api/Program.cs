@@ -48,6 +48,7 @@ builder.Services.AddBalanceModule(builder.Configuration);
 builder.Services.AddHawalaAuthentication();
 builder.Services.AddHawalaRateLimiting(builder.Configuration);
 builder.Services.AddHawalaForwardedHeaders(builder.Configuration);
+builder.Services.AddHawalaHubCors(builder.Configuration);
 
 // Temps réel : un hub, des groupes par agence et pour les Superviseurs ; les Transferts publient après validation.
 builder.Services.AddSignalR()
@@ -100,7 +101,9 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi().AllowAnonymous();
 }
 
-// Pas de UseHttpsRedirection : en production, Caddy termine le HTTPS devant l'API.
+// Pas de UseHttpsRedirection : en production, Caddy (ou le relais de l'hébergeur) termine le HTTPS devant l'API.
+// CORS seulement pour le hub (RequireCors plus bas) ; avant l'authentification, pour répondre aux demandes préalables.
+app.UseCors();
 app.UseAuthentication();
 
 // Après l'authentification : la limite générale se compte par compte connecté (phase 6).
@@ -122,6 +125,6 @@ app.MapCashEndpoints();
 app.MapProfitEndpoints();
 app.MapBalanceEndpoints();
 app.MapAuditEndpoints();
-app.MapHub<LiveHub>(LiveHub.Path);
+app.MapHub<LiveHub>(LiveHub.Path).RequireCors(HubCorsSetup.PolicyName);
 
 await app.RunAsync();

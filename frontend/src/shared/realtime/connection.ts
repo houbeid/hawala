@@ -42,11 +42,21 @@ export interface RealtimeConnection {
 
 export type RealtimeConnectionFactory = (accessToken: () => string | null) => RealtimeConnection;
 
+/**
+ * Adresse du hub. Par défaut la même origine (proxy Vite en dev, Caddy). Sur Vercel, le relais ne transmet pas les
+ * WebSocket : VITE_HUB_URL donne l'adresse directe de l'API (ex. https://….up.railway.app/hubs/live), autorisée par
+ * le CORS du hub côté API (déploiement du 1er novembre 2026).
+ */
+export function hubUrlFrom(configured: string | undefined): string {
+  const value = configured?.trim();
+  return value ? value : '/hubs/live';
+}
+
 /** Délais des reconnexions automatiques (ms) ; après le dernier, la connexion est « perdue » et l'app réessaie plus tard. */
 const RECONNECT_DELAYS = [0, 2000, 5000, 10000, 30000];
 
 /**
- * Vraie connexion SignalR vers /hubs/live (même origine : proxy Vite en dev, Caddy en prod). Le client SignalR
+ * Vraie connexion SignalR vers le hub (voir hubUrlFrom). Le jeton suffit : aucun cookie n'est envoyé. Le client SignalR
  * (~130 Ko) est chargé à la demande, au premier démarrage : l'écran de connexion n'en a pas besoin. Les abonnements
  * enregistrés avant sont posés sur le hub dès qu'il existe.
  */
@@ -60,7 +70,10 @@ export const createSignalRConnection: RealtimeConnectionFactory = (accessToken) 
     if (hub) return hub;
     const signalR = await import('@microsoft/signalr');
     const built = new signalR.HubConnectionBuilder()
-      .withUrl('/hubs/live', { accessTokenFactory: () => accessToken() ?? '' })
+      .withUrl(hubUrlFrom(import.meta.env.VITE_HUB_URL), {
+        accessTokenFactory: () => accessToken() ?? '',
+        withCredentials: false,
+      })
       .withAutomaticReconnect(RECONNECT_DELAYS)
       .configureLogging(signalR.LogLevel.Warning)
       .build();
