@@ -9,5 +9,9 @@ COPY . .
 RUN npm run build
 
 FROM caddy:2-alpine
+# Le binaire officiel porte la capacité « cap_net_bind_service » (ports < 1024 sans root). Les hébergeurs qui
+# retirent les capacités (Render : no-new-privileges) refusent alors de le lancer (« exec … operation not permitted »).
+# Caddy écoute sur 8080 sur Render, et tourne en root dans la variante serveur : la capacité est inutile.
+RUN apk add --no-cache libcap && setcap -r /usr/bin/caddy && apk del libcap
 COPY --from=build /src/dist /srv
 COPY Caddyfile /etc/caddy/Caddyfile
