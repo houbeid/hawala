@@ -1,9 +1,0 @@
-# Railway (préprod, 1er novembre 2026) : service « api » dont le dossier racine est backend/.
-# Variables à poser dans Railway (jamais ici) : voir docs/deploiement.md, partie Railway + Vercel.
-[build]
-builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
-
-[deploy]
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 5

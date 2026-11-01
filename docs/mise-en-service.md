@@ -55,7 +55,7 @@ Une personne lit les chiffres de l'ancienne app, une autre saisit dans la nouvel
 
 ### 2. Sauvegarder la base de la nouvelle app
 
-Faire une sauvegarde de la base de production *avant* tout import (elle contient les comptes et les comptes de trésorerie, rien d'autre). C'est le point de retour si la bascule doit être recommencée.
+Faire une sauvegarde de la base de production *avant* tout import (elle contient les comptes et les comptes de trésorerie, rien d'autre) : `deploy/backup-remote.ps1` (voir `docs/deploiement.md`, partie 2.5). C'est le point de retour si la bascule doit être recommencée.
 
 ### 3. Fixer la date de démarrage
 
@@ -153,4 +153,3 @@ L'ancien code de retrait n'est pas connu de la nouvelle app. Quand le bénéfici
 - Corriger une date de démarrage déjà fixée (aujourd'hui : seulement par restauration de la sauvegarde).
 - Corriger le montant d'un transfert repris.
 - Annulation d'un transfert repris : elle efface la dette « à livrer » ; si l'expéditeur est remboursé en espèces, le remboursement se saisit ensuite en décaissement (à valider).
-- Procédure de déploiement (serveur, Caddy, sauvegardes) : à écrire avec `deploy/`.

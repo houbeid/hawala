@@ -49,7 +49,6 @@ services:
   web:
     build:
       context: ../frontend
-      dockerfile: ../deploy/web.Dockerfile
     restart: unless-stopped
     depends_on: [api]
     environment:
@@ -60,7 +59,6 @@ services:
       - "${HTTPS_PORT:-443}:443"
       - "${HTTPS_PORT:-443}:443/udp"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
     networks: [edge]

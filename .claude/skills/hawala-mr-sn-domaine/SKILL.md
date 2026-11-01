@@ -470,7 +470,7 @@ App actuelle (capture du 20 octobre 2026), écran Superviseur qui réunit bilan 
 
 ## Hébergement (décidé)
 
-Serveur en Europe accepté. Départ : 1 VPS OVHcloud en France (type VPS-2, 4 vCore / 8 Go) avec Docker Compose, Caddy derrière Cloudflare, sauvegardes `pg_dump` + WAL vers un stockage objet, restauration testée chaque mois. Budget visé : environ 15 à 20 € par mois.
+Serveur en Europe accepté. **Décision du 1er novembre 2026 : production sur Render, sans préprod séparée** (Railway, choisi d'abord, avait fermé ses inscriptions) : région Frankfurt, base PostgreSQL 17 `hawala-db` (Basic-256mb, jamais l'offre gratuite supprimée au bout de 30 jours), Private Service `hawala-api` (`backend/Dockerfile`, Starter) et Web Service `elveth` (`frontend/Dockerfile`, Starter : Caddy sert l'interface et relaie `/api` et `/hubs` vers l'adresse interne de `hawala-api`, une seule adresse publique ; environ 20 $ par mois). On y saisit les vraies données (option A : cette base devient la prod, mise en service selon `docs/mise-en-service.md`). Règles : jamais de données de démonstration sur la base hébergée (`seed-demo.ps1` refuse toute API hors de `localhost`) ; sauvegarde chaque nuit hors de Render par `deploy/backup-remote.ps1` (sur le PC de Hamade, Docker, relue avant d'être gardée, 30 jours) et copie du dossier ailleurs ; secrets dans un gestionnaire de mots de passe, `Encryption__Key` surtout. Vercel écarté (offre gratuite non commerciale). Variante serveur (`deploy/docker-compose.yml`, Caddy, VPS ou Oracle Cloud) gardée si Render ne convient plus. Plus tard : un nom de domaine à soi. POINT OUVERT : adresse réelle des visiteurs derrière Render (limite de connexions relevée à 60 par minute en attendant).
 
 ## Hors périmètre V1
 

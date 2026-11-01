@@ -15,6 +15,8 @@
 
   À LANCER SUR UNE BASE DE DÉMONSTRATION SEULEMENT (ex. hawala_demo), jamais sur la base de production : le grand livre
   est immuable, ces données ne s'effacent pas. Toutes les données sont fictives (emails en @example.com).
+  Depuis le 1er novembre 2026, la base hébergée (Render) est la PRODUCTION : le script refuse toute API qui n'est pas
+  sur ce PC (localhost), sans exception.
 
   Utilisation (PowerShell, API démarrée sur la base de démo) :
     .\seed-demo.ps1                      # API sur http://localhost:5215
@@ -31,6 +33,13 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $api = "$ApiUrl/api/v1"
+
+# Jamais sur la base hébergée (la production) : seulement une API lancée sur ce PC.
+$apiHost = ([Uri]$ApiUrl).Host
+if ($apiHost -notin @('localhost', '127.0.0.1', '[::1]', '::1')) {
+    Write-Host "Refusé : $ApiUrl n'est pas sur ce PC. Les données de démonstration ne vont jamais sur la base hébergée (production)." -ForegroundColor Red
+    exit 1
+}
 $inv = [Globalization.CultureInfo]::InvariantCulture
 $rng = New-Object System.Random $Seed
 $now = [DateTime]::UtcNow

@@ -1,4 +1,4 @@
-# API Hawala (.NET 10). Contexte de construction : backend/ (Railway, et deploy/docker-compose.yml).
+# API Hawala (.NET 10). Contexte de construction : backend/ (Render, et deploy/docker-compose.yml).
 # Construit pour la machine cible (amd64 ou arm64, ex. VM Oracle Ampere) : l'image du SDK tourne sur la machine qui
 # construit et publie pour l'architecture visée.
 

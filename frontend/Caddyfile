@@ -1,5 +1,10 @@
-# Caddy : HTTPS automatique (Let's Encrypt), interface statique, /api et /hubs vers l'API (WebSocket compris).
-# SITE_ADDRESS : le nom du site (ex. hawala-preprod.duckdns.org) ; « :80 » pour un essai local en HTTP.
+# Caddy : interface statique, /api et /hubs vers l'API (WebSocket compris).
+# Variables :
+#   SITE_ADDRESS  le nom du site, avec HTTPS automatique (ex. app.mondomaine.com) ; « :8080 » sur Render (Render fait
+#                 déjà le HTTPS devant) ; « :80 » pour un essai local en HTTP ;
+#   API_UPSTREAM  l'adresse de l'API (par défaut api:8080, le service de deploy/docker-compose.yml ; sur Render
+#                 l'adresse interne du Private Service, ex. hawala-api:8080, par le réseau privé) ;
+#   ACME_EMAIL    l'email pour Let's Encrypt (obligatoire, même s'il ne sert pas sur Render).
 {
 	email {$ACME_EMAIL}
 }
@@ -9,8 +14,8 @@
 
 	@backend path /api/* /hubs/*
 	handle @backend {
-		# Caddy ajoute X-Forwarded-For / X-Forwarded-Proto ; l'API les croit car Caddy est sur son réseau de confiance.
-		reverse_proxy api:8080
+		# Caddy ajoute X-Forwarded-For / X-Forwarded-Proto pour l'API.
+		reverse_proxy {$API_UPSTREAM:api:8080}
 	}
 
 	handle {
