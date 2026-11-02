@@ -1,5 +1,13 @@
 import type { HttpClient } from '@/shared/api/http';
-import type { ImportReport, ImportResult, StartDateView } from './types';
+import type { AssignedHomeAgencies, ImportReport, ImportResult, StartDateView } from './types';
+
+/**
+ * Rattache d'après leurs soldes les tiers encore rattachés aux deux agences (parties.manage, 2 novembre 2026) : un solde
+ * dans une seule agence = cette agence. Un agent ne voit ensuite que les tiers de son agence et ceux des deux.
+ */
+export function assignHomeAgencies(http: HttpClient): Promise<AssignedHomeAgencies> {
+  return http.post<AssignedHomeAgencies>('/setup/parties/assign-agencies');
+}
 
 /** Modèle Excel à remplir (en-têtes dans la langue de l'interface, feuille d'aide). */
 export function downloadPartyTemplate(http: HttpClient, lang: 'fr' | 'ar'): Promise<Blob> {

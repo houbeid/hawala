@@ -9,7 +9,9 @@ namespace Parties.Domain.Parties;
 /// - nom (30 caractères) et type obligatoires ; téléphone, NNI, adresse, note facultatifs ;
 /// - téléphone et NNI uniques quand ils sont renseignés (vérifié par l'Application et par la base) ; nom non unique ;
 /// - « dans le bilan » vrai par défaut ; jamais supprimé, seulement archivé (à solde nul dans les deux agences) ;
-/// - le solde initial n'est jamais saisi à la création.
+/// - le solde initial n'est jamais saisi à la création ;
+/// - rattaché à une agence ou aux deux (<see cref="HomeAgencyId"/>, décision du patron du 2 novembre 2026) : un agent
+///   ne voit que les tiers de son agence et ceux des deux agences.
 /// </summary>
 public sealed class Party
 {
@@ -74,6 +76,12 @@ public sealed class Party
     public bool InBalanceSheet { get; private set; }
 
     public bool IsArchived { get; private set; }
+
+    /// <summary>
+    /// Agence de rattachement : un agent ne voit que les tiers de son agence (et ceux des deux) ; null = les deux agences
+    /// (décision du patron, 2 novembre 2026). Le Superviseur voit tout. Les comptes par agence restent ouverts partout.
+    /// </summary>
+    public Guid? HomeAgencyId { get; private set; }
 
     public DateTimeOffset CreatedAt { get; private set; }
 
@@ -191,6 +199,28 @@ public sealed class Party
 
         _agencyAccounts.Add(new PartyAgencyAccount(agencyId, ledgerAccountId));
     }
+
+    /// <summary>
+    /// Rattache le tiers à une agence (une de ses agences), ou aux deux (null). Renvoie vrai si le rattachement change.
+    /// </summary>
+    public Result<bool> AssignHomeAgency(Guid? agencyId)
+    {
+        if (agencyId is { } id && !_agencyAccounts.Exists(a => a.AgencyId == id))
+        {
+            return PartiesErrors.Party.AgencyInvalid;
+        }
+
+        if (HomeAgencyId == agencyId)
+        {
+            return false;
+        }
+
+        HomeAgencyId = agencyId;
+        return true;
+    }
+
+    /// <summary>Visible d'un agent de cette agence : rattaché à elle ou aux deux.</summary>
+    public bool IsVisibleFrom(Guid agencyId) => HomeAgencyId is null || HomeAgencyId == agencyId;
 
     /// <summary>
     /// Le Superviseur fixe le solde initial du tiers dans une agence, à tout moment (règle validée, comme l'ancienne app).

@@ -26,6 +26,7 @@ function party(balance: number, creditLimit: number | null): PartySummary {
     note: null,
     inBalanceSheet: true,
     isArchived: false,
+    homeAgencyId: null,
     balances: [{ agencyId: nkc.id, currency: 'MRO', balance, creditLimit, openingBalance: 0 }],
   };
 }
@@ -165,7 +166,7 @@ describe('Création d’un transfert — crédit', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Créer le tiers' }));
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(partyPosts).toEqual([{ name: 'Client Neuf', type: 'Client', phone: '+22220000099', nni: null, address: null, note: null }]);
+    expect(partyPosts).toEqual([{ name: 'Client Neuf', type: 'Client', phone: '+22220000099', nni: null, address: null, note: null, agencyId: null }]);
     expect(screen.getByText('Client Neuf')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Changer' })).toBeInTheDocument();
   });

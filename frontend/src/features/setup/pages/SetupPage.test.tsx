@@ -186,6 +186,27 @@ describe('Mise en service — date de démarrage et liste de contrôle', () => {
 });
 
 describe('Mise en service — autres comptes', () => {
+  it('rattache les tiers à leur agence d’après leurs soldes, après confirmation', async () => {
+    signedInAs(supervisorAccount);
+    baseServer({ startDate: '2026-11-01' });
+    let calls = 0;
+    server.use(
+      http.post(apiUrl('/setup/parties/assign-agencies'), () => {
+        calls++;
+        return HttpResponse.json({ assigned: 52, keptBoth: 3 });
+      }),
+    );
+    const { user } = renderApp('/setup');
+
+    await user.click(await screen.findByRole('button', { name: 'Rattacher les tiers d’après leurs soldes' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Rattacher les tiers à leur agence ?' });
+    expect(calls).toBe(0);
+    await user.click(within(dialog).getByRole('button', { name: 'Rattacher' }));
+
+    expect(await screen.findByText('52 tiers rattachés à leur agence, 3 laissés aux deux agences.')).toBeInTheDocument();
+    expect(calls).toBe(1);
+  });
+
   it('un agent n’a pas accès à l’écran', async () => {
     signedInAs(agentAccount);
     renderApp('/setup');

@@ -23,6 +23,7 @@ export function cachedParty(queryClient: QueryClient, id: string): PartySummary 
     note: null,
     inBalanceSheet: true,
     isArchived: false,
+    homeAgencyId: null,
     balances: null,
   };
 }

@@ -58,6 +58,7 @@ const newParty: PartySummary = {
   note: null,
   inBalanceSheet: true,
   isArchived: false,
+  homeAgencyId: null,
   balances: null,
 };
 

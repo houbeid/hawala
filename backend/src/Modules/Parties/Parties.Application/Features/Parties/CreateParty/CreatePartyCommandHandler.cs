@@ -17,6 +17,8 @@ namespace Parties.Application.Features.Parties.CreateParty;
 /// dans une seule transaction commune : si une étape échoue, rien n'existe.
 /// Un compte limité (« Limiter les tiers ») qui crée un tiers le voit ensuite : il entre dans sa liste (règle du 21 octobre 2026).
 /// Tracé dans l'audit (« Parties.Party.Created »), téléphone et NNI masqués.
+/// Rattachement (2 novembre 2026) : un agent rattache à son agence ; le Superviseur choisit (null = les deux). Un doublon
+/// de téléphone ou de NNI rattaché à l'autre agence est refusé avec un message qui le dit (« ExistsInOtherAgency »).
 /// </summary>
 public sealed class CreatePartyCommandHandler(
     IPartyRepository parties,
@@ -56,15 +58,16 @@ public sealed class CreatePartyCommandHandler(
             return party.Error;
         }
 
-        // Règle validée : doublon de téléphone ou de NNI interdit.
-        if (phone is not null && await parties.PhoneExistsAsync(phone, excludingPartyId: null, cancellationToken))
+        // Règle validée : doublon de téléphone ou de NNI interdit ; dit à l'agent si le tiers est dans l'autre agence.
+        var ownAgency = agencyScope.SeesAllAgencies ? null : agencyScope.AgencyId;
+        if (phone is not null && await parties.FindPhoneOwnerAsync(phone, cancellationToken) is { } phoneOwner)
         {
-            return PartiesErrors.Party.PhoneTaken;
+            return Duplicate(phoneOwner, ownAgency, PartiesErrors.Party.PhoneTaken);
         }
 
-        if (party.Value.Nni is { } nni && await parties.NniExistsAsync(nni, excludingPartyId: null, cancellationToken))
+        if (party.Value.Nni is { } nni && await parties.FindNniOwnerAsync(nni, cancellationToken) is { } nniOwner)
         {
-            return PartiesErrors.Party.NniTaken;
+            return Duplicate(nniOwner, ownAgency, PartiesErrors.Party.NniTaken);
         }
 
         foreach (var agency in await agencies.GetAllAsync(cancellationToken))
@@ -77,6 +80,12 @@ public sealed class CreatePartyCommandHandler(
             }
 
             party.Value.AttachAgencyAccount(agency.Id, account.Value);
+        }
+
+        var home = party.Value.AssignHomeAgency(agencyScope.SeesAllAgencies ? command.AgencyId : agencyScope.AgencyId);
+        if (home.IsFailure)
+        {
+            return home.Error;
         }
 
         parties.Add(party.Value);
@@ -100,4 +109,9 @@ public sealed class CreatePartyCommandHandler(
 
         return party.Value.Id;
     }
+
+    private static Error Duplicate(PartyOwner owner, Guid? ownAgency, Error taken) =>
+        ownAgency is { } agency && owner.HomeAgencyId is { } home && home != agency
+            ? PartiesErrors.Party.ExistsInOtherAgency
+            : taken;
 }

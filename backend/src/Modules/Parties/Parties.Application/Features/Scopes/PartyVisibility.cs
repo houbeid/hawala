@@ -13,6 +13,13 @@ public sealed class PartyVisibility(ICurrentAccount current, IAgencyScope agency
 {
     private VisibleParties? _visible;
 
+    /// <summary>
+    /// Agence d'un agent connecté : il ne voit que les tiers rattachés à elle ou aux deux (décision du 2 novembre 2026).
+    /// Null pour le Superviseur et hors requête (aucune restriction).
+    /// </summary>
+    public Guid? HomeAgencyOnly =>
+        current.AccountId is not null && !agencyScope.SeesAllAgencies ? agencyScope.AgencyId : null;
+
     public async Task<VisibleParties> GetAsync(CancellationToken cancellationToken)
     {
         if (_visible is not null)

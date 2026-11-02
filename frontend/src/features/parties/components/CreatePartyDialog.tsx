@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAgencyScope } from '@/shared/agency/agencyScope';
 import { errorMessage } from '@/shared/api/errorMessage';
 import { Button } from '@/shared/ui/Button';
 import { Notice } from '@/shared/ui/Notice';
@@ -7,6 +8,7 @@ import { Sheet } from '@/shared/ui/Sheet';
 import { TextField } from '@/shared/ui/TextField';
 import { useCreateParty } from '../queries';
 import { PARTY_TYPES, type PartyType } from '../types';
+import { HomeAgencyChoice } from './HomeAgencyChoice';
 
 // « Créer un tiers » depuis le crédit d'un transfert (choix A du 22 octobre 2026) : le minimum utile
 // (nom ≤ 30 obligatoire, type, téléphone international facultatif). Le reste de la fiche se complète
@@ -28,6 +30,9 @@ export function CreatePartyDialog({ open, onOpenChange, initialName, onCreated }
   const [name, setName] = useState(initialName.slice(0, NAME_MAX));
   const [type, setType] = useState<PartyType>('Client');
   const [phone, setPhone] = useState('');
+  // Rattachement : choisi par le Superviseur (l'agence de l'en-tête par défaut) ; un agent rattache à la sienne.
+  const { scope } = useAgencyScope();
+  const [homeAgency, setHomeAgency] = useState<string | null>(scope.kind === 'selected' ? scope.agency.id : null);
   const [nameError, setNameError] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -40,7 +45,15 @@ export function CreatePartyDialog({ open, onOpenChange, initialName, onCreated }
     }
     setNameError(null);
     try {
-      const { id } = await create.mutateAsync({ name: trimmed, type, phone: phone.trim() || null, nni: null, address: null, note: null });
+      const { id } = await create.mutateAsync({
+        name: trimmed,
+        type,
+        phone: phone.trim() || null,
+        nni: null,
+        address: null,
+        note: null,
+        agencyId: scope.kind === 'locked' ? null : homeAgency,
+      });
       onCreated({ id, name: trimmed, type, phone: phone.trim() || null });
       onOpenChange(false);
     } catch (error) {
@@ -85,6 +98,7 @@ export function CreatePartyDialog({ open, onOpenChange, initialName, onCreated }
           autoComplete="off"
           onChange={(event) => setPhone(event.target.value)}
         />
+        {scope.kind !== 'locked' && <HomeAgencyChoice agencies={scope.agencies} value={homeAgency} onChange={setHomeAgency} />}
         <Button variant="primary" fullWidth busy={create.isPending} busyLabel={t('parties.create.creating')} onClick={() => void submit()}>
           {t('parties.create.submit')}
         </Button>

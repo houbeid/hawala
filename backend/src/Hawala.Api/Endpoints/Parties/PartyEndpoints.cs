@@ -8,6 +8,7 @@ using Parties.Application.Features.Parties.ArchiveParty;
 using Parties.Application.Features.Parties.CreateParty;
 using Parties.Application.Features.Parties.GetParty;
 using Parties.Application.Features.Parties.GetPartyStatement;
+using Parties.Application.Features.Parties.HomeAgency;
 using Parties.Application.Features.Parties.ListParties;
 using Parties.Application.Features.Parties.SetCreditLimit;
 using Parties.Application.Features.Parties.SetOpeningBalance;
@@ -15,18 +16,26 @@ using Parties.Application.Features.Parties.UpdateParty;
 
 namespace Hawala.Api.Endpoints.Parties;
 
-/// <summary>Tiers : clients, fournisseurs, personnel. Communs aux deux agences, un solde par agence.</summary>
+/// <summary>
+/// Tiers : clients, fournisseurs, personnel. Un solde par agence ; rattachés à une agence ou aux deux (un agent ne voit
+/// que ceux de son agence et des deux, 2 novembre 2026).
+/// </summary>
 public static class PartyEndpoints
 {
     /// <param name="Type">Client, Supplier, Staff ou Other.</param>
     /// <param name="Phone">Format international (+222…, +221…), facultatif.</param>
+    /// <param name="AgencyId">Rattachement choisi par le Superviseur (absent = les deux agences) ; un agent rattache à la sienne.</param>
     public sealed record CreatePartyRequest(
         string? Name,
         string? Type,
         string? Phone,
         string? Nni,
         string? Address,
-        string? Note);
+        string? Note,
+        Guid? AgencyId);
+
+    /// <param name="AgencyId">Agence de rattachement ; null = les deux agences.</param>
+    public sealed record SetPartyHomeAgencyRequest(Guid? AgencyId);
 
     /// <summary>État complet de la fiche : un téléphone, un NNI, une adresse ou une note absents sont retirés.</summary>
     /// <param name="InBalanceSheet">Obligatoire (true ou false).</param>
@@ -68,6 +77,7 @@ public static class PartyEndpoints
             .RequirePermission(Permissions.PartiesManage);
         group.MapPut("/{id:guid}/agencies/{agencyId:guid}/credit-limit", SetCreditLimit)
             .RequirePermission(Permissions.PartiesManage);
+        group.MapPut("/{id:guid}/agency", SetHomeAgency).RequirePermission(Permissions.PartiesManage);
         group.MapPost("/{id:guid}/archive", ArchiveParty).RequirePermission(Permissions.PartiesManage);
         group.MapPost("/{id:guid}/unarchive", UnarchiveParty).RequirePermission(Permissions.PartiesManage);
 
@@ -112,6 +122,22 @@ public static class PartyEndpoints
         }
 
         var result = await handler.Handle(new SetCreditLimitCommand(actorId, id, agencyId, request.CreditLimit), cancellationToken);
+        return result.IsSuccess ? TypedResults.NoContent() : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> SetHomeAgency(
+        Guid id,
+        SetPartyHomeAgencyRequest request,
+        ClaimsPrincipal user,
+        ICommandHandler<SetPartyHomeAgencyCommand> handler,
+        CancellationToken cancellationToken)
+    {
+        if (!user.TryGetAccountId(out var actorId))
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        var result = await handler.Handle(new SetPartyHomeAgencyCommand(actorId, id, request.AgencyId), cancellationToken);
         return result.IsSuccess ? TypedResults.NoContent() : result.Error.ToProblem();
     }
 
@@ -218,7 +244,7 @@ public static class PartyEndpoints
         CancellationToken cancellationToken)
     {
         var command = new CreatePartyCommand(
-            request.Name, request.Type, request.Phone, request.Nni, request.Address, request.Note);
+            request.Name, request.Type, request.Phone, request.Nni, request.Address, request.Note, request.AgencyId);
         var result = await handler.Handle(command, cancellationToken);
 
         return result.IsSuccess

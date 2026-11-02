@@ -9,6 +9,7 @@ using Hawala.SharedKernel.Results;
 using Identity.Contracts;
 using Organization.Contracts;
 using Parties.Application.Features.Import;
+using Parties.Application.Features.Parties.HomeAgency;
 
 namespace Hawala.Api.Endpoints.Setup;
 
@@ -34,7 +35,25 @@ public static class PartyImportEndpoints
         group.MapPost("/check", Check).RequirePermission(Permissions.PartiesManage).DisableAntiforgery();
         group.MapPost("/import", Import).RequirePermission(Permissions.PartiesManage).DisableAntiforgery();
 
+        // Rattache d'après leurs soldes les tiers encore rattachés aux deux agences (2 novembre 2026).
+        group.MapPost("/assign-agencies", AssignAgencies).RequirePermission(Permissions.PartiesManage);
+
         return app;
+    }
+
+    /// <summary>200 { assigned, keptBoth }.</summary>
+    private static async Task<IResult> AssignAgencies(
+        ClaimsPrincipal user,
+        ICommandHandler<AssignHomeAgenciesCommand, AssignedHomeAgencies> handler,
+        CancellationToken cancellationToken)
+    {
+        if (!user.TryGetAccountId(out var actorId))
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        var result = await handler.Handle(new AssignHomeAgenciesCommand(actorId), cancellationToken);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.Error.ToProblem();
     }
 
     private static async Task<IResult> GetTemplate(string? lang, IAgencyDirectory agencies, CancellationToken cancellationToken)

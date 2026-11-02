@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAgencies } from '@/features/organization/queries';
 import { errorMessage } from '@/shared/api/errorMessage';
+import { useAgencyScope } from '@/shared/agency/agencyScope';
 import { usePermission } from '@/shared/auth/hooks';
 import { AgencyBadge } from '@/shared/ui/AgencyBadge';
 import { Button } from '@/shared/ui/Button';
@@ -14,6 +15,7 @@ import { BalanceAmount } from '../components/BalanceAmount';
 import { CreditLimitInfo } from '../components/CreditLimitInfo';
 import { CreditLimitSheet } from '../components/CreditLimitSheet';
 import { EditPartySheet } from '../components/EditPartySheet';
+import { HomeAgencySheet } from '../components/HomeAgencySheet';
 import { OpeningBalanceSheet } from '../components/OpeningBalanceSheet';
 import { useParty } from '../queries';
 
@@ -24,7 +26,7 @@ import { useParty } from '../queries';
 // solde initial et le plafond de crédit. Un tiers archivé ne se modifie plus (le serveur répond Parties.Party.Archived) :
 // seul « Désarchiver » reste. Hors ligne, les actions sont remplacées par une explication.
 
-type Open = { kind: 'edit' } | { kind: 'archive' } | { kind: 'opening' | 'limit'; agencyId: string } | null;
+type Open = { kind: 'edit' } | { kind: 'archive' } | { kind: 'home' } | { kind: 'opening' | 'limit'; agencyId: string } | null;
 
 function Field({ label, value, ltr = false }: { label: string; value: string | null; ltr?: boolean }) {
   if (!value) return null;
@@ -45,6 +47,7 @@ export function PartyDetailPage() {
   const agencies = useAgencies();
   const byId = useMemo(() => new Map((agencies.data ?? []).map((a) => [a.id, a])), [agencies.data]);
   const canManage = usePermission('parties.manage');
+  const { scope } = useAgencyScope();
   const online = useOnlineStatus();
   const [open, setOpen] = useState<Open>(null);
 
@@ -95,6 +98,7 @@ export function PartyDetailPage() {
           <Field label={t('parties.detail.nni')} value={data.nni} ltr />
           <Field label={t('parties.detail.address')} value={data.address} />
           <Field label={t('parties.detail.note')} value={data.note} />
+          <Field label={t('parties.home.label')} value={data.homeAgencyId ? agencyName(data.homeAgencyId) : t('parties.home.both')} />
         </dl>
       </section>
 
@@ -104,6 +108,11 @@ export function PartyDetailPage() {
           {!data.isArchived && (
             <Button icon={<Icon name="pencil" />} onClick={() => setOpen({ kind: 'edit' })}>
               {t('parties.manage.edit')}
+            </Button>
+          )}
+          {!data.isArchived && scope.kind !== 'locked' && (
+            <Button icon={<Icon name="globe" />} onClick={() => setOpen({ kind: 'home' })}>
+              {t('parties.home.open')}
             </Button>
           )}
           {data.isArchived ? (
@@ -173,6 +182,7 @@ export function PartyDetailPage() {
 
       {open?.kind === 'edit' && <EditPartySheet party={data} onClose={close} />}
       {open?.kind === 'archive' && <ArchiveSheet party={data} onClose={close} />}
+      {open?.kind === 'home' && scope.kind !== 'locked' && <HomeAgencySheet party={data} agencies={scope.agencies} onClose={close} />}
       {open?.kind === 'opening' && openedBalance && (
         <OpeningBalanceSheet partyId={data.id} balance={openedBalance} agencyName={agencyName(openedBalance.agencyId)} onClose={close} />
       )}

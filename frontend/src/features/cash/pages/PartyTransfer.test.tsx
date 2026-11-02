@@ -21,6 +21,7 @@ function party(id: string, name: string, balance: number, creditLimit: number | 
     note: null,
     inBalanceSheet: true,
     isArchived: false,
+    homeAgencyId: null,
     balances: [{ agencyId: nkc.id, currency: 'MRO', balance, creditLimit, openingBalance: 0 }],
   };
 }

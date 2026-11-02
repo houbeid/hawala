@@ -101,5 +101,6 @@ internal static class PartySummaryMapper
             party.Note,
             party.InBalanceSheet,
             party.IsArchived,
-            balances.For(party));
+            balances.For(party),
+            party.HomeAgencyId);
 }

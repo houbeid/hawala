@@ -38,6 +38,7 @@ export function changeView(action: string, change: AuditChange): ChangeView {
  */
 export function valueKey(value: string | null): { key: string } | { text: string } {
   if (value === null) return { key: 'audit.values.none' };
-  if (value === 'set' || value === 'changed' || value === 'true' || value === 'false') return { key: `audit.values.${value}` };
+  // « both » : tiers rattaché aux deux agences (2 novembre 2026).
+  if (value === 'set' || value === 'changed' || value === 'true' || value === 'false' || value === 'both') return { key: `audit.values.${value}` };
   return { text: value };
 }

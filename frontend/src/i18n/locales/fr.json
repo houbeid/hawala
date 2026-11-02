@@ -331,7 +331,9 @@
         "BalanceNotZero": "Le solde doit être à zéro dans les deux agences pour archiver ce tiers.",
         "CreditLimitNegative": "Le plafond de crédit est positif ou nul.",
         "AmountRequired": "Le montant est obligatoire.",
-        "InBalanceSheetRequired": "Indiquez si le tiers est « dans le bilan »."
+        "InBalanceSheetRequired": "Indiquez si le tiers est « dans le bilan ».",
+        "AgencyInvalid": "Agence inconnue.",
+        "ExistsInOtherAgency": "Ce tiers existe déjà dans l’autre agence : demandez au Superviseur de le rattacher aux deux agences."
       },
       "Phone": {
         "Invalid": "Le numéro doit être au format international, ex. +222 22 12 34 56 ou +221 77 123 45 67."
@@ -1029,6 +1031,14 @@
         "Adjustment": "Ajustement de solde",
         "PartyTransfer": "Transfert de solde"
       }
+    },
+    "home": {
+      "label": "Agence du tiers",
+      "both": "Les deux agences",
+      "hint": "Un agent ne voit que les tiers de son agence et ceux des deux agences.",
+      "open": "Agence du tiers",
+      "title": "Agence de « {{name}} »",
+      "save": "Enregistrer l’agence"
     }
   },
   "treasury": {
@@ -1721,7 +1731,8 @@
       "set": "renseigné",
       "changed": "changé",
       "true": "oui",
-      "false": "non"
+      "false": "non",
+      "both": "les deux agences"
     },
     "fields": {
       "fullName": "Nom",
@@ -1777,7 +1788,8 @@
           "OpeningBalanceChanged": "{{actor}} a changé le solde initial de {{entity}}",
           "CreditLimitChanged": "{{actor}} a changé le plafond de crédit de {{entity}}",
           "Archived": "{{actor}} a archivé le tiers {{entity}}",
-          "Unarchived": "{{actor}} a désarchivé le tiers {{entity}}"
+          "Unarchived": "{{actor}} a désarchivé le tiers {{entity}}",
+          "AgencyChanged": "{{actor}} a changé l’agence du tiers {{entity}}"
         }
       },
       "Cash": {
@@ -1983,6 +1995,17 @@
       "done": "Fait",
       "todo": "À faire",
       "open": "Ouvrir"
+    },
+    "homeAgencies": {
+      "title": "Agences des tiers",
+      "hint": "Un agent ne voit que les tiers de son agence et ceux des deux agences. Les tiers déjà importés sont rattachés aux deux : ce bouton rattache à son agence chaque tiers qui a un solde dans une seule agence. Les autres restent aux deux ; vous pouvez corriger sur la fiche du tiers.",
+      "run": "Rattacher les tiers d’après leurs soldes",
+      "busy": "Rattachement…",
+      "done": "{{assigned}} tiers rattachés à leur agence, {{keptBoth}} laissés aux deux agences.",
+      "confirmTitle": "Rattacher les tiers à leur agence ?",
+      "confirmText": "Chaque tiers qui a un solde dans une seule agence lui sera rattaché : les agents de l’autre agence ne le verront plus. C’est tracé dans le journal d’audit.",
+      "confirm": "Rattacher",
+      "back": "Annuler"
     }
   }
 }

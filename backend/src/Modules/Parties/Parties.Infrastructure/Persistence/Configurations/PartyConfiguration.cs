@@ -45,6 +45,10 @@ internal sealed class PartyConfiguration(FieldProtector protector) : IEntityType
         builder.Property(p => p.Note).HasMaxLength(Party.NoteMaxLength);
         builder.Property(p => p.InBalanceSheet);
         builder.Property(p => p.IsArchived);
+
+        // Rattachement (2 novembre 2026) : null = les deux agences (valeur des tiers existants).
+        builder.Property(p => p.HomeAgencyId);
+        builder.HasIndex(p => p.HomeAgencyId);
         builder.Property(p => p.CreatedAt);
 
         // Déduit du type, jamais stocké.

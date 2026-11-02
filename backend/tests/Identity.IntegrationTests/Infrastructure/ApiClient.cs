@@ -138,6 +138,13 @@ public static class ApiClient
         client.SendAsync(
             HttpMethod.Put, $"/api/v1/parties/{partyId}/agencies/{agencyId}/credit-limit", body: new { creditLimit }, accessToken: accessToken);
 
+    /// <param name="agencyId">Agence de rattachement ; null = les deux agences.</param>
+    public static Task<HttpResponseMessage> SetPartyHomeAgencyAsync(this HttpClient client, string? accessToken, Guid partyId, Guid? agencyId) =>
+        client.SendAsync(HttpMethod.Put, $"/api/v1/parties/{partyId}/agency", body: new { agencyId }, accessToken: accessToken);
+
+    public static Task<HttpResponseMessage> AssignHomeAgenciesAsync(this HttpClient client, string? accessToken) =>
+        client.SendAsync(HttpMethod.Post, "/api/v1/setup/parties/assign-agencies", accessToken: accessToken);
+
     public static Task<HttpResponseMessage> ArchivePartyAsync(this HttpClient client, string? accessToken, Guid id) =>
         client.SendAsync(HttpMethod.Post, $"/api/v1/parties/{id}/archive", accessToken: accessToken);
 

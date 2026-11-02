@@ -35,6 +35,9 @@ namespace Parties.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("HomeAgencyId")
+                        .HasColumnType("uuid");
+
                     b.Property<bool>("InBalanceSheet")
                         .HasColumnType("boolean");
 
@@ -72,6 +75,8 @@ namespace Parties.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(10)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("HomeAgencyId");
 
                     b.HasIndex("Name");
 

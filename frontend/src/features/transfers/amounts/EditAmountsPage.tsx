@@ -52,6 +52,7 @@ function EditAmountsForm({ transfer }: { transfer: Transfer }) {
           note: null,
           inBalanceSheet: true,
           isArchived: false,
+          homeAgencyId: null,
           balances: null,
         }
       : null,

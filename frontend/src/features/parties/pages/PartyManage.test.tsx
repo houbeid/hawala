@@ -19,6 +19,7 @@ function party(overrides: Partial<PartySummary> = {}): PartySummary {
     note: null,
     inBalanceSheet: true,
     isArchived: false,
+    homeAgencyId: null,
     balances: [
       { agencyId: nkc.id, currency: 'MRO', balance: 1_200_000, creditLimit: 1_500_000, openingBalance: 1_000_000 },
       { agencyId: dkr.id, currency: 'XOF', balance: 0, creditLimit: null, openingBalance: 0 },
@@ -177,6 +178,27 @@ describe('Fiche d’un tiers — actions du Superviseur', () => {
       { method: 'PUT', path: `credit-limit:${nkc.id}`, body: { creditLimit: null } },
       { method: 'PUT', path: `credit-limit:${dkr.id}`, body: { creditLimit: 0 } },
     ]);
+  });
+
+  it('agence du tiers : « les deux agences » affiché, rattaché à Dakar par le Superviseur', async () => {
+    cardServer(party());
+    const agencyCalls: unknown[] = [];
+    server.use(
+      http.put(apiUrl('/parties/:id/agency'), async ({ request }) => {
+        agencyCalls.push(await request.json());
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    const { user } = await openCard();
+    expect(screen.getByText('Agence du tiers', { selector: 'dt' }).nextElementSibling).toHaveTextContent('Les deux agences');
+
+    await user.click(screen.getByRole('button', { name: 'Agence du tiers' }));
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('radio', { name: 'Dakar' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Enregistrer l’agence' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(agencyCalls).toEqual([{ agencyId: dkr.id }]);
   });
 
   it('n’offre pas d’archiver un tiers dont un solde n’est pas nul', async () => {

@@ -48,6 +48,11 @@ export function setCreditLimit(http: HttpClient, id: string, agencyId: string, r
   return http.put<void>(`/parties/${id}/agencies/${agencyId}/credit-limit`, request);
 }
 
+/** Rattachement (parties.manage, 2 novembre 2026) : une agence, ou null = les deux. Tracé dans l'audit. 204. */
+export function setPartyHomeAgency(http: HttpClient, id: string, agencyId: string | null): Promise<void> {
+  return http.put<void>(`/parties/${id}/agency`, { agencyId });
+}
+
 /** Solde nul dans les deux agences seulement (Parties.Party.BalanceNotZero) ; ferme ses comptes au grand livre. */
 export function archiveParty(http: HttpClient, id: string): Promise<void> {
   return http.post<void>(`/parties/${id}/archive`);

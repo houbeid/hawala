@@ -7,10 +7,14 @@ namespace Parties.Application.Features.Parties.CreateParty;
 /// Pas de solde initial ici : il passe toujours par l'action « solde initial par agence ».
 /// </summary>
 /// <param name="Type">Client, Supplier, Staff ou Other.</param>
+/// <param name="AgencyId">
+/// Rattachement choisi par le Superviseur (null = les deux agences) ; un agent rattache toujours à son agence.
+/// </param>
 public sealed record CreatePartyCommand(
     string? Name,
     string? Type,
     string? Phone,
     string? Nni,
     string? Address,
-    string? Note) : ICommand<Guid>;
+    string? Note,
+    Guid? AgencyId = null) : ICommand<Guid>;

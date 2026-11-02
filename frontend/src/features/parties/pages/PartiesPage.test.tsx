@@ -21,6 +21,7 @@ function party(overrides: Partial<PartySummary>): PartySummary {
     note: null,
     inBalanceSheet: true,
     isArchived: false,
+    homeAgencyId: null,
     balances: [],
     ...overrides,
   };
@@ -152,7 +153,7 @@ describe('Tiers — liste, Agent de Nouakchott', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Créer le tiers' }));
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/parties/p-new'));
-    expect(bodies).toEqual([{ name: 'Nouveau Fictif', type: 'Client', phone: null, nni: null, address: null, note: null }]);
+    expect(bodies).toEqual([{ name: 'Nouveau Fictif', type: 'Client', phone: null, nni: null, address: null, note: null, agencyId: null }]);
   });
 });
 

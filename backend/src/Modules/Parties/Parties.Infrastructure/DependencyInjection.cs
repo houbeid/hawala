@@ -14,6 +14,7 @@ using Parties.Application.Features.Parties.CreateParty;
 using Parties.Application.Features.Parties.GetParty;
 using Parties.Application.Features.Parties.GetPartyStatement;
 using Parties.Application.Features.Parties.ListParties;
+using Parties.Application.Features.Parties.HomeAgency;
 using Parties.Application.Features.Parties.SetCreditLimit;
 using Parties.Application.Features.Parties.SetOpeningBalance;
 using Parties.Application.Features.Parties.UpdateParty;
@@ -58,6 +59,8 @@ public static class DependencyInjection
         // Une seule table, mais la ligne d'audit doit être dans la même transaction (phase 6).
         services.AddSharedTransactional<UpdatePartyCommand, UpdatePartyCommandHandler>();
         services.AddSharedTransactional<SetCreditLimitCommand, SetCreditLimitCommandHandler>();
+        services.AddSharedTransactional<SetPartyHomeAgencyCommand, HomeAgencyHandlers>();
+        services.AddSharedTransactional<AssignHomeAgenciesCommand, AssignedHomeAgencies, HomeAgencyHandlers>();
 
         // Écrit dans deux schémas (parties + ledger) : une seule transaction commune.
         services.AddSharedTransactional<CreatePartyCommand, Guid, CreatePartyCommandHandler>();

@@ -20,6 +20,14 @@ export interface ImportReport {
 
 export type PartyImportReport = ImportReport;
 
+/** POST /setup/parties/assign-agencies (2 novembre 2026). */
+export interface AssignedHomeAgencies {
+  /** Tiers rattachés à l'agence où ils ont un solde. */
+  assigned: number;
+  /** Tiers laissés aux deux agences (aucun solde, ou des soldes dans les deux). */
+  keptBoth: number;
+}
+
 export interface ImportResult {
   created: number;
 }

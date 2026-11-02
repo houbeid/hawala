@@ -8,6 +8,7 @@ namespace Parties.Application.Abstractions;
 /// Phase 6 : les lectures ne renvoient que les tiers visibles par le compte connecté (« Limiter les tiers »),
 /// sauf les méthodes « IgnoringScope » et <see cref="PartyFilter.IgnoreAccountScope"/>, pour ce qui vaut pour
 /// toute l'agence (budget, noms affichés, vérification d'existence) ; le téléphone et le NNI restent uniques pour tous.
+/// Depuis le 2 novembre 2026, un agent ne voit aussi que les tiers rattachés à son agence ou aux deux (même exception).
 /// </summary>
 public interface IPartyRepository
 {
@@ -35,6 +36,15 @@ public interface IPartyRepository
     /// <summary>Un autre tiers a-t-il déjà ce NNI ?</summary>
     Task<bool> NniExistsAsync(string nni, Guid? excludingPartyId, CancellationToken cancellationToken);
 
+    /// <summary>Le tiers qui a ce téléphone, tous tiers confondus (pour dire s'il est dans l'autre agence), ou null.</summary>
+    Task<PartyOwner?> FindPhoneOwnerAsync(PartyPhone phone, CancellationToken cancellationToken);
+
+    /// <summary>Le tiers qui a ce NNI, tous tiers confondus, ou null.</summary>
+    Task<PartyOwner?> FindNniOwnerAsync(string nni, CancellationToken cancellationToken);
+
+    /// <summary>Tiers non archivés encore rattachés aux deux agences (suivis), pour les rattacher d'après leurs soldes.</summary>
+    Task<IReadOnlyList<Party>> ListAttachedToBothAsync(CancellationToken cancellationToken);
+
     /// <summary>
     /// Verrouille (FOR UPDATE) le compte du tiers dans une agence jusqu'à la fin de la transaction en cours.
     /// Faux si ce compte n'existe pas.
@@ -43,6 +53,9 @@ public interface IPartyRepository
 
     void Add(Party party);
 }
+
+/// <summary>Le propriétaire d'un téléphone ou d'un NNI, et son agence de rattachement (null = les deux).</summary>
+public sealed record PartyOwner(Guid PartyId, Guid? HomeAgencyId);
 
 /// <summary>Filtres de la liste qui ne dépendent pas du solde. Un champ null = pas de filtre.</summary>
 /// <param name="Search">Texte cherché dans le nom, ou chiffres cherchés dans le téléphone.</param>

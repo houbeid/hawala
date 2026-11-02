@@ -46,7 +46,8 @@ public sealed class ImportPartiesCommandHandler(
         foreach (var row in rows)
         {
             var created = await create.Handle(
-                new CreatePartyCommand(row.Name, row.Type.ToString(), row.Phone, row.Nni, row.Address, row.Note), cancellationToken);
+                new CreatePartyCommand(row.Name, row.Type.ToString(), row.Phone, row.Nni, row.Address, row.Note, HomeAgencyOf(row)),
+                cancellationToken);
             if (created.IsFailure)
             {
                 return PartyImportErrors.RowFailed(row.Row, created.Error);
@@ -90,6 +91,13 @@ public sealed class ImportPartiesCommandHandler(
         }
 
         return new PartyImportResult(rows.Count);
+    }
+
+    /// <summary>Rattachement d'après les soldes du fichier : une seule agence avec un solde = elle ; sinon les deux.</summary>
+    private static Guid? HomeAgencyOf(ParsedPartyRow row)
+    {
+        var withBalance = row.Agencies.Where(a => a.Opening != 0m).Select(a => a.AgencyId).ToList();
+        return withBalance.Count == 1 ? withBalance[0] : null;
     }
 }
 

@@ -60,6 +60,14 @@ public static class PartiesErrors
 
         public static readonly Error NniTaken =
             Error.Conflict("Parties.Party.NniTaken", "Ce NNI appartient déjà à un autre tiers.");
+
+        public static readonly Error AgencyInvalid =
+            Error.Validation("Parties.Party.AgencyInvalid", "Agence de rattachement inconnue.");
+
+        public static readonly Error ExistsInOtherAgency =
+            Error.Conflict(
+                "Parties.Party.ExistsInOtherAgency",
+                "Ce tiers existe déjà dans l'autre agence : demandez au Superviseur de le rattacher aux deux agences.");
     }
 
     public static class List

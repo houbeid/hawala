@@ -128,6 +128,7 @@ export function PartyPicker({ label, selected, onSelect, error }: Props) {
                   note: null,
                   inBalanceSheet: true,
                   isArchived: false,
+                  homeAgencyId: null,
                   balances: null,
                 });
               }}

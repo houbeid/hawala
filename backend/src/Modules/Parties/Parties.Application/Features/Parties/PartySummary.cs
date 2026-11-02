@@ -9,6 +9,7 @@ namespace Parties.Application.Features.Parties;
 /// Solde du tiers dans chaque agence visible (débit − crédit : positif = rouge, il nous doit ; négatif = vert, on lui doit).
 /// Null si le compte connecté n'a pas la permission parties.view_balance (règle validée).
 /// </param>
+/// <param name="HomeAgencyId">Agence de rattachement ; null = les deux agences (2 novembre 2026).</param>
 public sealed record PartySummary(
     Guid Id,
     string Name,
@@ -20,7 +21,8 @@ public sealed record PartySummary(
     string? Note,
     bool InBalanceSheet,
     bool IsArchived,
-    IReadOnlyList<PartyAgencyBalance>? Balances);
+    IReadOnlyList<PartyAgencyBalance>? Balances,
+    Guid? HomeAgencyId);
 
 /// <param name="Currency">MRO à Nouakchott, XOF à Dakar.</param>
 /// <param name="CreditLimit">Plafond de crédit dans cette agence ; 0 = aucun crédit ; null = pas de plafond.</param>

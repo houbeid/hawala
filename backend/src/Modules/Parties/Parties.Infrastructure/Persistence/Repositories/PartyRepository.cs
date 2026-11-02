@@ -8,8 +8,8 @@ using Parties.Infrastructure.Persistence.Configurations;
 namespace Parties.Infrastructure.Persistence.Repositories;
 
 /// <summary>
-/// Les lectures passent par <see cref="VisibleAsync"/> : un compte limité ne voit que ses tiers autorisés
-/// (phase 6). Téléphone et NNI : vérifiés sur tous les tiers (l'unicité vaut pour tous).
+/// Les lectures passent par <see cref="VisibleAsync"/> : un agent ne voit que les tiers de son agence et ceux des deux
+/// (2 novembre 2026), et un compte limité que ses tiers autorisés (phase 6). Téléphone et NNI : vérifiés sur tous les tiers (l'unicité vaut pour tous).
 /// </summary>
 internal sealed class PartyRepository(PartiesDbContext db, PartyVisibility visibility, FieldProtector protector) : IPartyRepository
 {
@@ -96,6 +96,28 @@ internal sealed class PartyRepository(PartiesDbContext db, PartyVisibility visib
             cancellationToken);
     }
 
+    public async Task<PartyOwner?> FindPhoneOwnerAsync(PartyPhone phone, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(phone);
+        var index = protector.Index(phone.Value);
+        return await db.Parties.AsNoTracking()
+            .Where(p => EF.Property<string?>(p, PartyConfiguration.PhoneIndex) == index)
+            .Select(p => new PartyOwner(p.Id, p.HomeAgencyId))
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<PartyOwner?> FindNniOwnerAsync(string nni, CancellationToken cancellationToken)
+    {
+        var index = protector.Index(nni);
+        return await db.Parties.AsNoTracking()
+            .Where(p => EF.Property<string?>(p, PartyConfiguration.NniIndex) == index)
+            .Select(p => new PartyOwner(p.Id, p.HomeAgencyId))
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Party>> ListAttachedToBothAsync(CancellationToken cancellationToken) =>
+        await db.Parties.Where(p => p.HomeAgencyId == null && !p.IsArchived).OrderBy(p => p.Name).ToListAsync(cancellationToken);
+
     public async Task<bool> LockAgencyAccountAsync(Guid partyId, Guid agencyId, CancellationToken cancellationToken)
     {
         var locked = await db.Database
@@ -114,6 +136,12 @@ internal sealed class PartyRepository(PartiesDbContext db, PartyVisibility visib
 
     private async Task<IQueryable<Party>> VisibleAsync(IQueryable<Party> query, CancellationToken cancellationToken)
     {
+        // Un agent ne voit que les tiers de son agence et ceux des deux (2 novembre 2026).
+        if (visibility.HomeAgencyOnly is { } agencyId)
+        {
+            query = query.Where(p => p.HomeAgencyId == null || p.HomeAgencyId == agencyId);
+        }
+
         var visible = await visibility.GetAsync(cancellationToken);
         if (!visible.IsLimited)
         {

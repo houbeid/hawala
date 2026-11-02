@@ -5,6 +5,7 @@ import { formatAmount } from '@/shared/format/money';
 import { Notice } from '@/shared/ui/Notice';
 import { useOnlineStatus } from '@/shared/useOnlineStatus';
 import { checkPartyImport, checkResumedTransfers, downloadPartyTemplate, downloadResumeTemplate, importParties, importResumedTransfers } from '../api';
+import { HomeAgenciesSection } from '../components/HomeAgenciesSection';
 import { ImportSection } from '../components/ImportSection';
 import { SetupChecklist } from '../components/SetupChecklist';
 import { StartDateSection } from '../components/StartDateSection';
@@ -44,6 +45,8 @@ export function SetupPage() {
           value: formatAmount(total, currencyOf(code), { signed: true }),
         })}
       />
+
+      <HomeAgenciesSection />
 
       {canResume && (
         <ImportSection

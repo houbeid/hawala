@@ -34,6 +34,8 @@ export interface PartySummary {
   isArchived: boolean;
   /** Null sans parties.view_balance ; seulement les agences du périmètre. */
   balances: PartyAgencyBalance[] | null;
+  /** Agence de rattachement ; null = les deux agences (un agent ne voit que les tiers de la sienne et des deux, 2 novembre 2026). */
+  homeAgencyId: string | null;
 }
 
 export interface PartyTotals {
@@ -57,6 +59,8 @@ export interface CreatePartyRequest {
   nni: string | null;
   address: string | null;
   note: string | null;
+  /** Rattachement choisi par le Superviseur (absent ou null = les deux agences) ; ignoré pour un agent (la sienne). */
+  agencyId?: string | null;
 }
 
 /** « Dans le bilan » : All (défaut), In, Out. */
