@@ -32,7 +32,7 @@ const created: CreatedTransfer = {
 };
 
 /** Serveur de la création : taux du jour, comptes, et POST /transfers qui enregistre ce qu'il reçoit. */
-function creationServer(options: { rate?: boolean; saleRate?: number; post?: () => Response } = {}) {
+function creationServer(options: { rate?: boolean; saleRate?: number; earlier?: string; post?: () => Response } = {}) {
   const posts: { body: unknown; key: string | null }[] = [];
   const receipts: { id: unknown; body: unknown }[] = [];
   const accountQueries: (string | null)[] = [];
@@ -41,6 +41,12 @@ function creationServer(options: { rate?: boolean; saleRate?: number; post?: () 
       options.rate === false
         ? HttpResponse.json({ code: 'Rates.Rate.NotFound' }, { status: 404 })
         : HttpResponse.json({ date: today, saleRate: options.saleRate ?? 3650, purchaseRate: null, updatedAt: `${today}T07:00:00Z` }),
+    ),
+    // Sans taux du jour : le dernier taux connu (`earlier` = sa date), cherché dans l'historique.
+    http.get(apiUrl('/rates'), () =>
+      HttpResponse.json(
+        options.earlier ? [{ date: options.earlier, saleRate: 3650, purchaseRate: null, updatedAt: `${options.earlier}T07:00:00Z` }] : [],
+      ),
     ),
     http.get(apiUrl('/treasury-accounts'), ({ request }) => {
       const agencyId = new URL(request.url).searchParams.get('agencyId');
@@ -282,12 +288,25 @@ describe('Création d’un transfert — Agent de Nouakchott', () => {
     expect(screen.getByRole('heading', { name: 'Transfert enregistré', hidden: true })).toBeInTheDocument();
   });
 
-  it('bloque l’étape 1 sans taux du jour', async () => {
+  it('bloque l’étape 1 quand aucun taux n’a jamais été fixé', async () => {
     creationServer({ rate: false });
     renderApp('/transfers/new');
 
     expect(await screen.findByText(/Le taux du jour n'est pas encore fixé pour cette date/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Continuer' })).toBeDisabled();
+  });
+
+  it('sans taux du jour, reprend le dernier taux connu et le signale', async () => {
+    creationServer({ rate: false, earlier: '2026-10-30' });
+    const { user } = renderApp('/transfers/new');
+
+    expect(
+      // Les montants sont groupés par une espace fine : seul le début de la phrase est comparé.
+      await screen.findByText(/^Taux du jour pas encore fixé : le taux du 30\/10 est repris/),
+    ).toBeInTheDocument();
+    await fillAmount(user);
+    expect(await screen.findByText('1 250 000 FCFA')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Continuer' })).toBeEnabled();
   });
 
   it('refuse de continuer tant que la répartition ne fait pas le total', async () => {

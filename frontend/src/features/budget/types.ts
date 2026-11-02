@@ -40,7 +40,9 @@ export type CoherenceAlertKind =
   | 'CashMovementCancelled'
   | 'TransferCancelled'
   | 'DeliveredWithoutCode'
-  | 'NegativeBalance';
+  | 'NegativeBalance'
+  /** Transfert créé sans taux du jour, avec le taux d'un jour précédent (2 novembre 2026). */
+  | 'RateFromEarlierDay';
 
 /** Ordre d'affichage des familles d'alertes (maquette 10). */
 export const COHERENCE_ALERT_KINDS: readonly CoherenceAlertKind[] = [
@@ -51,6 +53,7 @@ export const COHERENCE_ALERT_KINDS: readonly CoherenceAlertKind[] = [
   'TransferCancelled',
   'DeliveredWithoutCode',
   'NegativeBalance',
+  'RateFromEarlierDay',
 ];
 
 export interface CoherenceAlert {

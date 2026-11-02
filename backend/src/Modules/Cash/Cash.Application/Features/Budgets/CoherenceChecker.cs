@@ -60,6 +60,9 @@ public sealed class CoherenceChecker(
                     $"{transfer.Reference} : {transfer.SaleRate} pour {transfer.DailySaleRate} le jour même", transfer.SaleRate, null),
                 TransferAlertKind.Cancelled => new CoherenceAlert(
                     CoherenceAlertKind.TransferCancelled, transfer.At, transfer.TransferId, transfer.Reference, null, transfer.Reason),
+                TransferAlertKind.RateFromEarlierDay => new CoherenceAlert(
+                    CoherenceAlertKind.RateFromEarlierDay, transfer.At, transfer.TransferId,
+                    $"{transfer.Reference} : taux du {transfer.Reason}", transfer.SaleRate, null),
                 _ => new CoherenceAlert(
                     CoherenceAlertKind.DeliveredWithoutCode, transfer.At, transfer.TransferId, transfer.Reference, null, transfer.Reason),
             });

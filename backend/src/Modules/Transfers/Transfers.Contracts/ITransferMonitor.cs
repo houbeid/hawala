@@ -21,10 +21,13 @@ public enum TransferAlertKind
 
     /// <summary>Transfert livré sans code par le Superviseur.</summary>
     DeliveredWithoutCode,
+
+    /// <summary>Transfert créé sans taux du jour : taux d'un jour précédent repris (2 novembre 2026).</summary>
+    RateFromEarlierDay,
 }
 
 /// <param name="At">Instant de l'événement (création ou modification, annulation, livraison).</param>
-/// <param name="Reason">Motif (annulation, livraison sans code) ; null sinon.</param>
+/// <param name="Reason">Motif (annulation, livraison sans code) ; date du taux repris (aaaa-mm-jj) ; null sinon.</param>
 /// <param name="SaleRate">Taux inhabituel : prix de vente du transfert ; null sinon.</param>
 /// <param name="DailySaleRate">Taux inhabituel : prix de vente du jour de l'opération ; null sinon.</param>
 public sealed record TransferAlertEvent(

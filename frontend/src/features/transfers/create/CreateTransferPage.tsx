@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useAgencies } from '@/features/organization/queries';
 import type { Agency } from '@/features/organization/types';
 import type { PartySummary } from '@/features/parties';
-import { useDailyRate } from '@/features/rates/queries';
+import { useApplicableRate } from '@/features/rates/queries';
 import { cachedParty } from '@/features/parties';
 import { useTreasuryAccounts } from '@/features/treasury/queries';
 import { useAgencyScope } from '@/shared/agency/agencyScope';
@@ -120,7 +120,9 @@ export function CreateTransferPage() {
   });
   const source = agencies.data?.find((a) => a.id === sourceAgencyId);
   const destination = agencies.data?.find((a) => a.id !== sourceAgencyId);
-  const rate = useDailyRate(rateDay({ operationAt }));
+  // Taux du jour, sinon le dernier taux connu (patron absent, 2 novembre 2026) : sa date est alors signalée.
+  const day = rateDay({ operationAt });
+  const rate = useApplicableRate(day);
   // Prix appliqué : celui saisi par l'agent, sinon celui du jour (décision du patron, 30 octobre 2026).
   const saleRate = appliedSaleRate({ saleRate: saleRateText }, rate.data?.saleRate ?? null);
   // FCFA de référence : tapé, ou déduit du MRO tapé (le serveur retrouve exactement ce MRO).
@@ -314,7 +316,8 @@ export function CreateTransferPage() {
           canChooseSource={canChooseSource}
           source={source}
           destination={destination}
-          rate={{ status: rate.isPending ? 'loading' : rate.isError ? 'error' : 'ready', data: rate.data ?? null }}
+          rate={rate}
+          rateFrom={rate.data && rate.data.date !== day ? rate.data.date : null}
           amountXof={amountXof}
           amountMro={amountMro}
           saleRate={saleRate}
@@ -394,7 +397,7 @@ export function CreateTransferPage() {
           </Button>
         )}
         {step < 3 ? (
-          <Button type="submit" variant="primary" className="flex-1" disabled={step === 1 && rate.isSuccess && !rate.data}>
+          <Button type="submit" variant="primary" className="flex-1" disabled={step === 1 && rate.status === 'ready' && !rate.data}>
             {t('transfers.create.continue')}
           </Button>
         ) : (

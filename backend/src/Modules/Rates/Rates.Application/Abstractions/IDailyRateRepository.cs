@@ -11,6 +11,9 @@ public interface IDailyRateRepository
     /// <summary>Les taux fixés entre deux dates incluses, du plus récent au plus ancien. Lecture seule.</summary>
     Task<IReadOnlyList<DailyRate>> ListAsync(DateOnly from, DateOnly to, CancellationToken cancellationToken);
 
+    /// <summary>Le dernier taux fixé à cette date ou avant (lecture seule), ou null s'il n'y en a aucun.</summary>
+    Task<DailyRate?> GetLatestOnOrBeforeAsync(DateOnly date, CancellationToken cancellationToken);
+
     void Add(DailyRate rate);
 }
 

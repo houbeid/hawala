@@ -52,6 +52,9 @@ export function alertDetail(alert: CoherenceAlert, currency: Currency): AlertDet
       return { subject: null, value: money(false), reason: alert.reason };
     case 'NegativeBalance':
       return { subject: alert.label, value: money(false), reason: null };
+    case 'RateFromEarlierDay':
+      // « TR-… : taux du 2026-11-01 » : la référence, puis le prix de vente appliqué.
+      return { subject: beforeColon(alert.label), value: alert.amount === null ? null : formatRate(alert.amount), reason: null };
     default:
       return { subject: alert.label, value: null, reason: alert.reason };
   }

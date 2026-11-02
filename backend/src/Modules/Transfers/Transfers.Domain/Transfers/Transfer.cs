@@ -19,7 +19,8 @@ public sealed record NewTransfer(
     string? Note,
     DateTimeOffset OperationAt,
     IReadOnlyList<PaymentLine> Payments,
-    Guid? CreditPartyId = null);
+    Guid? CreditPartyId = null,
+    DateOnly? RateDate = null);
 
 /// <summary>
 /// Un transfert non livré de l'ancienne app, repris à la mise en service (décisions du 24 octobre 2026) : montants tels
@@ -61,6 +62,9 @@ public sealed class Transfer
 
     /// <summary>Au 5e code faux, le transfert est bloqué (règle validée) ; déblocage par le Superviseur.</summary>
     public const int MaxCodeAttempts = 5;
+
+    /// <summary>Champ de la ligne « Ajouté » qui garde la date du taux repris d'un jour précédent.</summary>
+    public const string RateDateField = "RateDate";
 
     /// <summary>Délai pendant lequel l'auteur peut annuler son transfert intact (voir <see cref="CancelByCreator"/>).</summary>
     public static readonly TimeSpan CreatorCancellationWindow = TimeSpan.FromMinutes(30);
@@ -116,7 +120,15 @@ public sealed class Transfer
         CreatedBy = createdBy;
         CreatedAt = now;
         _payments.AddRange(request.Payments.Select(p => new TransferPayment(PaymentStage.Creation, p.TreasuryAccountId, p.Amount, now)));
-        Record(firstEvent, createdBy, now);
+
+        // Taux du jour pas encore fixé : celui d'un jour précédent est repris, et sa date est gardée dans l'historique.
+        Record(
+            firstEvent,
+            createdBy,
+            now,
+            changes: request.RateDate is { } rateDate
+                ? [new TransferFieldChange(RateDateField, null, rateDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))]
+                : null);
     }
 
     public Guid Id { get; private set; }
@@ -239,6 +251,17 @@ public sealed class Transfer
 
     /// <summary>Repris de l'ancienne app à la mise en service : exclu du bénéfice et du tableau de bord.</summary>
     public bool IsResumed => _events.Any(e => e.Type == TransferEventType.Resumed);
+
+    /// <summary>
+    /// Date du taux repris quand celui du jour de l'opération n'était pas fixé (décision du patron, 2 novembre 2026), lue
+    /// dans la ligne « Ajouté » de l'historique ; null si le taux du jour a été appliqué.
+    /// </summary>
+    public DateOnly? RateTakenFrom =>
+        _events.Count > 0
+        && _events[0].Changes.FirstOrDefault(c => c.Field == RateDateField)?.After is { } text
+        && DateOnly.TryParseExact(text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var day)
+            ? day
+            : null;
 
     /// <summary>
     /// Compte qui a vu le code en cours : l'auteur du dernier nouveau code, sinon le créateur. Lui seul peut demander

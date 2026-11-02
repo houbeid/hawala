@@ -16,5 +16,8 @@ internal sealed class DailyRateRepository(RatesDbContext db) : IDailyRateReposit
             .OrderByDescending(r => r.Date)
             .ToListAsync(cancellationToken);
 
+    public Task<DailyRate?> GetLatestOnOrBeforeAsync(DateOnly date, CancellationToken cancellationToken) =>
+        db.DailyRates.AsNoTracking().Where(r => r.Date <= date).OrderByDescending(r => r.Date).FirstOrDefaultAsync(cancellationToken);
+
     public void Add(DailyRate rate) => db.DailyRates.Add(rate);
 }

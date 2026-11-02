@@ -11,4 +11,10 @@ public sealed class DailyRates(IDailyRateRepository rates) : IDailyRates
         var rate = await rates.GetAsync(date, cancellationToken);
         return rate is null ? null : new DailyRateSnapshot(rate.Date, rate.SaleRate, rate.PurchaseRate);
     }
+
+    public async Task<DailyRateSnapshot?> GetLatestOnOrBeforeAsync(DateOnly date, CancellationToken cancellationToken)
+    {
+        var rate = await rates.GetLatestOnOrBeforeAsync(date, cancellationToken);
+        return rate is null ? null : new DailyRateSnapshot(rate.Date, rate.SaleRate, rate.PurchaseRate);
+    }
 }

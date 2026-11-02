@@ -88,11 +88,16 @@ public sealed class CreateTransferCommandHandler(
         }
 
         var operationDate = DateOnly.FromDateTime(operationAt.UtcDateTime);
-        var rate = await dailyRates.GetAsync(operationDate, cancellationToken);
+        // Taux du jour pas encore fixé (patron absent) : le dernier taux connu est repris, sa date est gardée et signalée au
+        // contrôle de cohérence ; le transfert garde ces taux même si le taux du jour est fixé ensuite (2 novembre 2026).
+        var rate = await dailyRates.GetAsync(operationDate, cancellationToken)
+            ?? await dailyRates.GetLatestOnOrBeforeAsync(operationDate, cancellationToken);
         if (rate is null)
         {
             return TransfersErrors.Transfer.RateNotSet;
         }
+
+        DateOnly? rateDate = rate.Date == operationDate ? null : rate.Date;
 
         // L'agent peut vendre à un autre prix que celui du jour, sans limite ; l'écart de plus de 5 % est signalé par le
         // contrôle de cohérence (TransferMonitor), jamais bloqué.
@@ -112,7 +117,7 @@ public sealed class CreateTransferCommandHandler(
             source.Id, source.Currency, destination.Id, destination.Currency,
             xof.Value, saleRate.Value, rate.PurchaseRate,
             command.SenderInfo, command.BeneficiaryInfo, command.Note,
-            operationAt, [.. payments.Value.Select(p => p.Line)], command.CreditPartyId);
+            operationAt, [.. payments.Value.Select(p => p.Line)], command.CreditPartyId, rateDate);
 
         // Validation complète AVANT de consommer un numéro de référence (le compteur est transactionnel de toute façon).
         var code = WithdrawalCodes.NewCode();

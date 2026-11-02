@@ -60,6 +60,8 @@ export interface Transfer {
   version: number;
   /** Repris de l'ancienne app à la mise en service : montant non modifiable, exclu du bénéfice (absent = faux). */
   isResumed?: boolean;
+  /** Taux du jour pas fixé à la création : date (aaaa-mm-jj) du taux repris ; absent ou null sinon (2 novembre 2026). */
+  rateTakenFrom?: string | null;
 }
 
 export interface TransferList {

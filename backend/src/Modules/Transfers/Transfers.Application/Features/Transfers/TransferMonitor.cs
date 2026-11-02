@@ -8,7 +8,8 @@ namespace Transfers.Application.Features.Transfers;
 /// <summary>
 /// Implémentation de la porte publique du contrôle de cohérence (règles validées le 21 octobre 2026) :
 /// taux inhabituel (écart de plus de 5 % entre le prix de vente du transfert et celui du jour de l'opération,
-/// sur un transfert créé ou modifié depuis l'instant donné), transferts annulés, livraisons sans code.
+/// sur un transfert créé ou modifié depuis l'instant donné), transferts annulés, livraisons sans code, et (2 novembre 2026)
+/// transferts créés avec le taux d'un jour précédent faute de taux du jour.
 /// </summary>
 public sealed class TransferMonitor(ITransferRepository transfers, IDailyRates dailyRates) : ITransferMonitor
 {
@@ -43,6 +44,14 @@ public sealed class TransferMonitor(ITransferRepository transfers, IDailyRates d
                         transfer.Id, transfer.Reference, TransferAlertKind.UnusualRate, rateEvent.At, null,
                         transfer.SaleRate.MroPer5000Xof, daily.SaleRate.MroPer5000Xof));
                 }
+            }
+
+            if (transfer.RateTakenFrom is { } rateDay && transfer.CreatedAt >= since)
+            {
+                alerts.Add(new TransferAlertEvent(
+                    transfer.Id, transfer.Reference, TransferAlertKind.RateFromEarlierDay, transfer.CreatedAt,
+                    rateDay.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+                    transfer.SaleRate.MroPer5000Xof, null));
             }
 
             if (transfer.Status == TransferStatus.Cancelled && transfer.CancelledAt >= since)

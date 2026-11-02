@@ -3,6 +3,7 @@ import { useWatch, type UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import type { Agency } from '@/features/organization/types';
 import type { DailyRate } from '@/features/rates/types';
+import { formatDayShort } from '@/shared/format/dates';
 import { formatAmount, formatNumber, formatRate } from '@/shared/format/money';
 import { AgencyBadge } from '@/shared/ui/AgencyBadge';
 import { Icon } from '@/shared/ui/Icon';
@@ -26,13 +27,15 @@ interface Props {
   source: Agency | undefined;
   destination: Agency | undefined;
   rate: { status: 'loading' | 'error' | 'ready'; data: DailyRate | null };
+  /** Taux du jour pas encore fixé : date du dernier taux connu, repris (2 novembre 2026) ; null sinon. */
+  rateFrom: string | null;
   amountXof: number | null;
   amountMro: number | null;
   /** Prix appliqué : saisi par l'agent, sinon celui du jour ; null s'il est mal saisi. */
   saleRate: number | null;
 }
 
-export function AmountStep({ form, errors, agencies, canChooseSource, source, destination, rate, amountXof, amountMro, saleRate }: Props) {
+export function AmountStep({ form, errors, agencies, canChooseSource, source, destination, rate, rateFrom, amountXof, amountMro, saleRate }: Props) {
   const { t } = useTranslation();
   const { register, setValue } = form;
   const unit = useWatch({ control: form.control, name: 'amountUnit' });
@@ -142,6 +145,11 @@ export function AmountStep({ form, errors, agencies, canChooseSource, source, de
       <div className="flex flex-col gap-1.5">
         {rate.status === 'ready' && rate.data ? (
           <>
+            {rateFrom && (
+              <Notice tone="warning">
+                {t('transfers.create.rateFromEarlierDay', { date: formatDayShort(rateFrom), rate: formatRate(rate.data.saleRate) })}
+              </Notice>
+            )}
             <RateField
               label={t('transfers.create.saleRate')}
               placeholder={formatNumber(rate.data.saleRate)}

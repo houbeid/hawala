@@ -706,7 +706,8 @@
       "formulaFromMro": "{{mro}} × 5 000 ÷ {{rate}}, arrondi au FCFA",
       "saleRate": "Prix de vente de ce transfert",
       "saleRateHint": "Prix du jour : {{rate}}. Laissez vide pour l’appliquer, ou saisissez un autre prix.",
-      "saleRateUnusual": "Plus de 5 % d’écart avec le prix du jour ({{rate}}) : le transfert sera signalé au contrôle du soir."
+      "saleRateUnusual": "Plus de 5 % d’écart avec le prix du jour ({{rate}}) : le transfert sera signalé au contrôle du soir.",
+      "rateFromEarlierDay": "Taux du jour pas encore fixé : le taux du {{date}} est repris (5 000 FCFA = {{rate}}). Le transfert le garde, et le contrôle de cohérence le signale."
     },
     "detail": {
       "backToList": "Transferts",
@@ -757,7 +758,8 @@
         "deliver": "Livrer",
         "deliverWithoutCode": "Livrer sans code"
       },
-      "resumed": "Repris de l’ancienne app à la mise en service : son ancien code est inconnu. L’agence d’envoi peut donner un nouveau code à l’expéditeur, ou le Superviseur peut livrer sans code. Exclu du bénéfice."
+      "resumed": "Repris de l’ancienne app à la mise en service : son ancien code est inconnu. L’agence d’envoi peut donner un nouveau code à l’expéditeur, ou le Superviseur peut livrer sans code. Exclu du bénéfice.",
+      "rateTakenFrom": "Créé sans taux du jour : taux du {{date}} repris."
     },
     "history": {
       "empty": "Aucun événement.",
@@ -790,7 +792,8 @@
         "CreditPartyId": "Tiers du crédit",
         "CreditAmount": "Part à crédit",
         "Status": "Statut",
-        "FailedCodeAttempts": "Codes faux"
+        "FailedCodeAttempts": "Codes faux",
+        "RateDate": "Date du taux repris"
       }
     },
     "amounts": {
@@ -1319,7 +1322,8 @@
         "CashMovementCancelled": "Mouvements de caisse annulés",
         "TransferCancelled": "Transferts annulés",
         "DeliveredWithoutCode": "Livraisons sans code",
-        "NegativeBalance": "Comptes en négatif"
+        "NegativeBalance": "Comptes en négatif",
+        "RateFromEarlierDay": "Taux d’un jour précédent repris"
       }
     },
     "save": {

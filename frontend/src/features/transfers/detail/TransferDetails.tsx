@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Agency } from '@/features/organization/types';
+import { formatDayLong } from '@/shared/format/dates';
 import { formatAmount, formatRate } from '@/shared/format/money';
 import { Icon } from '@/shared/ui/Icon';
 import { Notice } from '@/shared/ui/Notice';
@@ -22,7 +23,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 }
 
 export function TransferDetails({ transfer, agencies, createdBy }: { transfer: Transfer; agencies: Map<string, Agency>; createdBy: string | null }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const deliver = amountToDeliver(transfer);
   const paid = amountPaid(transfer);
   const city = (id: string) => {
@@ -44,6 +45,9 @@ export function TransferDetails({ transfer, agencies, createdBy }: { transfer: T
       )}
       {transfer.isCodeLocked && transfer.status === 'NotDelivered' && <Notice tone="error">{t('transfers.detail.codeLocked')}</Notice>}
       {transfer.isResumed && <Notice tone="info">{t('transfers.detail.resumed')}</Notice>}
+      {transfer.rateTakenFrom && (
+        <Notice tone="info">{t('transfers.detail.rateTakenFrom', { date: formatDayLong(transfer.rateTakenFrom, i18n.language) })}</Notice>
+      )}
 
       <section className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
         <span className="amount font-mono text-sm font-medium">{transfer.reference}</span>

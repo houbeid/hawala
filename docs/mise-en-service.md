@@ -131,7 +131,7 @@ Compléments :
 
 ## Le matin de J+1
 
-1. Le Superviseur fixe le **Taux du jour** (prix d'achat et prix de vente) avant le premier transfert : sans taux du jour, aucun transfert ne peut être créé.
+1. Le Superviseur fixe le **Taux du jour** (prix d'achat et prix de vente) avant le premier transfert. S'il ne l'est pas, les transferts reprennent le dernier taux connu et le contrôle de cohérence les signale (2 novembre 2026).
 2. Les agents se connectent, changent leur mot de passe temporaire, puis installent l'app sur leur téléphone (« Ajouter à l'écran d'accueil »).
 3. Premier test réel, en présence du Superviseur : un petit transfert de Nouakchott vers Dakar, vu à Dakar sans rafraîchir, puis livré.
 

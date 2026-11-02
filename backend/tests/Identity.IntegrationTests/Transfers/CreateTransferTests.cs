@@ -251,6 +251,37 @@ public sealed class CreateTransferTests(ApiFixture fixture)
     }
 
     [Fact]
+    public async Task Without_a_rate_for_its_day_the_last_known_rate_is_taken_kept_and_reported()
+    {
+        // 1972 : seul ce test y fixe un taux (les autres écrivent entre 1975 et 1995, et 1970 reste sans taux).
+        var ctx = await ArrangeAsync();
+        var rateDay = new DateOnly(1972, 3, 1);
+        using var rate = await ctx.Client.SetDailyRateAsync(ctx.SupervisorToken, rateDay, 3600m, 3650m);
+        Assert.Equal(HttpStatusCode.NoContent, rate.StatusCode);
+        var cash = await ctx.CreateTreasuryAccountAsync("NKC", "cash");
+        var agentToken = await ctx.LoginAgentAsync("NKC");
+        var since = DateTimeOffset.UtcNow.AddSeconds(-1);
+
+        var created = await CreateOkAsync(
+            ctx, agentToken, Body(ctx.Dkr, 5000m, new DateTimeOffset(1972, 3, 5, 10, 0, 0, TimeSpan.Zero), (cash, 3650m)));
+
+        Assert.Equal(3650m, created.GetProperty("saleRate").GetDecimal());
+        using var read = await ctx.Client.GetTransferAsync(ctx.SupervisorToken, created.GetProperty("id").GetGuid());
+        var view = await read.ReadJsonAsync();
+        Assert.Equal("1972-03-01", view.GetProperty("rateTakenFrom").GetString());
+        Assert.Equal(3600m, view.GetProperty("purchaseRate").GetDecimal());
+
+        using var coherence = await ctx.Client.SendGetAsync(
+            ctx.SupervisorToken,
+            $"/api/v1/cash-budget/coherence?agencyId={ctx.Nkc}&since={Uri.EscapeDataString(since.ToString("O", CultureInfo.InvariantCulture))}");
+        var alerts = (await coherence.ReadJsonAsync()).GetProperty("alerts").EnumerateArray()
+            .Where(a => a.GetProperty("kind").GetString() == "RateFromEarlierDay")
+            .Select(a => a.GetProperty("label").GetString())
+            .ToList();
+        Assert.Contains($"{created.GetProperty("reference").GetString()} : taux du 1972-03-01", alerts);
+    }
+
+    [Fact]
     public async Task Payment_method_must_be_an_active_account_of_the_sending_agency()
     {
         var ctx = await ArrangeAsync();

@@ -23,6 +23,9 @@ public enum CoherenceAlertKind
 
     /// <summary>Compte de trésorerie en négatif.</summary>
     NegativeBalance,
+
+    /// <summary>Transfert créé sans taux du jour, avec le taux d'un jour précédent (2 novembre 2026).</summary>
+    RateFromEarlierDay,
 }
 
 /// <param name="At">Instant de l'événement (ou du contrôle, pour un solde négatif).</param>

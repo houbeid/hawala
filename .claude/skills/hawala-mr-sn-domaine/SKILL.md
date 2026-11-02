@@ -69,7 +69,7 @@ Mêmes règles pour Nouakchott et Dakar :
 - **Commission = écart entre prix de vente et prix d'achat × montant.** Exemple : 5 000 000 FCFA vendus à 3 650 (le client paie 3 650 000 MRO), achetés à 3 600 (3 600 000 MRO) → 50 000 MRO. C'est la formule du bénéfice ci-dessous.
 - Chaque transfert garde ses taux (historisés).
 - **Un seul taux du jour pour les deux agences** (un seul corridor), validé le 20 octobre 2026.
-- **Sans taux fixé pour la date de l'opération, pas de transfert** : l'agent voit « taux du jour non fixé ».
+- **Sans taux fixé pour la date de l'opération** (décision du patron, 2 novembre 2026, remplace « pas de transfert ») : le **dernier taux connu** (prix d'achat et prix de vente d'un jour précédent) est repris ; le transfert le garde même si le taux du jour est fixé ensuite (le Superviseur corrige un transfert un par un) ; la date du taux repris est gardée dans l'historique (ligne « Ajouté », champ `RateDate`), affichée sur la fiche et signalée par le contrôle de cohérence (alerte « taux d'un jour précédent »). Refus « taux du jour non fixé » seulement si aucun taux n'a jamais été fixé.
 - **Le taux d'un jour peut être changé à tout moment** par le Superviseur ; les transferts déjà créés gardent leurs taux, seuls les nouveaux prennent le nouveau.
 - **Le prix d'achat n'est visible qu'avec la permission `profit.view`** (Superviseur) ; les agents ne voient que le prix de vente.
 - **Alerte « taux de change inhabituel »** si le taux d'un transfert s'écarte de **plus de 5 %** du taux du jour (avec 3 600 : hors de 3 420 à 3 780). Alerte seulement, sans blocage.
