@@ -177,6 +177,9 @@ public static class ApiClient
         this HttpClient client, string? accessToken, Guid id, string? reason, DateTimeOffset? operationAt = null) =>
         client.SendAsync(HttpMethod.Post, $"/api/v1/transfers/{id}/cancel", body: new { reason, operationAt }, accessToken: accessToken);
 
+    public static Task<HttpResponseMessage> CancelOwnTransferAsync(this HttpClient client, string? accessToken, Guid id, string? reason = null) =>
+        client.SendAsync(HttpMethod.Post, $"/api/v1/transfers/{id}/cancel-own", body: new { reason }, accessToken: accessToken);
+
     public static Task<HttpResponseMessage> UnlockTransferCodeAsync(this HttpClient client, string? accessToken, Guid id, string? reason = null) =>
         client.SendAsync(HttpMethod.Post, $"/api/v1/transfers/{id}/unlock-code", body: new { reason }, accessToken: accessToken);
 

@@ -71,6 +71,14 @@ export function cancelTransfer(http: HttpClient, id: string, request: CancelTran
   return http.post<void>(`/transfers/${id}/cancel`, request);
 }
 
+/**
+ * Annulation par l'auteur depuis l'écran du code, juste après la création (décision du 2 novembre 2026) : motif
+ * facultatif. 403 NotCreator, 409 CreatorTooLate (déjà touché ou trop tard : le Superviseur annule). 204.
+ */
+export function cancelOwnTransfer(http: HttpClient, id: string, reason: string | null): Promise<void> {
+  return http.post<void>(`/transfers/${id}/cancel-own`, { reason });
+}
+
 /** Déblocage du code après 5 essais faux (transfers.manage_code, Superviseur). 204. */
 export function unlockTransferCode(http: HttpClient, id: string, reason: string | null): Promise<void> {
   return http.post<void>(`/transfers/${id}/unlock-code`, { reason });

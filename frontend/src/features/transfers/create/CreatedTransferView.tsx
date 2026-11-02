@@ -1,15 +1,19 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatAmount, formatRate } from '@/shared/format/money';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
 import { Notice } from '@/shared/ui/Notice';
+import { useOnlineStatus } from '@/shared/useOnlineStatus';
 import { ReceiptButton } from '../components/ReceiptButton';
 import { WithdrawalCode } from '../components/WithdrawalCode';
 import type { CreatedTransfer } from '../types';
+import { CancelOwnTransfer } from './CancelOwnTransfer';
 
 // Succès (maquette 04) : SEUL écran où le code de retrait apparaît, en six grandes cases. Il n'est jamais
 // relu ensuite (le serveur ne le garde que haché). Pas d'imprimante en agence (24 octobre 2026) : le reçu PDF,
 // qui porte le code, est envoyé à l'expéditeur (partage du téléphone) ; sans code (envoi répété), le duplicata.
+// L'auteur peut encore annuler son transfert ici, en ligne (décision du patron, 2 novembre 2026).
 
 interface Props {
   created: CreatedTransfer;
@@ -25,6 +29,8 @@ interface Props {
 
 export function CreatedTransferView({ created, deliver, paid, credit, sender, beneficiary, onDone, onNew }: Props) {
   const { t } = useTranslation();
+  const online = useOnlineStatus();
+  const [cancelled, setCancelled] = useState(false);
 
   return (
     <div className="flex flex-col gap-4">
@@ -34,12 +40,18 @@ export function CreatedTransferView({ created, deliver, paid, credit, sender, be
             <Icon name="check" className="size-9" />
           </span>
           <h2 id="created-title" className="m-0 text-xl font-bold">
-            {created.replayed ? t('transfers.create.done.replayedTitle') : t('transfers.create.done.title')}
+            {cancelled
+              ? t('transfers.create.done.cancelledTitle')
+              : created.replayed
+                ? t('transfers.create.done.replayedTitle')
+                : t('transfers.create.done.title')}
           </h2>
           <span className="amount font-mono text-sm font-medium">{created.reference}</span>
         </div>
 
-        {created.withdrawalCode ? (
+        {cancelled ? (
+          <Notice tone="warning">{t('transfers.create.done.cancelledText')}</Notice>
+        ) : created.withdrawalCode ? (
           <WithdrawalCode code={created.withdrawalCode} />
         ) : (
           <Notice tone="info">{t('transfers.create.done.noCodeReplayed')}</Notice>
@@ -74,14 +86,19 @@ export function CreatedTransferView({ created, deliver, paid, credit, sender, be
         </div>
       </section>
 
-      {created.withdrawalCode && <Notice tone="warning">{t('transfers.create.done.codeOnce')}</Notice>}
-      <ReceiptButton transferId={created.id} reference={created.reference} code={created.withdrawalCode ?? undefined} />
+      {!cancelled && created.withdrawalCode && <Notice tone="warning">{t('transfers.create.done.codeOnce')}</Notice>}
+      {!cancelled && (
+        <ReceiptButton transferId={created.id} reference={created.reference} code={created.withdrawalCode ?? undefined} />
+      )}
       <Button variant="primary" fullWidth onClick={onDone}>
         {t('transfers.create.done.finish')}
       </Button>
       <Button fullWidth icon={<Icon name="plus" />} onClick={onNew}>
         {t('transfers.new')}
       </Button>
+      {!cancelled && !created.replayed && online && (
+        <CancelOwnTransfer transferId={created.id} hasCredit={credit !== null} onCancelled={() => setCancelled(true)} />
+      )}
     </div>
   );
 }

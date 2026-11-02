@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Transfers.Application.Abstractions;
 using Hawala.SharedKernel.Messaging;
 using Transfers.Application.Features.Transfers;
+using Transfers.Application.Features.Transfers.CancelOwnTransfer;
 using Transfers.Application.Features.Transfers.CancelTransfer;
 using Transfers.Application.Features.Transfers.CreateTransfer;
 using Transfers.Application.Features.Transfers.DeliverTransfer;
@@ -84,6 +85,7 @@ public static class DependencyInjection
 
         // Annulation : transfert + contre-passation au grand livre, ensemble.
         services.AddPublishingTransactional<CancelTransferCommand, CancelTransferCommandHandler>();
+        services.AddPublishingTransactional<CancelOwnTransferCommand, CancelOwnTransferCommandHandler>();
 
         // Actions sur le code : transfert verrouillé pendant la commande (et grand livre pour la livraison sans code).
         services.AddPublishingTransactional<UnlockCodeCommand, UnlockCodeCommandHandler>();

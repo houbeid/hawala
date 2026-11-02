@@ -62,6 +62,12 @@ public sealed class Transfer
     /// <summary>Au 5e code faux, le transfert est bloqué (règle validée) ; déblocage par le Superviseur.</summary>
     public const int MaxCodeAttempts = 5;
 
+    /// <summary>Délai pendant lequel l'auteur peut annuler son transfert intact (voir <see cref="CancelByCreator"/>).</summary>
+    public static readonly TimeSpan CreatorCancellationWindow = TimeSpan.FromMinutes(30);
+
+    /// <summary>Motif enregistré quand l'auteur annule sans en donner (le grand livre exige un motif).</summary>
+    public const string DefaultCreatorCancellationReason = "Annulé par son auteur juste après la création.";
+
     private readonly List<TransferPayment> _payments = [];
     private readonly List<TransferEvent> _events = [];
 
@@ -845,6 +851,36 @@ public sealed class Transfer
             new TransferFieldChange(nameof(Status), nameof(TransferStatus.NotDelivered), nameof(TransferStatus.Cancelled)),
         ]);
         return Result.Success();
+    }
+
+    /// <summary>
+    /// Annulation par l'auteur, depuis l'écran du code juste après la création (décision du patron, 2 novembre 2026) :
+    /// seulement son propre transfert, motif facultatif, et seulement s'il est intact (aucune autre action dans
+    /// l'historique : ni modification, ni code faux, ni nouveau code) et enregistré il y a moins de
+    /// <see cref="CreatorCancellationWindow"/>. Ensuite, seul le Superviseur annule.
+    /// POINT OUVERT : durée de la fenêtre (le patron a dit « seulement sur l'écran » ; le serveur ne voit pas l'écran).
+    /// </summary>
+    public Result CancelByCreator(string? reason, Guid actorId, DateTimeOffset now)
+    {
+        if (actorId != CreatedBy)
+        {
+            return TransfersErrors.Cancellation.NotCreator;
+        }
+
+        if (Status != TransferStatus.NotDelivered)
+        {
+            return Status == TransferStatus.Cancelled
+                ? TransfersErrors.Cancellation.AlreadyCancelled
+                : TransfersErrors.Cancellation.Delivered;
+        }
+
+        var untouched = _events.Count == 1 && _events[0].Type == TransferEventType.Created;
+        if (!untouched || now - CreatedAt > CreatorCancellationWindow)
+        {
+            return TransfersErrors.Cancellation.CreatorTooLate;
+        }
+
+        return Cancel(string.IsNullOrWhiteSpace(reason) ? DefaultCreatorCancellationReason : reason, now, actorId, now);
     }
 
     /// <summary>Rattache la contre-passation de l'écriture de création, une seule fois et seulement après l'annulation.</summary>

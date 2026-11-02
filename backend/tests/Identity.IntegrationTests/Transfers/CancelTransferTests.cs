@@ -143,6 +143,48 @@ public sealed class CancelTransferTests(ApiFixture fixture)
         Assert.NotEqual(kept, cancelled);
     }
 
+    [Fact]
+    public async Task The_author_cancels_his_transfer_right_after_creating_it_without_a_reason()
+    {
+        var ctx = await ArrangeAsync();
+        var (id, _) = await ctx.CreateAsync(paid: 36_500m);
+
+        using var response = await ctx.Client.CancelOwnTransferAsync(ctx.NkcAgentToken, id);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Equal(0m, await ctx.TreasuryBalanceAsync(ctx.NkcCash));
+        var view = await ctx.GetAsync(ctx.NkcAgentToken, id);
+        Assert.Equal("Cancelled", view.GetProperty("status").GetString());
+        Assert.Equal(
+            global::Transfers.Domain.Transfers.Transfer.DefaultCreatorCancellationReason,
+            view.GetProperty("cancellationReason").GetString());
+    }
+
+    [Fact]
+    public async Task Only_the_author_cancels_this_way_and_only_while_the_transfer_is_untouched()
+    {
+        var ctx = await ArrangeAsync();
+        var (id, _) = await ctx.CreateAsync(paid: 36_500m);
+        var (touched, _) = await ctx.CreateAsync(paid: 36_500m);
+        using var wrongCode = await ctx.Client.DeliverTransferAsync(ctx.DkrAgentToken, touched, new
+        {
+            code = "000000",
+            operationAt = ctx.OperationAt.AddHours(1),
+            payments = new[] { new { treasuryAccountId = ctx.DkrCash, amount = 50_000m } },
+        });
+
+        using var byOtherAgency = await ctx.Client.CancelOwnTransferAsync(ctx.DkrAgentToken, id, "Motif");
+        using var bySupervisor = await ctx.Client.CancelOwnTransferAsync(ctx.SupervisorToken, id, "Motif");
+        using var afterWrongCode = await ctx.Client.CancelOwnTransferAsync(ctx.NkcAgentToken, touched);
+
+        Assert.Equal(HttpStatusCode.Forbidden, byOtherAgency.StatusCode);
+        Assert.Equal("Transfers.Cancellation.NotCreator", await byOtherAgency.ReadErrorCodeAsync());
+        Assert.Equal("Transfers.Cancellation.NotCreator", await bySupervisor.ReadErrorCodeAsync());
+        Assert.Equal(HttpStatusCode.Conflict, afterWrongCode.StatusCode);
+        Assert.Equal("Transfers.Cancellation.CreatorTooLate", await afterWrongCode.ReadErrorCodeAsync());
+        Assert.Equal("NotDelivered", (await ctx.GetAsync(ctx.NkcAgentToken, id)).GetProperty("status").GetString());
+    }
+
     // --- Outils ------------------------------------------------------------
 
     private async Task<Context> ArrangeAsync()

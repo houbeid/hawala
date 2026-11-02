@@ -6,6 +6,7 @@ using Hawala.SharedKernel.Messaging;
 using Identity.Contracts;
 using Microsoft.AspNetCore.Mvc;
 using Transfers.Application.Features.Transfers;
+using Transfers.Application.Features.Transfers.CancelOwnTransfer;
 using Transfers.Application.Features.Transfers.CancelTransfer;
 using Transfers.Application.Features.Transfers.CreateTransfer;
 using Transfers.Application.Features.Transfers.DeliverTransfer;
@@ -75,6 +76,8 @@ public static class TransferEndpoints
         group.MapPost("", CreateTransfer).RequirePermission(Permissions.TransfersCreate);
         group.MapPost("/{id:guid}/deliver", DeliverTransfer).RequirePermission(Permissions.TransfersDeliver);
         group.MapPost("/{id:guid}/cancel", CancelTransfer).RequirePermission(Permissions.TransfersCancel);
+        // Annulation par l'auteur, depuis l'écran du code juste après la création (décision du patron, 2 novembre 2026).
+        group.MapPost("/{id:guid}/cancel-own", CancelOwnTransfer).RequirePermission(Permissions.TransfersCreate);
 
         // Code de retrait : débloquer et livrer sans code (Superviseur) ; nouveau code (agence d'envoi ou Superviseur).
         group.MapPost("/{id:guid}/unlock-code", UnlockCode).RequirePermission(Permissions.TransfersManageCode);
@@ -322,6 +325,26 @@ public static class TransferEndpoints
 
         var result = await handler.Handle(
             new CancelTransferCommand(actorId, id, request.Reason, request.OperationAt), cancellationToken);
+        return result.IsSuccess ? TypedResults.NoContent() : result.Error.ToProblem();
+    }
+
+    /// <param name="Reason">Motif facultatif.</param>
+    public sealed record CancelOwnTransferRequest(string? Reason);
+
+    /// <summary>204 : annulé par son auteur. Pas l'auteur : 403 ; trop tard ou déjà touché : 409.</summary>
+    private static async Task<IResult> CancelOwnTransfer(
+        Guid id,
+        CancelOwnTransferRequest request,
+        ClaimsPrincipal user,
+        ICommandHandler<CancelOwnTransferCommand> handler,
+        CancellationToken cancellationToken)
+    {
+        if (!user.TryGetAccountId(out var actorId))
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        var result = await handler.Handle(new CancelOwnTransferCommand(actorId, id, request.Reason), cancellationToken);
         return result.IsSuccess ? TypedResults.NoContent() : result.Error.ToProblem();
     }
 

@@ -268,7 +268,9 @@
         "Delivered": "Un transfert livré ne s'annule pas.",
         "ReasonRequired": "Le motif est obligatoire.",
         "ReasonTooLong": "Motif trop long (500 caractères au plus).",
-        "DateBeforeTransfer": "La date d'annulation ne peut pas précéder le transfert."
+        "DateBeforeTransfer": "La date d'annulation ne peut pas précéder le transfert.",
+        "NotCreator": "Seul l'auteur du transfert peut l'annuler depuis cet écran.",
+        "CreatorTooLate": "Ce transfert ne peut plus être annulé ici : demandez au Superviseur."
       },
       "Code": {
         "NotLocked": "Le code n'est pas bloqué.",
@@ -633,7 +635,16 @@
         "paid": "Payé par le client",
         "codeOnce": "Ce code ne sera plus jamais affiché. Envoyez le reçu à l’expéditeur maintenant. L’expéditeur remet lui-même ce code au bénéficiaire ; l’agence qui livre ne peut pas le lire.",
         "noCodeReplayed": "Ce transfert avait déjà été enregistré (envoi répété) : son code n'est plus affiché. En cas de perte, demandez un nouveau code depuis la fiche.",
-        "finish": "Terminé"
+        "finish": "Terminé",
+        "cancel": "Annuler ce transfert",
+        "cancelTitle": "Annuler ce transfert ?",
+        "cancelWarning": "Le transfert sera annulé et l'argent encaissé sortira des caisses : rendez-le au client. Le code ne marchera plus.",
+        "cancelCredit": "La part à crédit sera aussi effacée du tiers.",
+        "cancelReason": "Motif (facultatif)",
+        "cancelConfirm": "Annuler le transfert",
+        "keep": "Garder le transfert",
+        "cancelledTitle": "Transfert annulé",
+        "cancelledText": "Ce transfert est annulé : rendez l'argent au client. Le code ne marche plus."
       },
       "validation": {
         "sourceRequired": "Choisissez l'agence d'envoi.",

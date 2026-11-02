@@ -224,6 +224,64 @@ describe('Création d’un transfert — Agent de Nouakchott', () => {
     });
   });
 
+  it('l’auteur annule son transfert depuis l’écran du code, sans motif : le code et le reçu disparaissent', async () => {
+    creationServer();
+    const cancels: { id: unknown; body: unknown }[] = [];
+    server.use(
+      http.post(apiUrl('/transfers/:id/cancel-own'), async ({ params, request }) => {
+        cancels.push({ id: params.id, body: await request.json() });
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    const { user } = renderApp('/transfers/new');
+
+    await fillAmount(user);
+    await user.click(screen.getByRole('button', { name: 'Continuer' }));
+    await screen.findByLabelText('Montant de la ligne 1');
+    await user.click(screen.getByRole('button', { name: 'Continuer' }));
+    await user.type(await screen.findByLabelText('Expéditeur'), 'E');
+    await user.type(screen.getByLabelText('Bénéficiaire'), 'B');
+    await user.click(screen.getByRole('button', { name: 'Créer le transfert' }));
+    await screen.findByRole('heading', { name: 'Transfert enregistré' });
+
+    await user.click(screen.getByRole('button', { name: 'Annuler ce transfert' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Annuler ce transfert ?' });
+    await user.click(within(dialog).getByRole('button', { name: 'Annuler le transfert' }));
+
+    expect(await screen.findByRole('heading', { name: 'Transfert annulé' })).toBeInTheDocument();
+    expect(cancels).toEqual([{ id: 'tr-1', body: { reason: null } }]);
+    expect(screen.queryByRole('button', { name: 'Annuler ce transfert' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Envoyer le reçu/ })).not.toBeInTheDocument();
+  });
+
+  it('un refus du serveur (trop tard) est expliqué dans la fenêtre', async () => {
+    creationServer();
+    server.use(
+      http.post(apiUrl('/transfers/:id/cancel-own'), () =>
+        HttpResponse.json({ code: 'Transfers.Cancellation.CreatorTooLate' }, { status: 409 }),
+      ),
+    );
+    const { user } = renderApp('/transfers/new');
+
+    await fillAmount(user);
+    await user.click(screen.getByRole('button', { name: 'Continuer' }));
+    await screen.findByLabelText('Montant de la ligne 1');
+    await user.click(screen.getByRole('button', { name: 'Continuer' }));
+    await user.type(await screen.findByLabelText('Expéditeur'), 'E');
+    await user.type(screen.getByLabelText('Bénéficiaire'), 'B');
+    await user.click(screen.getByRole('button', { name: 'Créer le transfert' }));
+    await screen.findByRole('heading', { name: 'Transfert enregistré' });
+    await user.click(screen.getByRole('button', { name: 'Annuler ce transfert' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Annuler ce transfert ?' });
+    await user.type(within(dialog).getByLabelText('Motif (facultatif)'), 'Mauvais montant');
+    await user.click(within(dialog).getByRole('button', { name: 'Annuler le transfert' }));
+
+    expect(
+      await within(dialog).findByText('Ce transfert ne peut plus être annulé ici : demandez au Superviseur.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Transfert enregistré', hidden: true })).toBeInTheDocument();
+  });
+
   it('bloque l’étape 1 sans taux du jour', async () => {
     creationServer({ rate: false });
     renderApp('/transfers/new');

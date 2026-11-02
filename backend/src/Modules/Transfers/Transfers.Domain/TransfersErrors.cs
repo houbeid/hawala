@@ -180,6 +180,14 @@ public static class TransfersErrors
 
         public static readonly Error DateBeforeTransfer =
             Error.Validation("Transfers.Cancellation.DateBeforeTransfer", "L'annulation ne peut pas être datée avant le transfert.");
+
+        public static readonly Error NotCreator =
+            Error.Forbidden("Transfers.Cancellation.NotCreator", "Seul l'auteur du transfert peut l'annuler ainsi.");
+
+        public static readonly Error CreatorTooLate =
+            Error.Conflict(
+                "Transfers.Cancellation.CreatorTooLate",
+                "Ce transfert ne peut plus être annulé par son auteur : demandez au Superviseur.");
     }
 
     public static class Filter
