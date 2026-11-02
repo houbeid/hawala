@@ -5,6 +5,7 @@ using Cash.Application.Abstractions;
 using Cash.Domain.Adjustments;
 using Cash.Domain.Budgets;
 using Cash.Domain.Movements;
+using Cash.Domain.PartyTransfers;
 using Hawala.SharedInfrastructure.Persistence;
 using Identity.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -32,6 +33,8 @@ public sealed class CashDbContext(DbContextOptions<CashDbContext> options, IAgen
     public DbSet<BalanceAdjustment> Adjustments => Set<BalanceAdjustment>();
 
     public DbSet<CashBudgetSnapshot> BudgetSnapshots => Set<CashBudgetSnapshot>();
+
+    public DbSet<PartyBalanceTransfer> PartyTransfers => Set<PartyBalanceTransfer>();
 
     // Lus à chaque requête SQL (et non à la création du contexte) : EF les traite comme des paramètres.
     private bool SeesAllAgencies => agencyScope.SeesAllAgencies;
@@ -125,6 +128,38 @@ public sealed class CashDbContext(DbContextOptions<CashDbContext> options, IAgen
             adjustment.HasIndex(a => a.TargetId);
 
             adjustment.HasQueryFilter(a => SeesAllAgencies || a.AgencyId == ScopeAgencyId);
+        });
+
+        modelBuilder.Entity<PartyBalanceTransfer>(transfer =>
+        {
+            transfer.ToTable("party_balance_transfers", table =>
+            {
+                table.HasCheckConstraint("ck_party_balance_transfers_amount_positive", "\"Amount\" > 0");
+                table.HasCheckConstraint("ck_party_balance_transfers_two_parties", "\"FromPartyId\" <> \"ToPartyId\"");
+            });
+
+            transfer.HasKey(t => t.Id);
+            transfer.Property(t => t.Id).ValueGeneratedNever();
+            transfer.Property(t => t.AgencyId);
+            transfer.Property(t => t.FromPartyId);
+            transfer.Property(t => t.ToPartyId);
+            transfer.Property(t => t.Amount).HasPrecision(18, 2);
+            transfer.Property(t => t.Currency).HasConversion<string>().HasMaxLength(3);
+            transfer.Property(t => t.Note).HasMaxLength(PartyBalanceTransfer.NoteMaxLength);
+            transfer.Property(t => t.OperationAt);
+            transfer.Property(t => t.IdempotencyKey).HasMaxLength(PartyBalanceTransfer.IdempotencyKeyMaxLength).IsRequired();
+            transfer.Property(t => t.EntryId);
+            transfer.Property(t => t.CreatedBy);
+            transfer.Property(t => t.CreatedAt);
+            transfer.Ignore(t => t.Money);
+
+            // Une clé d'idempotence appartient au compte qui l'envoie.
+            transfer.HasIndex(t => new { t.CreatedBy, t.IdempotencyKey }).IsUnique();
+            transfer.HasIndex(t => new { t.AgencyId, t.OperationAt });
+            transfer.HasIndex(t => t.FromPartyId);
+            transfer.HasIndex(t => t.ToPartyId);
+
+            transfer.HasQueryFilter(t => SeesAllAgencies || t.AgencyId == ScopeAgencyId);
         });
 
         modelBuilder.Entity<CashBudgetSnapshot>(snapshot =>

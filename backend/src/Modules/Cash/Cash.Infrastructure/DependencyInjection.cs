@@ -6,6 +6,7 @@ using Cash.Application.Features.Movements;
 using Cash.Application.Features.Movements.CreateCashMovement;
 using Cash.Application.Features.Movements.GetCashMovement;
 using Cash.Application.Features.Movements.ListCashMovements;
+using Cash.Application.Features.PartyTransfers;
 using Cash.Infrastructure.Persistence;
 using Hawala.SharedInfrastructure.Persistence;
 using Hawala.SharedKernel.Messaging;
@@ -40,6 +41,7 @@ public static class DependencyInjection
         services.AddScoped<ISharedTransactionParticipant>(sp => sp.GetRequiredService<CashDbContext>());
         services.AddScoped<ICashMovementRepository, CashMovementRepository>();
         services.AddScoped<IBalanceAdjustmentRepository, BalanceAdjustmentRepository>();
+        services.AddScoped<IPartyBalanceTransferRepository, PartyBalanceTransferRepository>();
         services.AddScoped<ICashBudgetSnapshotRepository, CashBudgetSnapshotRepository>();
         services.AddScoped<CashBudgetCalculator>();
         services.AddScoped<CoherenceChecker>();
@@ -59,6 +61,9 @@ public static class DependencyInjection
         // Corrections du Superviseur : contre-passation ou écriture d'ajustement, avec le mouvement ou l'ajustement.
         services.AddSharedTransactional<CancelCashMovementCommand, CancelCashMovementCommandHandler>();
         services.AddSharedTransactional<CreateBalanceAdjustmentCommand, Guid, CreateBalanceAdjustmentCommandHandler>();
+
+        // Transfert de solde entre tiers : verrou du tiers débité et écriture au grand livre, ensemble.
+        services.AddSharedTransactional<CreatePartyBalanceTransferCommand, CreatedPartyBalanceTransfer, CreatePartyBalanceTransferCommandHandler>();
 
         // Photo du budget : lecture du grand livre et enregistrement dans la même transaction (verrou de la photo du jour).
         services.AddSharedTransactional<SaveCashBudgetCommand, CashBudgetSnapshotView, SaveCashBudgetCommandHandler>();

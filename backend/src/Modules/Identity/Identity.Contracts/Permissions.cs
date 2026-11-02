@@ -25,6 +25,12 @@ public static class Permissions
     /// <summary>Modifier un tiers : fiche, solde initial, plafond de crédit, « dans le bilan », archivage.</summary>
     public const string PartiesManage = "parties.manage";
 
+    /// <summary>
+    /// Transfert de solde entre deux tiers d'une même agence, sans toucher aux caisses (Superviseur et Agent ;
+    /// décision du patron, 2 novembre 2026).
+    /// </summary>
+    public const string PartiesTransferBalance = "parties.transfer_balance";
+
     /// <summary>Voir les soldes des tiers (de son agence ; des deux pour le Superviseur).</summary>
     public const string PartiesViewBalance = "parties.view_balance";
 
@@ -77,7 +83,7 @@ public static class Permissions
 
     public static readonly IReadOnlyList<string> All =
     [
-        UsersManage, AgenciesManage, TreasuryManage, CashBudgetRead, PartiesCreate, PartiesManage, PartiesViewBalance,
+        UsersManage, AgenciesManage, TreasuryManage, CashBudgetRead, PartiesCreate, PartiesManage, PartiesViewBalance, PartiesTransferBalance,
         RatesSetDaily, ProfitView, TransfersCreate, TransfersCredit, TransfersDeliver, TransfersCancel, TransfersManageCode, TransfersEditRate, CashCreate, CashManage, CashBudgetSave, BalanceView, BalanceManage, AuditView, Export,
     ];
 }

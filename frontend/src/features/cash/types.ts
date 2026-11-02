@@ -112,6 +112,30 @@ export interface CreateBalanceAdjustmentRequest {
   operationAt: string | null;
 }
 
+/**
+ * POST /party-transfers (parties.transfer_balance : Superviseur et Agent ; décisions du 2 novembre 2026) : transfert de
+ * solde entre deux tiers d'une même agence, sans toucher aux caisses. En-tête Idempotency-Key. 201 (200 si rejoué).
+ */
+export interface CreatePartyTransferRequest {
+  agencyId: string;
+  /** Tiers débité : il nous doit davantage, ou on lui doit moins. */
+  fromPartyId: string;
+  /** Tiers crédité : il nous doit moins, ou on lui doit davantage. */
+  toPartyId: string;
+  /** Dans la devise de l'agence (MRU déjà converti × 10). */
+  amount: number;
+  note: string | null;
+  /** ISO ; null = maintenant. */
+  operationAt: string | null;
+}
+
+export interface CreatedPartyTransfer {
+  id: string;
+  amount: number;
+  currency: Currency;
+  replayed: boolean;
+}
+
 /** GET /balance-adjustments (cash.budget.read) : ajustements d'une période, aujourd'hui par défaut. */
 export interface BalanceAdjustment {
   id: string;

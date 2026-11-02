@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest';
 import {
   buildAdjustmentRequest,
   buildCashRequest,
+  buildPartyTransferRequest,
   overdraftAfter,
   parseCashSearch,
   parseNewMovementSearch,
+  partyTransferBalances,
   validateAdjustment,
   validateCashForm,
+  validatePartyTransfer,
   type AdjustmentForm,
   type CashForm,
 } from './cashRules';
@@ -118,5 +121,34 @@ describe('ajustement de solde', () => {
       operationAt: null,
     });
     expect(buildAdjustmentRequest(adjustment({ direction: 'up', amount: '100', unit: 'MRU' }), 'nkc').amount).toBe(1000);
+  });
+});
+
+describe('transfert de solde entre tiers', () => {
+  const form = { fromPartyId: 'a', toPartyId: 'b', amount: '12,5', unit: 'MRU' as const, note: '  ' };
+
+  it('demande deux tiers différents et un montant valable', () => {
+    expect(validatePartyTransfer(form)).toEqual({});
+    expect(validatePartyTransfer({ ...form, fromPartyId: null, toPartyId: null })).toEqual({
+      from: 'cash.partyTransfer.errors.fromRequired',
+      to: 'cash.partyTransfer.errors.toRequired',
+    });
+    expect(validatePartyTransfer({ ...form, toPartyId: 'a' }).to).toBe('cash.partyTransfer.errors.sameParty');
+    expect(validatePartyTransfer({ ...form, amount: '' }).amount).toBe('cash.form.errors.amount.empty');
+  });
+
+  it('envoie le montant converti en MRO, sans note vide, daté de maintenant', () => {
+    expect(buildPartyTransferRequest(form, 'nkc')).toEqual({
+      agencyId: 'nkc',
+      fromPartyId: 'a',
+      toPartyId: 'b',
+      amount: 125,
+      note: null,
+      operationAt: null,
+    });
+  });
+
+  it('le tiers débité monte, le tiers crédité baisse, en centimes', () => {
+    expect(partyTransferBalances(-1_000_000, 0.1, 400_000.2)).toEqual({ from: -599_999.8, to: -400_000.1 });
   });
 });

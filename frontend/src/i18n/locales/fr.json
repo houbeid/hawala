@@ -449,6 +449,13 @@
         "AmountInvalid": "Le montant de l’ajustement doit être différent de zéro.",
         "ReasonRequired": "Le motif est obligatoire.",
         "ReasonTooLong": "Le motif dépasse 500 caractères."
+      },
+      "PartyTransfer": {
+        "PartyRequired": "Choisissez le tiers débité et le tiers crédité.",
+        "SameParty": "Choisissez deux tiers différents.",
+        "PartyNotFound": "Tiers introuvable.",
+        "PartyArchived": "Ce tiers est archivé : plus aucune opération possible.",
+        "LimitExceeded": "Le plafond de crédit du tiers débité serait dépassé : transfert de solde refusé."
       }
     },
     "Profit": {
@@ -1019,7 +1026,8 @@
       "Cash": {
         "Receipt": "Encaissement",
         "Payment": "Décaissement",
-        "Adjustment": "Ajustement de solde"
+        "Adjustment": "Ajustement de solde",
+        "PartyTransfer": "Transfert de solde"
       }
     }
   },
@@ -1253,6 +1261,27 @@
         "reasonRequired": "Le motif est obligatoire."
       },
       "account": "Compte à corriger"
+    },
+    "partyTransfer": {
+      "open": "Transfert de solde",
+      "title": "Transfert de solde entre tiers à {{agency}}",
+      "hint": "Le tiers débité donne le montant au tiers crédité. Les caisses ne bougent pas.",
+      "from": "Du tiers (débité)",
+      "to": "Vers le tiers (crédité)",
+      "amount": "Montant",
+      "note": "Note (facultative)",
+      "save": "Enregistrer le transfert de solde",
+      "owesUs": "Il nous doit {{amount}}",
+      "weOwe": "On lui doit {{amount}}",
+      "settled": "Soldé",
+      "after": "Après : {{name}} — {{state}}",
+      "overLimit": "{{name}} dépasserait son plafond de {{limit}} : le transfert de solde sera refusé.",
+      "errors": {
+        "fromRequired": "Choisissez le tiers débité.",
+        "toRequired": "Choisissez le tiers crédité.",
+        "sameParty": "Choisissez deux tiers différents.",
+        "noteTooLong": "500 caractères au plus."
+      }
     }
   },
   "budget": {
@@ -1592,7 +1621,8 @@
       "parties": {
         "create": "Créer un tiers",
         "manage": "Modifier un tiers",
-        "view_balance": "Voir les soldes des tiers"
+        "view_balance": "Voir les soldes des tiers",
+        "transfer_balance": "Transférer un solde entre tiers"
       },
       "rates": {
         "set_daily": "Fixer les taux du jour"

@@ -95,6 +95,26 @@ public static class CashErrors
             Error.Validation("Cash.Adjustment.ReasonTooLong", "Motif : 500 caractères au plus.");
     }
 
+    public static class PartyTransfer
+    {
+        public static readonly Error PartyRequired =
+            Error.Validation("Cash.PartyTransfer.PartyRequired", "Choisir le tiers débité et le tiers crédité.");
+
+        public static readonly Error SameParty =
+            Error.Validation("Cash.PartyTransfer.SameParty", "Le tiers crédité doit être différent du tiers débité.");
+
+        public static readonly Error PartyNotFound =
+            Error.Validation("Cash.PartyTransfer.PartyNotFound", "Tiers introuvable.");
+
+        public static readonly Error PartyArchived =
+            Error.Validation("Cash.PartyTransfer.PartyArchived", "Ce tiers est archivé : plus aucune opération possible.");
+
+        public static readonly Error LimitExceeded =
+            Error.Conflict(
+                "Cash.PartyTransfer.LimitExceeded",
+                "Le plafond de crédit du tiers débité serait dépassé : transfert de solde refusé.");
+    }
+
     public static class Filter
     {
         public static readonly Error PeriodInvalid =

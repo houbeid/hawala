@@ -48,6 +48,7 @@ public class RolePermissionsTests
         Assert.Contains(Permissions.PartiesCreate, granted);
         Assert.Contains(Permissions.PartiesViewBalance, granted);
         Assert.Contains(Permissions.CashBudgetRead, granted);
+        Assert.Contains(Permissions.PartiesTransferBalance, granted);
         Assert.DoesNotContain(Permissions.PartiesManage, granted);
         Assert.DoesNotContain(Permissions.TreasuryManage, granted);
     }
@@ -66,6 +67,7 @@ public class RolePermissionsTests
         Assert.DoesNotContain(Permissions.PartiesViewBalance, granted);
         Assert.DoesNotContain(Permissions.PartiesCreate, granted);
         Assert.DoesNotContain(Permissions.PartiesManage, granted);
+        Assert.DoesNotContain(Permissions.PartiesTransferBalance, granted);
         Assert.DoesNotContain(Permissions.Export, granted);
     }
 

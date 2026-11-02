@@ -129,6 +129,7 @@ Le passage MRO ↔ FCFA se fait par un compte système « Position de change »,
 | Approvisionnement de caisse | Trésorerie | Apports du patron | locale |
 | Retrait du patron | Apports du patron | Trésorerie | locale |
 | Virement interne | Trésorerie destination | Trésorerie source (même agence) | locale |
+| Transfert de solde entre tiers (2 novembre 2026) | Tiers débité | Tiers crédité (même agence) | locale |
 
 Décisions validées pour le grand livre :
 

@@ -235,6 +235,69 @@ namespace Cash.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_cash_movements_party", "(\"Type\" IN ('Receipt', 'Payment')) = (\"PartyId\" IS NOT NULL)");
                         });
                 });
+
+            modelBuilder.Entity("Cash.Domain.PartyTransfers.PartyBalanceTransfer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AgencyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
+
+                    b.Property<Guid>("EntryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("FromPartyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTimeOffset>("OperationAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ToPartyId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FromPartyId");
+
+                    b.HasIndex("ToPartyId");
+
+                    b.HasIndex("AgencyId", "OperationAt");
+
+                    b.HasIndex("CreatedBy", "IdempotencyKey")
+                        .IsUnique();
+
+                    b.ToTable("party_balance_transfers", "cash", t =>
+                        {
+                            t.HasCheckConstraint("ck_party_balance_transfers_amount_positive", "\"Amount\" > 0");
+
+                            t.HasCheckConstraint("ck_party_balance_transfers_two_parties", "\"FromPartyId\" <> \"ToPartyId\"");
+                        });
+                });
 #pragma warning restore 612, 618
         }
     }

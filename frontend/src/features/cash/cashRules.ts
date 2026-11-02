@@ -2,10 +2,12 @@ import { isIsoDay } from '@/shared/format/dates';
 import { parseMoneyInput, type InputUnit } from '@/shared/format/moneyInput';
 import {
   CASH_MOVEMENT_TYPES,
+  CASH_REASON_MAX,
   type AdjustmentTarget,
   type CashMovementType,
   type CreateBalanceAdjustmentRequest,
   type CreateCashMovementRequest,
+  type CreatePartyTransferRequest,
 } from './types';
 
 // Règles de l'écran Caisse (skill métier, « Caisse », décisions du 21 octobre 2026) :
@@ -174,4 +176,47 @@ export function overdraftAfter(type: CashMovementType, balance: number | null, a
   if (!leavesAccount(type) || balance === null || amount === null) return null;
   const after = (Math.round(balance * 100) - Math.round(amount * 100)) / 100;
   return after < 0 ? after : null;
+}
+
+// Transfert de solde entre tiers (parties.transfer_balance, décisions du patron du 2 novembre 2026) : deux tiers de la
+// même agence, sans motif ; le tiers débité « donne » le montant au tiers crédité, les caisses ne bougent pas.
+
+export interface PartyTransferForm {
+  fromPartyId: string | null;
+  toPartyId: string | null;
+  amount: string;
+  unit: InputUnit;
+  note: string;
+}
+
+export type PartyTransferErrors = Partial<Record<'from' | 'to' | 'amount' | 'note', string>>;
+
+export function validatePartyTransfer(form: PartyTransferForm): PartyTransferErrors {
+  const errors: PartyTransferErrors = {};
+  if (!form.fromPartyId) errors.from = 'cash.partyTransfer.errors.fromRequired';
+  if (!form.toPartyId) errors.to = 'cash.partyTransfer.errors.toRequired';
+  else if (form.toPartyId === form.fromPartyId) errors.to = 'cash.partyTransfer.errors.sameParty';
+  const amount = parseMoneyInput(form.amount, form.unit);
+  if (!amount.ok) errors.amount = amount.error === 'tooPrecise' ? `cash.form.errors.tooPrecise${form.unit}` : `cash.form.errors.amount.${amount.error}`;
+  if (form.note.trim().length > CASH_REASON_MAX) errors.note = 'cash.partyTransfer.errors.noteTooLong';
+  return errors;
+}
+
+export function buildPartyTransferRequest(form: PartyTransferForm, agencyId: string): CreatePartyTransferRequest {
+  const amount = parseMoneyInput(form.amount, form.unit);
+  if (!amount.ok || !form.fromPartyId || !form.toPartyId) throw new Error('Formulaire non validé.');
+  return {
+    agencyId,
+    fromPartyId: form.fromPartyId,
+    toPartyId: form.toPartyId,
+    amount: amount.value,
+    note: form.note.trim() || null,
+    operationAt: null,
+  };
+}
+
+/** Soldes après l'opération (positif = il nous doit) : le tiers débité monte, le tiers crédité baisse ; en centimes. */
+export function partyTransferBalances(from: number, to: number, amount: number): { from: number; to: number } {
+  const cents = Math.round(amount * 100);
+  return { from: (Math.round(from * 100) + cents) / 100, to: (Math.round(to * 100) - cents) / 100 };
 }

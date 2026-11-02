@@ -8,6 +8,8 @@ import type {
   CreateBalanceAdjustmentRequest,
   CreateCashMovementRequest,
   CreatedCashMovement,
+  CreatedPartyTransfer,
+  CreatePartyTransferRequest,
 } from './types';
 
 /** Mouvements de caisse (cash.budget.read), périmètre de l'agence côté serveur ; aujourd'hui par défaut. */
@@ -33,6 +35,11 @@ export function cancelCashMovement(http: HttpClient, id: string, request: Cancel
 /** Ajustement de solde (cash.manage) contre « Écarts et ajustements », sur un compte de trésorerie ou un tiers. */
 export function createBalanceAdjustment(http: HttpClient, request: CreateBalanceAdjustmentRequest): Promise<{ id: string }> {
   return http.post<{ id: string }>('/balance-adjustments', request);
+}
+
+/** Transfert de solde entre deux tiers de l'agence (parties.transfer_balance) ; plafond du tiers débité bloquant (409). */
+export function createPartyTransfer(http: HttpClient, request: CreatePartyTransferRequest, idempotencyKey: string): Promise<CreatedPartyTransfer> {
+  return http.post<CreatedPartyTransfer>('/party-transfers', request, { headers: { [IDEMPOTENCY_HEADER]: idempotencyKey } });
 }
 
 export function listBalanceAdjustments(http: HttpClient, params: { agencyId?: string; from?: string; to?: string }): Promise<BalanceAdjustment[]> {

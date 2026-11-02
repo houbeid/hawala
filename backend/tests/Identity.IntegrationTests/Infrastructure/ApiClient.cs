@@ -235,6 +235,27 @@ public static class ApiClient
         return await client.SendAsync(request);
     }
 
+    /// <param name="body">Objet anonyme : agencyId, fromPartyId, toPartyId, amount, unit, note, operationAt.</param>
+    /// <param name="idempotencyKey">En-tête Idempotency-Key ; null pour ne pas l'envoyer.</param>
+    public static async Task<HttpResponseMessage> CreatePartyTransferAsync(
+        this HttpClient client, string? accessToken, object body, string? idempotencyKey)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/party-transfers") { Content = JsonContent.Create(body) };
+        if (accessToken is not null)
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        }
+
+        if (idempotencyKey is not null)
+        {
+            request.Headers.Add("Idempotency-Key", idempotencyKey);
+        }
+
+        return await client.SendAsync(request);
+    }
+
     public static Task<HttpResponseMessage> CancelCashMovementAsync(this HttpClient client, string? accessToken, Guid id, string? reason) =>
         client.SendAsync(HttpMethod.Post, $"/api/v1/cash-movements/{id}/cancel", body: new { reason }, accessToken: accessToken);
 

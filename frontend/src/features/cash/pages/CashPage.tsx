@@ -15,6 +15,7 @@ import { useOnlineStatus } from '@/shared/useOnlineStatus';
 import { parseCashSearch, type CashSearch } from '../cashRules';
 import { AdjustmentList } from '../components/AdjustmentList';
 import { AdjustmentSheet } from '../components/AdjustmentSheet';
+import { PartyTransferSheet } from '../components/PartyTransferSheet';
 import { CancelMovementSheet } from '../components/CancelMovementSheet';
 import { CashMovementRow } from '../components/CashMovementRow';
 import { CashTotals } from '../components/CashTotals';
@@ -43,9 +44,11 @@ export function CashPage() {
   const { scope } = useAgencyScope();
   const canCreate = usePermission('cash.create');
   const canManage = usePermission('cash.manage');
+  const canTransferBalance = usePermission('parties.transfer_balance');
   const online = useOnlineStatus();
   const [cancelling, setCancelling] = useState<CashMovement | null>(null);
   const [adjusting, setAdjusting] = useState(false);
+  const [transferring, setTransferring] = useState(false);
 
   const choices: AgencyRef[] = scope.kind === 'all' ? scope.agencies : [];
   const agency: AgencyRef | undefined =
@@ -120,6 +123,11 @@ export function CashPage() {
         ) : (
           <Notice tone="info">{t('cash.offline')}</Notice>
         ))}
+      {canTransferBalance && online && agency?.currency && (
+        <Button icon={<Icon name="arrow" />} className="self-start" onClick={() => setTransferring(true)}>
+          {t('cash.partyTransfer.open')}
+        </Button>
+      )}
       {manageable && agency?.currency && (
         <Button icon={<Icon name="pencil" />} className="self-start" onClick={() => setAdjusting(true)}>
           {t('cash.adjustment.open')}
@@ -233,6 +241,14 @@ export function CashPage() {
       {adjustments.data && <AdjustmentList adjustments={adjustments.data} />}
 
       {cancelling && <CancelMovementSheet key={cancelling.id} movement={cancelling} onClose={() => setCancelling(null)} />}
+      {transferring && agency?.currency && (
+        <PartyTransferSheet
+          agencyId={agency.id}
+          agencyName={t(`agencies.${agency.code}`, { defaultValue: agency.name })}
+          currency={agency.currency}
+          onClose={() => setTransferring(false)}
+        />
+      )}
       {adjusting && agency?.currency && (
         <AdjustmentSheet
           agencyId={agency.id}

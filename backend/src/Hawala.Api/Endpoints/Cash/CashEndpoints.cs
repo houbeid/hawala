@@ -6,6 +6,7 @@ using Cash.Application.Features.Movements.CancelCashMovement;
 using Cash.Application.Features.Movements.CreateCashMovement;
 using Cash.Application.Features.Movements.GetCashMovement;
 using Cash.Application.Features.Movements.ListCashMovements;
+using Cash.Application.Features.PartyTransfers;
 using Hawala.Api.Configuration;
 using Hawala.Api.Errors;
 using Hawala.SharedKernel.Messaging;
@@ -58,6 +59,10 @@ public static class CashEndpoints
         adjustments.MapGet("", ListBalanceAdjustments).RequirePermission(Permissions.CashBudgetRead);
 
         // Budget de la caisse : calcul en direct et historique (cash.budget.read) ; photo du jour (cash.budget.save).
+        // Transfert de solde entre deux tiers d'une même agence (décisions du patron, 2 novembre 2026).
+        app.MapGroup("/api/v1/party-transfers").WithTags("Caisse")
+            .MapPost("", CreatePartyBalanceTransfer).RequirePermission(Permissions.PartiesTransferBalance);
+
         var budget = app.MapGroup("/api/v1/cash-budget").WithTags("Caisse");
         budget.MapGet("", GetCashBudget).RequirePermission(Permissions.CashBudgetRead);
         budget.MapGet("/snapshots", ListCashBudgetSnapshots).RequirePermission(Permissions.CashBudgetRead);
@@ -226,6 +231,47 @@ public static class CashEndpoints
         return result.Value.Replayed
             ? TypedResults.Ok(result.Value)
             : TypedResults.Created($"/api/v1/cash-movements/{result.Value.Id}", result.Value);
+    }
+
+    /// <param name="AgencyId">Agence : facultative pour un agent (la sienne), obligatoire pour le Superviseur.</param>
+    /// <param name="FromPartyId">Tiers débité (il nous doit davantage, ou on lui doit moins).</param>
+    /// <param name="ToPartyId">Tiers crédité (il nous doit moins, ou on lui doit davantage).</param>
+    /// <param name="Unit">Devise de l'agence (défaut) ou MRU (converti × 10).</param>
+    /// <param name="OperationAt">Date et heure ; maintenant si absente. Jamais dans le futur.</param>
+    public sealed record CreatePartyBalanceTransferRequest(
+        Guid? AgencyId,
+        Guid? FromPartyId,
+        Guid? ToPartyId,
+        decimal? Amount,
+        string? Unit,
+        string? Note,
+        DateTimeOffset? OperationAt);
+
+    /// <summary>201. La même Idempotency-Key renvoie 200 et le transfert de solde déjà enregistré.</summary>
+    private static async Task<IResult> CreatePartyBalanceTransfer(
+        CreatePartyBalanceTransferRequest request,
+        [FromHeader(Name = IdempotencyKeyHeader)] string? idempotencyKey,
+        ClaimsPrincipal user,
+        ICommandHandler<CreatePartyBalanceTransferCommand, CreatedPartyBalanceTransfer> handler,
+        CancellationToken cancellationToken)
+    {
+        if (!user.TryGetAccountId(out var actorId))
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        var result = await handler.Handle(
+            new CreatePartyBalanceTransferCommand(
+                actorId, idempotencyKey, request.AgencyId, request.FromPartyId, request.ToPartyId, request.Amount,
+                request.Unit, request.Note, request.OperationAt),
+            cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return result.Error.ToProblem();
+        }
+
+        return result.Value.Replayed ? TypedResults.Ok(result.Value) : TypedResults.Created((string?)null, result.Value);
     }
 
     /// <param name="from">Premier jour (aaaa-mm-jj), aujourd'hui par défaut.</param>
