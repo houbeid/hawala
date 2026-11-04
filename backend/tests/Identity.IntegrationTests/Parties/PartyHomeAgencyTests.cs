@@ -80,6 +80,26 @@ public sealed class PartyHomeAgencyTests(ApiFixture fixture)
         Assert.Equal(["DKR>both", "NKC>DKR"], changes);
     }
 
+    [Fact]
+    public async Task An_off_balance_sheet_party_is_seen_by_the_supervisor_only()
+    {
+        var ctx = await ArrangeAsync();
+        var name = $"Hors {ctx.Tag}";
+        var party = await ctx.CreateAsync(ctx.SupervisorToken, name, agency: null);
+        using var update = await ctx.Client.UpdatePartyAsync(
+            ctx.SupervisorToken, party, new { name, type = "Client", inBalanceSheet = false });
+        Assert.Equal(HttpStatusCode.NoContent, update.StatusCode);
+
+        Assert.Equal([party], await ctx.ListAsync(ctx.SupervisorToken));
+        Assert.Empty(await ctx.ListAsync(ctx.NkcAgentToken));
+        Assert.Empty(await ctx.ListAsync(ctx.DkrAgentToken));
+
+        using var byAgent = await ctx.Client.GetPartyAsync(ctx.NkcAgentToken, party);
+        using var bySupervisor = await ctx.Client.GetPartyAsync(ctx.SupervisorToken, party);
+        Assert.Equal(HttpStatusCode.NotFound, byAgent.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, bySupervisor.StatusCode);
+    }
+
     // --- Outils ------------------------------------------------------------
 
     private static string NewPhone() => $"+2224{Random.Shared.Next(1_000_000, 9_999_999)}";

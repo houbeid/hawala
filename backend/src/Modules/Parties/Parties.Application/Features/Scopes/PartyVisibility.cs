@@ -20,6 +20,11 @@ public sealed class PartyVisibility(ICurrentAccount current, IAgencyScope agency
     public Guid? HomeAgencyOnly =>
         current.AccountId is not null && !agencyScope.SeesAllAgencies ? agencyScope.AgencyId : null;
 
+    /// <summary>
+    /// Un compte connecté autre que le Superviseur ne voit pas les tiers hors bilan (décision du 4 novembre 2026).
+    /// </summary>
+    public bool BalanceSheetOnly => current.AccountId is not null && !agencyScope.SeesAllAgencies;
+
     public async Task<VisibleParties> GetAsync(CancellationToken cancellationToken)
     {
         if (_visible is not null)

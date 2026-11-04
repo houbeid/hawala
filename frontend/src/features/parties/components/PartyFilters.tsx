@@ -19,9 +19,11 @@ interface Props {
   onChange: (next: PartySearch) => void;
   /** Filtre « solde » possible : soldes visibles (parties.view_balance) et une seule agence. */
   balanceFilter: boolean;
+  /** Filtre « dans le bilan » : Superviseur seulement, seul à voir les tiers hors bilan (4 novembre 2026). */
+  balanceSheetFilter: boolean;
 }
 
-export function PartyFilters({ filters, onChange, balanceFilter }: Props) {
+export function PartyFilters({ filters, onChange, balanceFilter, balanceSheetFilter }: Props) {
   const { t } = useTranslation();
   const [search, setSearch] = useState(filters.search ?? '');
   const [lastApplied, setLastApplied] = useState(filters.search);
@@ -67,18 +69,20 @@ export function PartyFilters({ filters, onChange, balanceFilter }: Props) {
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-xs font-semibold text-muted">{t('parties.filters.balanceSheet')}</span>
-          <select
-            value={filters.balanceSheet ?? ''}
-            onChange={(e) => set({ balanceSheet: (e.target.value || undefined) as PartySearch['balanceSheet'] })}
-            className={selectClass}
-          >
-            <option value="">{t('parties.filters.all')}</option>
-            <option value="In">{t('parties.filters.in')}</option>
-            <option value="Out">{t('parties.filters.out')}</option>
-          </select>
-        </label>
+        {balanceSheetFilter && (
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold text-muted">{t('parties.filters.balanceSheet')}</span>
+            <select
+              value={filters.balanceSheet ?? ''}
+              onChange={(e) => set({ balanceSheet: (e.target.value || undefined) as PartySearch['balanceSheet'] })}
+              className={selectClass}
+            >
+              <option value="">{t('parties.filters.all')}</option>
+              <option value="In">{t('parties.filters.in')}</option>
+              <option value="Out">{t('parties.filters.out')}</option>
+            </select>
+          </label>
+        )}
         {balanceFilter && (
           <label className="flex flex-col gap-1">
             <span className="text-xs font-semibold text-muted">{t('parties.filters.balance')}</span>

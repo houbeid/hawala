@@ -117,7 +117,12 @@ export function PartiesPage() {
           <Notice tone="info">{t('parties.offline')}</Notice>
         ))}
 
-      <PartyFilters filters={filters} onChange={setFilters} balanceFilter={balanceFilter} />
+      <PartyFilters
+        filters={filters}
+        onChange={setFilters}
+        balanceFilter={balanceFilter}
+        balanceSheetFilter={scope.kind !== 'locked'}
+      />
 
       {parties.isPending && (
         <div role="status" className="flex flex-col gap-2">

@@ -5,7 +5,7 @@ import { useAgencies } from '@/features/organization/queries';
 import type { Agency } from '@/features/organization/types';
 import { scopedAgencyId, useAgencyScope } from '@/shared/agency/agencyScope';
 import { errorMessage } from '@/shared/api/errorMessage';
-import { usePermission } from '@/shared/auth/hooks';
+import { useCurrentAccount, usePermission } from '@/shared/auth/hooks';
 import { ExportButton } from '@/shared/files/ExportButton';
 import { compactDay, todayIso } from '@/shared/format/dates';
 import { Button } from '@/shared/ui/Button';
@@ -59,6 +59,7 @@ export function TransfersPage() {
   const filters = useSearch({ strict: false }) as TransferFilters;
   const { scope } = useAgencyScope();
   const canCreate = usePermission('transfers.create');
+  const newInBottomBar = useCurrentAccount()?.role === 'Agent';
   const desktop = useIsDesktop();
   const agencies = useAgencyMap();
   const today = todayIso();
@@ -106,9 +107,10 @@ export function TransfersPage() {
           />
         </div>
         {canCreate && (
+          // Sur téléphone, seul l'Agent a « Nouveau » dans la barre du bas : les autres rôles (Superviseur) ont ce bouton.
           <Link
             to="/transfers/new"
-            className="hidden min-h-14 items-center gap-2 rounded-[14px] border-2 border-ink bg-ink px-5 text-[17px] font-semibold text-on-ink no-underline lg:inline-flex"
+            className={`${newInBottomBar ? 'hidden' : 'inline-flex'} min-h-14 items-center gap-2 rounded-[14px] border-2 border-ink bg-ink px-5 text-[17px] font-semibold text-on-ink no-underline lg:inline-flex`}
           >
             <Icon name="plus" />
             {t('transfers.new')}

@@ -26,13 +26,16 @@ public sealed class CashBudgetTests(ApiFixture fixture)
         var wallet = await ctx.AccountAsync(ctx.Dkr, "wallet");
         var debtor = await ctx.PartyAsync($"Débiteur {ctx.Tag}"[..20], inBalanceSheet: true);
         var creditor = await ctx.PartyAsync($"Créditeur {ctx.Tag}"[..20], inBalanceSheet: true);
-        var outside = await ctx.PartyAsync($"Hors bilan {ctx.Tag}"[..20], inBalanceSheet: false);
+        var outsideName = $"Hors bilan {ctx.Tag}"[..20];
+        var outside = await ctx.PartyAsync(outsideName, inBalanceSheet: true);
 
         await ctx.MovementAsync("OwnerContribution", cash, 100_000m, party: null);
         await ctx.MovementAsync("OwnerContribution", wallet, 40_000m, party: null);
         await ctx.MovementAsync("Payment", cash, 30_000m, debtor);      // il nous doit 30 000
         await ctx.MovementAsync("Receipt", wallet, 20_000m, creditor);  // on lui doit 20 000
         await ctx.MovementAsync("Payment", cash, 5_000m, outside);      // hors bilan : ignoré
+        // Passé hors bilan après le mouvement : l'agent ne voit plus un tiers hors bilan (4 novembre 2026).
+        await ctx.OutOfBalanceSheetAsync(outside, outsideName);
         await ctx.UndeliveredTransferToDakarAsync(50_000m);
 
         var after = await ctx.BudgetAsync(ctx.SupervisorToken, ctx.Dkr);
@@ -175,11 +178,16 @@ public sealed class CashBudgetTests(ApiFixture fixture)
             var id = (await created.ReadJsonAsync()).GetProperty("id").GetGuid();
             if (!inBalanceSheet)
             {
-                using var update = await Client.UpdatePartyAsync(SupervisorToken, id, new { name, type = "Client", inBalanceSheet = false });
-                Assert.Equal(HttpStatusCode.NoContent, update.StatusCode);
+                await OutOfBalanceSheetAsync(id, name);
             }
 
             return id;
+        }
+
+        public async Task OutOfBalanceSheetAsync(Guid id, string name)
+        {
+            using var update = await Client.UpdatePartyAsync(SupervisorToken, id, new { name, type = "Client", inBalanceSheet = false });
+            Assert.Equal(HttpStatusCode.NoContent, update.StatusCode);
         }
 
         /// <summary>Mouvement de caisse saisi par l'agent de Dakar.</summary>

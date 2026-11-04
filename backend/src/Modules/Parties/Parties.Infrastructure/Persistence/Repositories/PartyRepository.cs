@@ -9,7 +9,7 @@ namespace Parties.Infrastructure.Persistence.Repositories;
 
 /// <summary>
 /// Les lectures passent par <see cref="VisibleAsync"/> : un agent ne voit que les tiers de son agence et ceux des deux
-/// (2 novembre 2026), et un compte limité que ses tiers autorisés (phase 6). Téléphone et NNI : vérifiés sur tous les tiers (l'unicité vaut pour tous).
+/// (2 novembre 2026), jamais les tiers hors bilan (4 novembre 2026), et un compte limité que ses tiers autorisés (phase 6). Téléphone et NNI : vérifiés sur tous les tiers (l'unicité vaut pour tous).
 /// </summary>
 internal sealed class PartyRepository(PartiesDbContext db, PartyVisibility visibility, FieldProtector protector) : IPartyRepository
 {
@@ -140,6 +140,12 @@ internal sealed class PartyRepository(PartiesDbContext db, PartyVisibility visib
         if (visibility.HomeAgencyOnly is { } agencyId)
         {
             query = query.Where(p => p.HomeAgencyId == null || p.HomeAgencyId == agencyId);
+        }
+
+        // Les tiers hors bilan sont réservés au Superviseur (4 novembre 2026).
+        if (visibility.BalanceSheetOnly)
+        {
+            query = query.Where(p => p.InBalanceSheet);
         }
 
         var visible = await visibility.GetAsync(cancellationToken);

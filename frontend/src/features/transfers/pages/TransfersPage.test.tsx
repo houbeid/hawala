@@ -188,6 +188,14 @@ describe('Liste des transferts — Agent', () => {
 describe('Liste des transferts — Superviseur', () => {
   beforeEach(() => signedInAs(supervisorAccount));
 
+  it('garde le bouton « Nouveau transfert » sur téléphone (pas dans sa barre du bas), l’agent ne l’a que sur ordinateur', async () => {
+    listServer(page([transfer({ direction: null })]));
+    renderApp('/transfers');
+    const link = await screen.findByRole('link', { name: 'Nouveau transfert' });
+    expect(link).toHaveAttribute('href', '/transfers/new');
+    expect(link).not.toHaveClass('hidden');
+  });
+
   it('exporte en Excel avec les filtres de l’écran et la langue de l’interface', async () => {
     listServer(page([transfer({ direction: null })]));
     const exports: URLSearchParams[] = [];
